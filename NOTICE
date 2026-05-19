@@ -1,0 +1,22 @@
+ePlanSys - Epistemic Planning System for ROS2
+Copyright 2026 Haniel Ulises Vasquez Morales
+
+This project is a fork of PlanSys2 (ROS2 Planning System),
+originally developed by Francisco Martín Rico, Jonatan Ginés Clavero,
+Francisco J. Rodríguez Lera, and Vicente Matellán Olivera.
+
+  Original repository: https://github.com/PlanSys2/ros2_planning_system
+  Original license:    Apache License, Version 2.0
+  Original reference:  F. Martín et al., "PlanSys2: A Planning System
+                       Framework for ROS2", IROS 2021.
+
+The packages plansys2_* included in this repository are reproduced
+unmodified from the original PlanSys2 project and remain subject to
+their original copyright notices and the Apache License, Version 2.0.
+
+The packages eplansys_* are original contributions developed as part
+of a terminal work at the Instituto Politécnico Nacional, Mexico, and
+are also distributed under the Apache License, Version 2.0.
+
+You may obtain a copy of the Apache License at:
+  http://www.apache.org/licenses/LICENSE-2.0
