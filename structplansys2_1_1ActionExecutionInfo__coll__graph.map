@@ -1,0 +1,17 @@
+<map id="ActionExecutionInfo" name="ActionExecutionInfo">
+<area shape="rect" id="Node000001" title="Structure that holds execution information for an action." alt="" coords="414,178,550,204"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,13,79,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="49,53,67,105,82,131,103,152,147,163,229,173,414,184,413,189,228,178,146,168,101,156,78,134,62,107,44,55"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="103,5,248,46"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="174,62,177,109,185,133,200,152,214,161,234,169,289,180,353,185,413,187,413,193,352,191,289,185,233,174,211,166,196,156,181,135,172,110,169,62"/>
+<area shape="rect" id="Node000004" href="$classbool.html" title=" " alt="" coords="282,13,327,38"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="305,54,309,104,318,130,333,152,345,160,364,167,414,178,413,183,363,172,343,165,329,156,313,132,304,105,300,54"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="457,13,507,38"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="485,54,485,177,479,177,479,54"/>
+<area shape="rect" id="Node000006" href="$classplansys2_1_1ActionVariant.html" title="Structure that holds either an Action or DurativeAction message." alt="" coords="604,13,704,38"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="658,55,652,106,643,133,627,156,610,169,591,179,551,190,550,185,589,174,607,165,623,152,638,130,647,104,653,54"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="729,13,782,38"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="755,55,746,112,738,139,728,156,698,171,653,181,551,191,550,185,652,176,696,166,724,152,733,136,741,111,750,54"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="880,13,940,38"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="915,54,914,79,909,107,899,134,881,156,863,164,833,170,746,180,551,190,551,185,746,175,832,165,862,159,878,152,894,131,904,105,908,78,909,54"/>
+</map>
