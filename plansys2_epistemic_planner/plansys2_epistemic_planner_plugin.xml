@@ -1,0 +1,11 @@
+<library path="plansys2_epistemic_planner">
+  <class name="plansys2/EpistemicPlanSolver"
+         type="plansys2::EpistemicPlanSolver"
+         base_class_type="plansys2::PlanSolverBase">
+    <description>
+      Epistemic plan solver based on multi-agent Kripke models. Supports
+      DEL-based product update, bisimulation contraction, and heuristic
+      search over epistemic states (S5 and KD45 semantics).
+    </description>
+  </class>
+</library>
