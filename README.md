@@ -3,6 +3,7 @@
 ![ePlanSys Logo](eplansys_docs/eplansys.png)
 
 [![epistemic-planner (humble)](https://github.com/HanielUlises/eplansys/actions/workflows/epistemic-humble.yaml/badge.svg?branch=rolling)](https://github.com/HanielUlises/eplansys/actions/workflows/epistemic-humble.yaml)
+[![rolling](https://github.com/HanielUlises/eplansys/actions/workflows/rolling.yaml/badge.svg?branch=rolling)](https://github.com/HanielUlises/eplansys/actions/workflows/rolling.yaml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![ROS2](https://img.shields.io/badge/ROS2-Humble%20%7C%20Jazzy-blue)](https://docs.ros.org)
 [![IεPC 2026](https://img.shields.io/badge/IεPC_2026-Intermediate-purple)](https://sites.google.com/view/epistemic-competition/)
