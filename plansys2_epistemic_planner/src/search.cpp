@@ -1,62 +1,123 @@
+#include "plansys2_epistemic_planner/search.hpp"
+
+#include "plansys2_epistemic_planner/bisimulation.hpp"
+#include "plansys2_epistemic_planner/product_update.hpp"
+#include "plansys2_epistemic_planner/world_cap_policy.hpp"
+
+#include <algorithm>
+#include <chrono>
+#include <climits>
+#include <deque>
+#include <iostream>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
-#include <iostream>
-#include <algorithm>
-#include <climits>
-#include <chrono>
+#include <vector>
 
-#include "plansys2_epistemic_planner/search.hpp"
-#include "plansys2_epistemic_planner/product_update.hpp"
-#include "plansys2_epistemic_planner/bisimulation.hpp"
+// Search
+//
+// Three changes are shared by every algorithm here.
+//
+// States are never stored twice. Nodes live in a deque arena and the open list
+// holds (h, g, index) triples of twelve bytes, so heap sift operations move
+// integers rather than Kripke models. The previous code stored Node by value
+// inside a std::priority_queue and read the top with `Node node = open.top()`,
+// which deep-copied an entire model on every expansion and again on every sift.
+//
+// Plans are stored as parent links. Each node carries its parent's index and
+// the action that reached it, and the plan is reconstructed once on success.
+// The previous code copied a std::vector<std::string> of the whole prefix into
+// every generated successor, so plan storage alone was O(nodes · depth).
+//
+// Closed lists store 128-bit fingerprints, not states. Because contraction
+// assigns a canonical world numbering, fingerprint equality is exactly
+// bisimilarity — the old hash was sensitive to world numbering, so states that
+// were the same epistemic situation under a different labelling hashed
+// differently and were re-expanded.
+
+namespace {
+
+constexpr std::uint32_t kNoNode = std::numeric_limits<std::uint32_t>::max();
+
+using FingerprintSet = std::unordered_set<Fingerprint, FingerprintHash>;
+
+// Reconstruct an action-name sequence by walking parent links to the root.
+template <class NodeArena>
+std::vector<std::string> reconstruct(const NodeArena& nodes, std::uint32_t leaf,
+                                     const PlanningTask& task) {
+    std::vector<std::string> plan;
+    for (std::uint32_t i = leaf; i != kNoNode && nodes[i].parent != kNoNode;
+         i = nodes[i].parent)
+        plan.push_back(task.actions[nodes[i].action].name);
+    std::reverse(plan.begin(), plan.end());
+    return plan;
+}
+
+} // namespace
 
 namespace gbfs {
 
+namespace {
+
 struct Node {
     EpistemicState state;
-    std::vector<std::string> plan;
-    float h;
-
-    bool operator>(const Node& o) const { return h > o.h; }
+    std::uint32_t  parent{kNoNode};
+    ActionIdx      action{0};
+    std::uint32_t  g{0};
 };
 
-// Greedy Best-First Search over bisimulation-contracted epistemic states.
-// The closed list is keyed by state hash with collision buckets for structural
-// equality, since bisimulation contraction does not guarantee hash uniqueness.
-// Returns the first plan found, or nullopt if the reachable space is exhausted
-// or the node limit is exceeded.
-std::optional<SearchResult> search(const PlanningTask& task,
-                                   const Heuristic& h,
-                                   size_t max_nodes) {
+struct QEntry {
+    float         h;
+    std::uint32_t g;
+    std::uint32_t idx;
+};
+
+// std::push_heap builds a max-heap under the comparator, so this reports
+// "a is worse than b": higher h first, and among equal h the *shallower* node,
+// which leaves the deeper one on top. Diving on ties is the standard greedy
+// tie-break and matters here because epistemic plateaus are wide.
+struct Worse {
+    bool operator()(const QEntry& a, const QEntry& b) const noexcept {
+        if (a.h != b.h) return a.h > b.h;
+        return a.g < b.g;
+    }
+};
+
+} // namespace
+
+std::optional<SearchResult> search(const PlanningTask& task, const Heuristic& h,
+                                   std::size_t max_nodes, Deadline deadline) {
     SearchResult result;
     result.stats.start_timer();
 
-    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open;
-    std::unordered_map<size_t, std::vector<EpistemicState>> closed;
+    const WorldCapPolicy cap = make_world_cap_policy(task.partial_obs);
 
     EpistemicState init = bisim_contract(task.init);
     if (init.satisfies(*task.goal)) {
-        result.plan = {};
-        result.stats.initial_h = 0.f;
-        result.stats.best_h    = 0.f;
-        result.stats.final_h   = 0.f;
         result.stats.stop_timer();
         return result;
     }
 
     result.stats.heuristic_calls++;
-    float init_h = h(init, task);
+    const float init_h = h(init, task);
     result.stats.initial_h = init_h;
     result.stats.best_h    = init_h;
     result.stats.final_h   = init_h;
 
-    open.push({std::move(init), {}, init_h});
-    result.stats.max_frontier_size =
-        std::max(result.stats.max_frontier_size, open.size());
+    std::deque<Node>    nodes;
+    std::vector<QEntry> open;
+    FingerprintSet      closed;
+    std::size_t         live_bytes = 0;
+
+    closed.insert(init.fingerprint());
+    live_bytes += init.footprint();
+    nodes.push_back(Node{std::move(init), kNoNode, 0, 0});
+    open.push_back(QEntry{init_h, 0, 0});
 
     while (!open.empty()) {
-        Node node = open.top();
-        open.pop();
+        std::pop_heap(open.begin(), open.end(), Worse{});
+        const QEntry cur = open.back();
+        open.pop_back();
 
         result.stats.nodes_expanded++;
 
@@ -65,76 +126,85 @@ std::optional<SearchResult> search(const PlanningTask& task,
             result.stats.stop_timer();
             return std::nullopt;
         }
-
-        size_t hsh = node.state.hash();
-        {
-            auto& bucket = closed[hsh];
-            bool already_seen = std::any_of(bucket.begin(), bucket.end(),
-                [&](const EpistemicState& s){ return s == node.state; });
-            if (already_seen) continue;
-            bucket.push_back(node.state);
+        if (std::chrono::steady_clock::now() >= deadline) {
+            std::cerr << "[gbfs] Deadline exceeded at "
+                      << result.stats.nodes_expanded << " nodes.\n";
+            result.stats.stop_timer();
+            return std::nullopt;
         }
 
+        // Copy the state out before generating successors: pushing into `nodes`
+        // can reallocate the deque's index block, and holding a reference to an
+        // element across that would be fragile even though deque never moves
+        // its elements.
+        const std::uint32_t cur_idx = cur.idx;
         bool generated_successor = false;
 
-        for (auto& action : task.actions) {
-            if (!action.applicable(node.state)) continue;
+        for (ActionIdx ai = 0; ai < task.actions.size(); ++ai) {
+            const Action& action = task.actions[ai];
+            if (!action.applicable(nodes[cur_idx].state)) continue;
 
-            auto maybe_next = product_update(node.state, action, task.kd45);
-            if (!maybe_next) continue;
+            auto maybe = product_update(nodes[cur_idx].state, action, task.kd45, cap);
+            if (!maybe) { result.stats.record_prune(maybe.error()); continue; }
 
-            EpistemicState next = bisim_contract(std::move(*maybe_next));
+            EpistemicState next = bisim_contract(std::move(*maybe));
             generated_successor = true;
             result.stats.nodes_generated++;
 
-            std::vector<std::string> new_plan = node.plan;
-            new_plan.push_back(action.name);
+            const std::uint32_t g = nodes[cur_idx].g + 1;
 
             if (next.satisfies(*task.goal)) {
-                result.plan = std::move(new_plan);
-                result.stats.final_h = 0.f;
+                nodes.push_back(Node{std::move(next), cur_idx, ai, g});
+                result.plan = reconstruct(nodes, static_cast<std::uint32_t>(nodes.size() - 1), task);
+                result.stats.final_h    = 0.f;
+                result.stats.closed_size = closed.size();
 
-                std::cerr << "[gbfs] Solution found! Length=" << result.plan.size()
+                std::cerr << "[gbfs] Solution found. Length=" << result.plan.size()
                           << "  Expanded=" << result.stats.nodes_expanded
                           << "  Generated=" << result.stats.nodes_generated
-                          << "  HeuristicCalls=" << result.stats.heuristic_calls
-                          << "  BestH=" << result.stats.best_h
-                          << "  FrontierMax=" << result.stats.max_frontier_size
+                          << "  Closed=" << closed.size()
+                          << "  PeakStateBytes=" << result.stats.peak_state_bytes
                           << "\n";
 
                 result.stats.stop_timer();
                 return result;
             }
 
-            result.stats.heuristic_calls++;
-            float hval = h(next, task);
-            result.stats.final_h = hval;
+            // Duplicate check before evaluating h: the heuristic is the most
+            // expensive operation per successor, and a fingerprint lookup is
+            // two integer comparisons.
+            if (!closed.insert(next.fingerprint()).second) {
+                result.stats.duplicates_pruned++;
+                continue;
+            }
 
-            if (hval < result.stats.best_h) {
-                result.stats.best_h = hval;
+            result.stats.heuristic_calls++;
+            const float hv = h(next, task);
+            result.stats.final_h = hv;
+            if (hv < result.stats.best_h) {
+                result.stats.best_h = hv;
                 result.stats.heuristic_improvements++;
             } else {
                 result.stats.heuristic_stalls++;
             }
 
-            size_t nhsh = next.hash();
-            auto it = closed.find(nhsh);
-            bool seen = it != closed.end() &&
-                std::any_of(it->second.begin(), it->second.end(),
-                    [&](const EpistemicState& s){ return s == next; });
+            live_bytes += next.footprint();
+            result.stats.peak_state_bytes =
+                std::max(result.stats.peak_state_bytes, live_bytes);
 
-            if (!seen) {
-                open.push({std::move(next), std::move(new_plan), hval});
-                result.stats.max_frontier_size =
-                    std::max(result.stats.max_frontier_size, open.size());
-            }
+            nodes.push_back(Node{std::move(next), cur_idx, ai, g});
+            open.push_back(QEntry{hv, g, static_cast<std::uint32_t>(nodes.size() - 1)});
+            std::push_heap(open.begin(), open.end(), Worse{});
+
+            result.stats.max_frontier_size =
+                std::max(result.stats.max_frontier_size, open.size());
         }
 
-        if (!generated_successor)
-            result.stats.dead_ends++;
+        if (!generated_successor) result.stats.dead_ends++;
     }
 
-    std::cerr << "[gbfs] Search exhausted  no solution.\n";
+    result.stats.closed_size = closed.size();
+    std::cerr << "[gbfs] Search exhausted — no solution.\n";
     result.stats.stop_timer();
     return std::nullopt;
 }
@@ -143,213 +213,257 @@ std::optional<SearchResult> search(const PlanningTask& task,
 
 namespace aostar {
 
-// Memo table maps (state_hash, depth_remaining) -> bool.
-// A false entry records a proven failure: no solution exists from that state
-// within that depth bound, so re-expansion is skipped on future encounters.
-using MemoKey = std::pair<size_t, size_t>;
-struct MemoKeyHash {
-    size_t operator()(const MemoKey& k) const {
-        return k.first ^ (k.second * 0x9e3779b97f4a7c15ULL);
-    }
+namespace {
+
+// One expanded action: the contracted state of every sensing outcome, plus an
+// aggregate heuristic estimate.
+//
+// The previous implementation ranked actions by running product_update, threw
+// the resulting state away, and then ran product_update_split again on whichever
+// action it committed to — computing the expensive part twice. Here the split is
+// computed once and carried into the recursion.
+//
+// Ranking uses the *worst* branch rather than the heuristic of the merged
+// product. An AND node is only solved when every branch is solved, so the
+// binding constraint is the hardest outcome; the merged product's designated set
+// is the union over designated events and describes no branch in particular.
+struct Expansion {
+    ActionIdx                                       action{0};
+    float                                           h{0.f};
+    std::vector<std::pair<EventIdx, EpistemicState>> branches;
 };
-using MemoTable = std::unordered_map<MemoKey, bool, MemoKeyHash>;
 
-// Ranks applicable actions by heuristic value of their raw successor state.
-// Uses product_update (not product_update_split) for ranking since we only
-// need a single aggregate heuristic estimate per action, not per-branch states.
-static std::vector<const Action*>
-rank_actions(const EpistemicState& s,
-             const PlanningTask& task,
-             const Heuristic& h,
-             PlannerStats& stats) {
-    std::vector<std::pair<float, const Action*>> ranked;
-    for (auto& a : task.actions) {
-        if (!a.applicable_weak(s)) continue;
-        auto maybe = product_update(s, a, task.kd45);
-        if (!maybe) continue;
+struct Solved {
+    std::shared_ptr<PlanNode> tree;     // null = state already satisfies the goal
+    std::uint32_t             height{0};
+};
 
-        stats.heuristic_calls++;
-        float hv = h(*maybe, task);
-        ranked.emplace_back(hv, &a);
-        stats.best_h = std::min(stats.best_h, hv);
+struct DfsResult {
+    bool                      solved{false};
+    std::shared_ptr<PlanNode> tree;
+    std::uint32_t             height{0};
+
+    // True when this failure depended on the ancestor cut or on the deadline
+    // rather than on the depth bound alone. Such failures are path- or
+    // time-dependent and must not enter the memo: the same state reached by a
+    // different path, or at a later moment, may well be solvable.
+    bool tainted{false};
+};
+
+// A refuted state, and whether that refutation was forced by the depth bound.
+struct Refuted {
+    std::uint32_t depth{0};       // greatest depth at which failure was proven
+    bool          truncated{false};
+};
+
+struct Context {
+    const PlanningTask& task;
+    const Heuristic&    h;
+    WorldCapPolicy      cap;
+    PlannerStats&       stats;
+    Deadline            deadline;
+
+    // Set whenever a branch was abandoned because the depth budget ran out.
+    // If a whole iteration completes without this being set, the depth bound
+    // never bound anything: the search visited the entire reachable AND-OR
+    // space and a larger budget cannot reach further. That is a proof of
+    // unsolvability, not a reason to try depth+1.
+    //
+    // Without it the planner spins forever on unsolvable tasks — cn-2 under a
+    // sensing encoding has two worlds and reaches depth 1.5 million. The
+    // previous test compared expansion counts between iterations, which the
+    // persistent memo defeats: memo hits keep each iteration cheap but still
+    // expand more than the root.
+    bool truncated{false};
+
+    // Both memos persist across the iterative-deepening iterations. The previous
+    // implementation rebuilt its memo table at every depth, so each iteration
+    // re-expanded from scratch everything the last one had already refuted.
+    std::unordered_map<Fingerprint, Solved, FingerprintHash>   solved;
+    std::unordered_map<Fingerprint, Refuted, FingerprintHash>  failed_upto;
+
+    FingerprintSet ancestors;
+};
+
+std::vector<Expansion> expand(const EpistemicState& s, Context& ctx) {
+    std::vector<Expansion> out;
+    out.reserve(ctx.task.actions.size());
+
+    for (ActionIdx ai = 0; ai < ctx.task.actions.size(); ++ai) {
+        const Action& a = ctx.task.actions[ai];
+        if (!a.applicable(s)) continue;
+
+        auto branches = product_update_split(s, a, ctx.task.kd45, ctx.cap);
+        if (branches.empty()) continue;
+
+        Expansion e;
+        e.action = ai;
+        e.branches.reserve(branches.size());
+
+        float worst = 0.f;
+        for (auto& [eid, bstate] : branches) {
+            EpistemicState contracted = bisim_contract(std::move(bstate));
+            ctx.stats.heuristic_calls++;
+            worst = std::max(worst, ctx.h(contracted, ctx.task));
+            e.branches.emplace_back(eid, std::move(contracted));
+        }
+
+        e.h = worst;
+        ctx.stats.nodes_generated += e.branches.size();
+        ctx.stats.best_h = std::min(ctx.stats.best_h, worst);
+        out.push_back(std::move(e));
     }
 
-    std::sort(ranked.begin(), ranked.end(),
-              [](auto& x, auto& y){ return x.first < y.first; });
-
-    std::vector<const Action*> out;
-    out.reserve(ranked.size());
-    for (auto& [_, a] : ranked) out.push_back(a);
+    std::sort(out.begin(), out.end(), [](const Expansion& x, const Expansion& y) {
+        if (x.h != y.h) return x.h < y.h;
+        return x.action < y.action;      // deterministic tie-break
+    });
     return out;
 }
 
-// Iterative-deepening AND-OR DFS for conditional epistemic plans.
-//
-// Return value encoding:
-//   nullopt             — failure (no solution within depth / pruned)
-//   optional(nullptr)   — success: this state already satisfies the goal
-//   optional(node_ptr)  — success: node_ptr is the plan subtree
-//
-// The distinction between nullopt and optional(nullptr) is critical.
-// The caller checks result.has_value() to detect success, then checks
-// whether *result is non-null to detect the goal-leaf case.
-static std::optional<std::shared_ptr<PlanNode>>
-and_or_dfs(const EpistemicState& s,
-           size_t depth,
-           const PlanningTask& task,
-           const Heuristic& h,
-           PlannerStats& stats,
-           MemoTable& memo,
-           std::unordered_set<size_t>& ancestors,
-           std::chrono::steady_clock::time_point deadline) {
+DfsResult dfs(const EpistemicState& s, std::size_t depth, Context& ctx) {
+    ctx.stats.nodes_expanded++;
 
-    stats.nodes_expanded++;
-
-    // Wall-clock budget check — avoids blocking on deep subtrees.
-    if (std::chrono::steady_clock::now() >= deadline)
-        return std::nullopt;
-
-    // Prune if this state hash already appears on the current DFS path.
-    // Hash collisions may cause rare false positives (valid states pruned),
-    // but this is acceptable given the correctness guarantee from the memo table.
-    size_t shash = s.hash();
-    if (ancestors.count(shash)) return std::nullopt;
-
-    // Goal reached: return optional(nullptr) to signal success without a subtree.
-    // This is distinct from nullopt (failure) — the parent checks has_value().
-    if (s.satisfies(*task.goal))
-        return std::optional<std::shared_ptr<PlanNode>>{nullptr};
-
-    if (depth == 0)
-        return std::nullopt;
-
-    MemoKey key{shash, depth};
-    auto mit = memo.find(key);
-    if (mit != memo.end()) {
-        if (!mit->second) return std::nullopt;
+    if (std::chrono::steady_clock::now() >= ctx.deadline) {
+        // Also counts as truncation: the iteration did not finish, so its
+        // failure is no evidence that the space was searched.
+        ctx.truncated = true;
+        return DfsResult{false, nullptr, 0, true};
     }
 
-    auto candidates = rank_actions(s, task, h, stats);
+    const Fingerprint fp = s.fingerprint();
 
-    bool generated_any = false;
+    if (ctx.ancestors.count(fp))
+        return DfsResult{false, nullptr, 0, true};
 
-    for (const Action* action : candidates) {
-        // Strong applicability check: ontic actions require ∀ designated worlds
-        // to satisfy the precondition. rank_actions used applicable_weak (∃)
-        // for speed; we re-check with the conformant criterion here before
-        // committing to a branch.
-        if (!action->applicable(s)) continue;
+    if (s.satisfies(*ctx.task.goal))
+        return DfsResult{true, nullptr, 0, false};
 
-        // product_update_split reuses the same pair_to_idx produced internally
-        // by product_update, so the branch world IDs are consistent with the
-        // full update and with each other.
-        auto branches = product_update_split(s, *action, task.kd45);
-        if (branches.empty()) continue;
+    // A cached solution is reusable only if it fits the remaining budget;
+    // otherwise the depth bound this iteration is enforcing would be violated.
+    if (auto it = ctx.solved.find(fp); it != ctx.solved.end() &&
+                                       it->second.height <= depth)
+        return DfsResult{true, it->second.tree, it->second.height, false};
 
-        generated_any = true;
-        stats.nodes_generated += branches.size();
+    if (depth == 0) {
+        ctx.truncated = true;               // the bound, not the domain, stopped us
+        return DfsResult{false, nullptr, 0, false};
+    }
 
+    // Failure at depth d implies failure at every d' ≤ d. If that failure was
+    // itself forced by the bound, replaying it must re-raise the flag —
+    // conservatively, since a truncated failure at depth d is also truncated at
+    // any smaller depth. Erring this way can only delay the exhaustion proof,
+    // never fabricate one.
+    if (auto it = ctx.failed_upto.find(fp); it != ctx.failed_upto.end() &&
+                                            depth <= it->second.depth) {
+        if (it->second.truncated) ctx.truncated = true;
+        return DfsResult{false, nullptr, 0, false};
+    }
+
+    std::vector<Expansion> candidates = expand(s, ctx);
+    if (candidates.empty()) ctx.stats.dead_ends++;
+
+    ctx.ancestors.insert(fp);
+    const bool truncated_before = ctx.truncated;
+    bool tainted = false;
+
+    for (const Expansion& e : candidates) {
         auto node = std::make_shared<PlanNode>();
-        node->action = action->name;
-        bool all_ok = true;
+        node->action = ctx.task.actions[e.action].name;
+        node->branches.reserve(e.branches.size());
 
-        for (auto& [eid, branch_state] : branches) {
-            EpistemicState contracted = bisim_contract(branch_state);
+        bool          all_ok = true;
+        std::uint32_t height = 0;
 
-            // Insert current hash into the ancestor set before recursing and
-            // remove it on return, maintaining the invariant that ancestors
-            // reflects exactly the states on the active DFS path.
-            ancestors.insert(shash);
-            auto child = and_or_dfs(contracted, depth - 1, task, h, stats,
-                                    memo, ancestors, deadline);
-            ancestors.erase(shash);
-
-            // child.has_value() == true  means the branch is solved.
-            // child.has_value() == false means failure on this branch.
-            // *child == nullptr          means the branch reached the goal
-            //                            immediately (leaf); store nullptr.
-            if (!child.has_value()) {
-                all_ok = false;
-                break;
-            }
-            node->branches.emplace_back(eid, *child);
+        for (const auto& [eid, branch] : e.branches) {
+            const DfsResult r = dfs(branch, depth - 1, ctx);
+            tainted |= r.tainted;
+            if (!r.solved) { all_ok = false; break; }
+            node->branches.emplace_back(eid, r.tree);
+            height = std::max(height, r.height);
         }
 
         if (all_ok) {
-            memo[key] = true;
-            return node;
+            ctx.ancestors.erase(fp);
+            const std::uint32_t h = height + 1;
+            ctx.solved[fp] = Solved{node, h};
+            return DfsResult{true, node, h, false};
         }
     }
 
-    if (!generated_any)
-        stats.dead_ends++;
+    ctx.ancestors.erase(fp);
 
-    memo[key] = false;
-    return std::nullopt;
+    if (!tainted) {
+        Refuted& rec = ctx.failed_upto[fp];
+        const auto d = static_cast<std::uint32_t>(depth);
+        if (d >= rec.depth) {
+            rec.depth     = d;
+            rec.truncated = ctx.truncated && !truncated_before;
+        }
+    }
+    return DfsResult{false, nullptr, 0, tainted};
 }
 
-std::optional<ConditionalSearchResult>
-search(const PlanningTask& task,
-       const Heuristic& h,
-       size_t max_depth,
-       std::chrono::steady_clock::time_point deadline) {
+} // namespace
 
-    EpistemicState init = bisim_contract(task.init);
+std::optional<ConditionalSearchResult>
+search(const PlanningTask& task, const Heuristic& h,
+       std::size_t max_depth, Deadline deadline) {
 
     ConditionalSearchResult out;
     out.stats.start_timer();
 
+    EpistemicState init = bisim_contract(task.init);
+
     if (init.satisfies(*task.goal)) {
-        out.plan_tree = nullptr;
-        out.stats.initial_h = 0.f;
-        out.stats.best_h    = 0.f;
-        out.stats.final_h   = 0.f;
         out.stats.stop_timer();
         return out;
     }
 
     out.stats.heuristic_calls++;
-    float init_h = h(init, task);
+    const float init_h = h(init, task);
     out.stats.initial_h = init_h;
     out.stats.best_h    = init_h;
     out.stats.final_h   = init_h;
 
-    size_t depth_limit = (max_depth == 0) ? SIZE_MAX : max_depth;
+    Context ctx{task, h, make_world_cap_policy(task.partial_obs), out.stats, deadline,
+                false, {}, {}, {}};
 
-    // Early termination: if no new nodes were expanded beyond the root at
-    // depth d, no action was applicable and deeper iterations are redundant.
-    size_t last_expanded = 0;
+    const std::size_t depth_limit = (max_depth == 0) ? SIZE_MAX : max_depth;
 
-    for (size_t depth = 0; depth <= depth_limit; depth++) {
+    for (std::size_t depth = 0; depth <= depth_limit; ++depth) {
         if (std::chrono::steady_clock::now() >= deadline) {
-            std::cerr << "[aostar] Timeout at depth " << depth << " — wrote null.\n";
+            std::cerr << "[aostar] Timeout at depth " << depth << ".\n";
             out.stats.stop_timer();
             return std::nullopt;
         }
 
         std::cerr << "[aostar] Trying depth " << depth << "\n";
-        MemoTable memo;
-        std::unordered_set<size_t> ancestors;
+        ctx.ancestors.clear();
+        ctx.truncated = false;
 
-        auto result = and_or_dfs(init, depth, task, h, out.stats,
-                                 memo, ancestors, deadline);
+        const DfsResult r = dfs(init, depth, ctx);
 
-        if (result.has_value()) {
-            out.plan_tree = *result;
+        if (r.solved) {
+            out.plan_tree = r.tree;
             std::cerr << "[aostar] Solution found at depth " << depth
                       << "  Expanded=" << out.stats.nodes_expanded
-                      << "  Generated=" << out.stats.nodes_generated << "\n";
+                      << "  Generated=" << out.stats.nodes_generated
+                      << "  Memo=" << ctx.solved.size() << "/" << ctx.failed_upto.size()
+                      << "\n";
             out.stats.stop_timer();
             return out;
         }
 
-        if (depth > 0 && out.stats.nodes_expanded == last_expanded + 1) {
-            std::cerr << "[aostar] Search space exhausted at depth " << depth << ".\n";
+        // Nothing was cut off by the budget, so the whole reachable AND-OR
+        // space was searched and refuted. No deeper iteration can differ.
+        if (!ctx.truncated) {
+            std::cerr << "[aostar] Search space exhausted at depth " << depth
+                      << " — no solution exists.\n";
             out.stats.stop_timer();
             return std::nullopt;
         }
-
-        last_expanded = out.stats.nodes_expanded;
     }
 
     std::cerr << "[aostar] No solution within depth " << depth_limit << ".\n";
@@ -361,120 +475,125 @@ search(const PlanningTask& task,
 
 namespace ehc {
 
-// Enforced Hill Climbing with BFS plateau escape.
-//
-// Greedy descent: at each step, all applicable successors are generated,
-// ranked by heuristic value, and the best strictly improving state is
-// committed to. Goal checks are performed before heuristic evaluation.
-//
-// Plateau escape: when no improving successor exists, a BFS is launched from
-// the current state to find the nearest state with a strictly lower heuristic
-// value. The BFS shares the visited map with the greedy phase to prevent
-// re-expansion of already-committed states and avoid oscillation between
-// plateau regions.
-//
-// Falls back to nullopt on exhaustion; main() then retries with GBFS.
-std::optional<SearchResult> search(const PlanningTask& task,
-                                   const Heuristic& h,
-                                   size_t max_nodes) {
+namespace {
+
+struct Node {
+    EpistemicState state;
+    std::uint32_t  parent{kNoNode};
+    ActionIdx      action{0};
+    std::uint32_t  g{0};
+};
+
+} // namespace
+
+std::optional<SearchResult> search(const PlanningTask& task, const Heuristic& h,
+                                   std::size_t max_nodes, Deadline deadline) {
     SearchResult result;
     result.stats.start_timer();
 
-    EpistemicState cur = bisim_contract(task.init);
+    const WorldCapPolicy cap = make_world_cap_policy(task.partial_obs);
 
-    if (cur.satisfies(*task.goal)) {
-        result.plan = {};
-        result.stats.initial_h = 0.f;
-        result.stats.best_h    = 0.f;
-        result.stats.final_h   = 0.f;
+    EpistemicState init = bisim_contract(task.init);
+    if (init.satisfies(*task.goal)) {
         result.stats.stop_timer();
         return result;
     }
 
-    std::vector<std::string> plan;
-
-    // Single visited map shared between greedy descent and BFS escape.
-    // States already committed to by the greedy phase are not re-entered
-    // during BFS, preventing cycles across phase boundaries.
-    std::unordered_map<size_t, std::vector<EpistemicState>> visited;
-    visited[cur.hash()].push_back(cur);
-
     result.stats.heuristic_calls++;
-    float cur_h = h(cur, task);
+    float cur_h = h(init, task);
     result.stats.initial_h = cur_h;
     result.stats.best_h    = cur_h;
     result.stats.final_h   = cur_h;
 
-    while (true) {
+    // One arena and one visited set for both phases. Sharing the visited set is
+    // what keeps the greedy descent from re-entering a region the plateau escape
+    // already crossed, and vice versa.
+    std::deque<Node> nodes;
+    FingerprintSet   visited;
+
+    visited.insert(init.fingerprint());
+    nodes.push_back(Node{std::move(init), kNoNode, 0, 0});
+    std::uint32_t cur_idx = 0;
+
+    const auto budget_exhausted = [&] {
         if (max_nodes > 0 && result.stats.nodes_expanded > max_nodes) {
             std::cerr << "[ehc] Node limit reached (" << max_nodes << ").\n";
-            result.stats.stop_timer();
-            return std::nullopt;
+            return true;
         }
+        if (std::chrono::steady_clock::now() >= deadline) {
+            std::cerr << "[ehc] Deadline exceeded.\n";
+            return true;
+        }
+        return false;
+    };
+
+    const auto finish = [&](std::uint32_t leaf) {
+        result.plan = reconstruct(nodes, leaf, task);
+        result.stats.final_h    = 0.f;
+        result.stats.closed_size = visited.size();
+        result.stats.stop_timer();
+    };
+
+    for (;;) {
+        if (budget_exhausted()) { result.stats.stop_timer(); return std::nullopt; }
 
         struct Succ {
             EpistemicState state;
-            std::string    action_name;
+            ActionIdx      action;
             float          hval;
         };
         std::vector<Succ> succs;
 
-        for (auto& action : task.actions) {
-            if (!action.applicable(cur)) continue;
+        for (ActionIdx ai = 0; ai < task.actions.size(); ++ai) {
+            const Action& action = task.actions[ai];
+            if (!action.applicable(nodes[cur_idx].state)) continue;
 
-            auto maybe_next = product_update(cur, action, task.kd45);
-            if (!maybe_next) continue;
+            auto maybe = product_update(nodes[cur_idx].state, action, task.kd45, cap);
+            if (!maybe) { result.stats.record_prune(maybe.error()); continue; }
 
-            EpistemicState next = bisim_contract(std::move(*maybe_next));
+            EpistemicState next = bisim_contract(std::move(*maybe));
             result.stats.nodes_generated++;
 
             if (next.satisfies(*task.goal)) {
-                plan.push_back(action.name);
-                result.plan = std::move(plan);
+                nodes.push_back(Node{std::move(next), cur_idx, ai, nodes[cur_idx].g + 1});
                 result.stats.nodes_expanded++;
-                result.stats.final_h = 0.f;
-
-                std::cerr << "[ehc] Solution found! Length=" << result.plan.size()
+                finish(static_cast<std::uint32_t>(nodes.size() - 1));
+                std::cerr << "[ehc] Solution found. Length=" << result.plan.size()
                           << "  Expanded=" << result.stats.nodes_expanded
                           << "  Generated=" << result.stats.nodes_generated << "\n";
-
-                result.stats.stop_timer();
                 return result;
             }
 
             result.stats.heuristic_calls++;
-            float hval = h(next, task);
-            result.stats.final_h = hval;
-            if (hval < result.stats.best_h) {
-                result.stats.best_h = hval;
+            const float hv = h(next, task);
+            result.stats.final_h = hv;
+            if (hv < result.stats.best_h) {
+                result.stats.best_h = hv;
                 result.stats.heuristic_improvements++;
             } else {
                 result.stats.heuristic_stalls++;
             }
 
-            succs.push_back({std::move(next), action.name, hval});
+            succs.push_back(Succ{std::move(next), ai, hv});
         }
 
-        // Sort ascending: the first entry strictly below cur_h is the best
-        // available improvement. Entries at or above cur_h are skipped.
-        std::sort(succs.begin(), succs.end(),
-                  [](const Succ& a, const Succ& b){ return a.hval < b.hval; });
+        std::sort(succs.begin(), succs.end(), [](const Succ& a, const Succ& b) {
+            if (a.hval != b.hval) return a.hval < b.hval;
+            return a.action < b.action;
+        });
 
         bool improved = false;
-        for (auto& s : succs) {
+        for (Succ& s : succs) {
             if (s.hval >= cur_h) break;
+            if (!visited.insert(s.state.fingerprint()).second) {
+                result.stats.duplicates_pruned++;
+                continue;
+            }
 
-            size_t nhsh = s.state.hash();
-            auto it = visited.find(nhsh);
-            bool seen = it != visited.end() &&
-                std::any_of(it->second.begin(), it->second.end(),
-                    [&](const EpistemicState& vs){ return vs == s.state; });
-            if (seen) continue;
-
-            visited[nhsh].push_back(s.state);
-            plan.push_back(s.action_name);
-            cur   = std::move(s.state);
-            cur_h = s.hval;
+            nodes.push_back(Node{std::move(s.state), cur_idx, s.action,
+                                 nodes[cur_idx].g + 1});
+            cur_idx  = static_cast<std::uint32_t>(nodes.size() - 1);
+            cur_h    = s.hval;
             improved = true;
             result.stats.nodes_expanded++;
             break;
@@ -482,102 +601,78 @@ std::optional<SearchResult> search(const PlanningTask& task,
 
         if (improved) continue;
 
-        std::cerr << "[ehc] Plateau at h=" << cur_h << "  BFS escape...\n";
+        // ── Plateau escape ──────────────────────────────────────────────────
+        std::cerr << "[ehc] Plateau at h=" << cur_h << " — BFS escape...\n";
 
-        struct BFSNode {
-            EpistemicState state;
-            std::vector<std::string> suffix;
-        };
-
-        std::queue<BFSNode> bfs;
-        bfs.push({cur, {}});
-        result.stats.max_frontier_size =
-            std::max(result.stats.max_frontier_size, bfs.size());
+        std::queue<std::uint32_t> frontier;
+        frontier.push(cur_idx);
 
         bool escaped = false;
-        auto run_bfs = [&]() -> bool {
-            while (!bfs.empty()) {
-                auto node = std::move(bfs.front());
-                bfs.pop();
+        while (!frontier.empty() && !escaped) {
+            const std::uint32_t node_idx = frontier.front();
+            frontier.pop();
 
-                result.stats.nodes_expanded++;
-                if (max_nodes > 0 && result.stats.nodes_expanded > max_nodes) {
-                    std::cerr << "[ehc] Node limit reached during BFS escape.\n";
-                    return false;
+            result.stats.nodes_expanded++;
+            if (budget_exhausted()) { result.stats.stop_timer(); return std::nullopt; }
+
+            for (ActionIdx ai = 0; ai < task.actions.size(); ++ai) {
+                const Action& action = task.actions[ai];
+                if (!action.applicable(nodes[node_idx].state)) continue;
+
+                auto maybe = product_update(nodes[node_idx].state, action, task.kd45, cap);
+                if (!maybe) { result.stats.record_prune(maybe.error()); continue; }
+
+                EpistemicState next = bisim_contract(std::move(*maybe));
+                result.stats.nodes_generated++;
+
+                const bool at_goal = next.satisfies(*task.goal);
+
+                result.stats.heuristic_calls++;
+                const float nh = at_goal ? 0.f : h(next, task);
+                result.stats.final_h = nh;
+                if (nh < result.stats.best_h) {
+                    result.stats.best_h = nh;
+                    result.stats.heuristic_improvements++;
+                } else {
+                    result.stats.heuristic_stalls++;
                 }
 
-                for (auto& action : task.actions) {
-                    if (!action.applicable(node.state)) continue;
-
-                    auto maybe_next = product_update(node.state, action, task.kd45);
-                    if (!maybe_next) continue;
-
-                    EpistemicState next = bisim_contract(std::move(*maybe_next));
-                    result.stats.nodes_generated++;
-
-                    if (next.satisfies(*task.goal)) {
-                        for (auto& a : node.suffix) plan.push_back(a);
-                        plan.push_back(action.name);
-                        result.plan = std::move(plan);
-                        result.stats.plateau_escapes++;
-                        result.stats.final_h = 0.f;
-
-                        std::cerr << "[ehc] Solution found during BFS escape! Length="
-                                  << result.plan.size()
-                                  << "  Expanded=" << result.stats.nodes_expanded
-                                  << "  Generated=" << result.stats.nodes_generated << "\n";
-
-                        result.stats.stop_timer();
-                        return true;
-                    }
-
-                    result.stats.heuristic_calls++;
-                    float nh = h(next, task);
-                    result.stats.final_h = nh;
-
-                    if (nh < result.stats.best_h) {
-                        result.stats.best_h = nh;
-                        result.stats.heuristic_improvements++;
-                    } else {
-                        result.stats.heuristic_stalls++;
-                    }
-
-                    size_t nhsh = next.hash();
-
-                    auto it = visited.find(nhsh);
-                    bool seen = it != visited.end() &&
-                        std::any_of(it->second.begin(), it->second.end(),
-                            [&](const EpistemicState& vs){ return vs == next; });
-                    if (seen) continue;
-
-                    // Register in the shared visited map before deciding whether
-                    // this is the escape state, so the greedy phase that follows
-                    // will not re-enter it.
-                    visited[nhsh].push_back(next);
-
-                    if (nh < cur_h) {
-                        for (auto& a : node.suffix) plan.push_back(a);
-                        plan.push_back(action.name);
-                        cur   = std::move(next);
-                        cur_h = nh;
-                        result.stats.plateau_escapes++;
-                        return true;
-                    }
-
-                    std::vector<std::string> new_suffix = node.suffix;
-                    new_suffix.push_back(action.name);
-                    bfs.push({std::move(next), std::move(new_suffix)});
-                    result.stats.max_frontier_size =
-                        std::max(result.stats.max_frontier_size, bfs.size());
+                if (!at_goal && !visited.insert(next.fingerprint()).second) {
+                    result.stats.duplicates_pruned++;
+                    continue;
                 }
+
+                nodes.push_back(Node{std::move(next), node_idx, ai,
+                                     nodes[node_idx].g + 1});
+                const auto idx = static_cast<std::uint32_t>(nodes.size() - 1);
+
+                if (at_goal) {
+                    finish(idx);
+                    result.stats.plateau_escapes++;
+                    std::cerr << "[ehc] Solution found during BFS escape. Length="
+                              << result.plan.size()
+                              << "  Expanded=" << result.stats.nodes_expanded
+                              << "  Generated=" << result.stats.nodes_generated << "\n";
+                    return result;
+                }
+
+                if (nh < cur_h) {
+                    cur_idx = idx;
+                    cur_h   = nh;
+                    result.stats.plateau_escapes++;
+                    escaped = true;
+                    break;
+                }
+
+                frontier.push(idx);
+                result.stats.max_frontier_size =
+                    std::max(result.stats.max_frontier_size, frontier.size());
             }
-            return false;
-        };
-
-        escaped = run_bfs();
+        }
 
         if (!escaped) {
-            std::cerr << "[ehc] BFS escape exhausted  no solution.\n";
+            std::cerr << "[ehc] BFS escape exhausted — no solution.\n";
+            result.stats.closed_size = visited.size();
             result.stats.stop_timer();
             return std::nullopt;
         }

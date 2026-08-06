@@ -1,374 +1,439 @@
 #include "plansys2_epistemic_planner/heuristic.hpp"
-#include <unordered_set>
-#include <unordered_map>
-#include <algorithm>
-#include <queue>
 
-float WorldCountHeuristic::operator()(const EpistemicState& s,
-                                       const PlanningTask&) const {
-    return static_cast<float>(s.designated.size());
+#include <algorithm>
+#include <vector>
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Heuristics over satisfaction sets.
+//
+// Every heuristic here is a goal-decomposition estimate: it measures how far
+// each unsatisfied goal conjunct is from holding, either as a 0/1 flag or as a
+// fraction of the accessible worlds that still act as counterexamples. The
+// numeric behaviour is unchanged from the previous implementation; what changed
+// is how it is computed and that it is now deterministic.
+//
+// Determinism mattered. Both `ed` and `ks` cut their counterexample scan off
+// after a fixed number of accessible worlds, and the old code walked
+// std::unordered_set, so *which* worlds fell inside the sample — and therefore
+// the heuristic value, and therefore the plan — depended on hash iteration
+// order. Bit sets are traversed in ascending index order, so the same state
+// always yields the same estimate.
+//
+// The remaining cost is one bottom-up evaluation of the goal per state, shared
+// across conjuncts through the state's satisfaction cache. The old code called
+// s.satisfies() per conjunct, each a fresh recursive descent, on top of a
+// separate per-heuristic (formula, world) memo that could not outlive one call.
+// ─────────────────────────────────────────────────────────────────────────────
+
+namespace {
+
+// Number of accessible worlds examined before a counterexample count is
+// truncated. Bounds the cost of `ed` and `ks` on wide models.
+constexpr std::size_t kMaxSample = 64;
+
+// Depth cap on projection through nested modalities.
+constexpr std::size_t kMaxDepth = 4;
+
+using WordVec = std::vector<bits::Word>;
+
+// The worlds agent `ag` considers possible from anywhere in `designated`:
+// ⋃ { R_ag(w) | w ∈ designated }.
+WordVec project(const EpistemicState& s, bits::ConstWordSpan designated, AgentIdx ag) {
+    WordVec out(s.rel_words, 0);
+    if (ag >= s.num_agents) return out;
+    bits::for_each(designated,
+                   [&](std::uint32_t w) { bits::or_into(out, s.succ(ag, w)); });
+    return out;
 }
 
-static float count_unsatisfied(const EpistemicState& s, const Formula& f) {
-    if (f.kind == FormulaKind::And) {
+// Fraction of the worlds accessible from `designated` via `ag` at which `inner`
+// fails, sampled in ascending world order and truncated at kMaxSample.
+float counterexample_ratio(const EpistemicState& s, bits::ConstWordSpan designated,
+                           AgentIdx ag, const Formula& inner) {
+    if (ag >= s.num_agents) return 1.0f;
+
+    const auto ext = s.sat(inner);
+
+    std::size_t fails = 0, sampled = 0;
+    bits::for_each_until(designated, [&](std::uint32_t w) {
+        return bits::for_each_until(s.succ(ag, w), [&](std::uint32_t v) {
+            if (!bits::test(ext, v)) ++fails;
+            return ++sampled < kMaxSample;
+        });
+    });
+
+    if (sampled == 0) return 0.0f;
+    return static_cast<float>(fails) / static_cast<float>(sampled);
+}
+
+[[nodiscard]] bool holds_throughout(const EpistemicState& s,
+                                    bits::ConstWordSpan designated,
+                                    const Formula& f) {
+    return bits::subset_of(designated, s.sat(f));
+}
+
+} // namespace
+
+// h1 — number of designated worlds.
+float WorldCountHeuristic::operator()(const EpistemicState& s,
+                                      const PlanningTask&) const {
+    return static_cast<float>(s.num_designated());
+}
+
+// h2 — number of unsatisfied top-level goal conjuncts.
+float UnsatisfiedGoalHeuristic::operator()(const EpistemicState& s,
+                                           const PlanningTask& task) const {
+    const Formula& goal = *task.goal;
+    const auto designated = s.designated_bits();
+
+    if (goal.kind == FormulaKind::And) {
         float unsat = 0.0f;
-        for (auto& c : f.children)
-            if (!s.satisfies(*c)) unsat += 1.0f;
+        for (const auto& c : goal.children)
+            if (!holds_throughout(s, designated, *c)) unsat += 1.0f;
         return unsat;
     }
-    return s.satisfies(f) ? 0.0f : 1.0f;
+    return holds_throughout(s, designated, goal) ? 0.0f : 1.0f;
 }
 
-float UnsatisfiedGoalHeuristic::operator()(const EpistemicState& s,
-                                            const PlanningTask& task) const {
-    return count_unsatisfied(s, *task.goal);
-}
+// h3 — epistemic distance.
+//
+// For a belief conjunct [i]φ, instead of the 0/1 verdict `ug` gives, this counts
+// what fraction of the worlds agent i considers possible are counterexamples to
+// φ — a real gradient as uncertainty is resolved. Nested modalities are handled
+// by projecting the designated set through the accessibility relation and
+// recursing, up to kMaxDepth.
+namespace {
 
-static constexpr size_t MAX_SAMPLE = 64;
-static constexpr size_t MAX_DEPTH  = 4;
+float epistemic_distance(const EpistemicState& s, bits::ConstWordSpan designated,
+                         const Formula& f, std::size_t depth) {
+    if (holds_throughout(s, designated, f)) return 0.0f;
 
-struct HoldsKey {
-    const Formula* formula;
-    WorldIdx world;
-
-    bool operator==(const HoldsKey& o) const {
-        return formula == o.formula &&
-               world == o.world;
-    }
-};
-
-struct HoldsKeyHash {
-    size_t operator()(const HoldsKey& k) const {
-        size_t h1 =
-            std::hash<const void*>()(
-                static_cast<const void*>(k.formula)
-            );
-
-        size_t h2 =
-            std::hash<size_t>()(k.world);
-
-        return h1 ^ (h2 << 1);
-    }
-};
-
-static bool cached_holds_at(
-    const EpistemicState& s,
-    const Formula& f,
-    WorldIdx w,
-    std::unordered_map<HoldsKey, bool, HoldsKeyHash>& cache
-) {
-    HoldsKey key{&f, w};
-
-    auto it = cache.find(key);
-
-    if (it != cache.end())
-        return it->second;
-
-    bool result = s.holds_at(f, w);
-
-    cache.emplace(key, result);
-
-    return result;
-}
-
-static std::unordered_set<WorldIdx>
-project_designated(const EpistemicState& s,
-                   const std::unordered_set<WorldIdx>& designated,
-                   AgentIdx ag) {
-    std::unordered_set<WorldIdx> reachable;
-
-    if (ag >= s.accessibility.size())
-        return reachable;
-
-    for (WorldIdx w : designated) {
-        if (w >= s.accessibility[ag].size())
-            continue;
-
-        for (WorldIdx v : s.accessibility[ag][w])
-            reachable.insert(v);
-    }
-
-    return reachable;
-}
-
-// Forward declaration
-static float epistemic_distance_for_conjunct(
-    const EpistemicState& s,
-    const std::unordered_set<WorldIdx>& designated,
-    const Formula& f,
-    size_t depth,
-    std::unordered_map<HoldsKey, bool, HoldsKeyHash>& cache
-);
-
-// Build a projected epistemic state from agent ag's perspective:
-// designated worlds = all worlds accessible from s.designated via R_ag.
-// This lets us recurse into nested belief formulas.
-
-static float epistemic_distance_for_conjunct(
-    const EpistemicState& s,
-    const std::unordered_set<WorldIdx>& designated,
-    const Formula& f,
-    size_t depth,
-    std::unordered_map<HoldsKey, bool, HoldsKeyHash>& cache
-) {
-    bool satisfied = true;
-
-    for (WorldIdx w : designated) {
-        if (!cached_holds_at(s, f, w, cache)) {
-            satisfied = false;
-            break;
-        }
-    }
-
-    if (satisfied) return 0.0f;
-
-    if (f.kind == FormulaKind::Belief) {
-        AgentIdx ag = f.agent;
-        if (ag >= s.accessibility.size()) return 1.0f;
-
+    switch (f.kind) {
+    case FormulaKind::Belief: {
+        if (f.agent >= s.num_agents) return 1.0f;
         const Formula& inner = *f.children[0];
 
-        // If inner is itself a belief formula and we haven't hit the depth cap,
-        // recurse by projecting the state through agent ag's accessibility.
-        if (depth < MAX_DEPTH &&
-            (inner.kind == FormulaKind::Belief ||
-             inner.kind == FormulaKind::Common  ||
-             inner.kind == FormulaKind::And     ||
-             inner.kind == FormulaKind::Or)) {
+        const bool nested = inner.kind == FormulaKind::Belief ||
+                            inner.kind == FormulaKind::Common ||
+                            inner.kind == FormulaKind::And    ||
+                            inner.kind == FormulaKind::Or;
 
-            auto projected =
-                project_designated(
-                    s,
-                    designated,
-                    ag
-                );
-
-            if (projected.empty())
-                return 1.0f;
-
-            return epistemic_distance_for_conjunct(
-                s,
-                projected,
-                inner,
-                depth + 1,
-                cache
-            );
+        if (depth < kMaxDepth && nested) {
+            const WordVec projected = project(s, designated, f.agent);
+            if (bits::empty(projected)) return 1.0f;
+            return epistemic_distance(s, projected, inner, depth + 1);
         }
 
-        // Leaf belief formula: count counterexample worlds with sampling cap
-        size_t counterexamples = 0;
-        size_t sampled = 0;
-
-        for (WorldIdx w : designated) {
-
-            if (w >= s.accessibility[ag].size())
-                continue;
-
-            for (WorldIdx v : s.accessibility[ag][w]) {
-
-                if (!cached_holds_at(s, inner, v, cache))
-                    counterexamples++;
-
-                sampled++;
-
-                if (sampled >= MAX_SAMPLE) goto done;
-            }
-        }
-
-        done:
-        if (sampled == 0) return 0.0f;
-
-        return static_cast<float>(counterexamples) /
-               static_cast<float>(sampled);
+        return counterexample_ratio(s, designated, f.agent, inner);
     }
 
-    // Common knowledge: project through union of group relations
-    if (f.kind == FormulaKind::Common && !f.children.empty()) {
-        if (depth >= MAX_DEPTH) return satisfied ? 0.0f : 1.0f;
+    case FormulaKind::Common: {
+        if (f.children.empty()) return 1.0f;
+        if (depth >= kMaxDepth) return 1.0f;
 
-        // Project through each agent in the group, take max distance
+        // Worst agent in the group: common knowledge is no closer than its
+        // furthest constituent.
         float worst = 0.0f;
-
         for (AgentIdx ag : f.group) {
-
-            auto projected =
-                project_designated(
-                    s,
-                    designated,
-                    ag
-                );
-
-            if (projected.empty())
-                continue;
-
-            float d =
-                epistemic_distance_for_conjunct(
-                    s,
-                    projected,
-                    *f.children[0],
-                    depth + 1,
-                    cache
-                );
-
-            worst = std::max(worst, d);
+            const WordVec projected = project(s, designated, ag);
+            if (bits::empty(projected)) continue;
+            worst = std::max(worst,
+                             epistemic_distance(s, projected, *f.children[0], depth + 1));
         }
-
         return worst;
     }
 
-    // Conjunction: sum distances of unsatisfied conjuncts
-    if (f.kind == FormulaKind::And) {
+    case FormulaKind::And: {
         float total = 0.0f;
-
-        for (auto& c : f.children) {
-            total += epistemic_distance_for_conjunct(
-                s,
-                designated,
-                *c,
-                depth,
-                cache
-            );
-        }
-
+        for (const auto& c : f.children)
+            total += epistemic_distance(s, designated, *c, depth);
         return total;
     }
 
-    // Kw: [i]φ ∨ [i]¬φ — take the closer branch
-    if (f.kind == FormulaKind::Or && f.children.size() == 2) {
-
-        float d0 =
-            epistemic_distance_for_conjunct(
-                s,
-                designated,
-                *f.children[0],
-                depth,
-                cache
-            );
-
-        float d1 =
-            epistemic_distance_for_conjunct(
-                s,
-                designated,
-                *f.children[1],
-                depth,
-                cache
-            );
-
-        return std::min(d0, d1);
+    case FormulaKind::Or: {
+        // Covers Kw expanded as [i]φ ∨ [i]¬φ: credit the nearer disjunct.
+        if (f.children.size() != 2) break;
+        return std::min(epistemic_distance(s, designated, *f.children[0], depth),
+                        epistemic_distance(s, designated, *f.children[1], depth));
     }
 
-    return satisfied ? 0.0f : 1.0f;
+    case FormulaKind::Kw: {
+        if (f.agent >= s.num_agents) return 1.0f;
+        const Formula& inner = *f.children[0];
+        // Distance to knowing φ, or to knowing ¬φ, whichever is nearer.
+        const float to_true  = counterexample_ratio(s, designated, f.agent, inner);
+        return std::min(to_true, 1.0f - to_true);
+    }
+
+    default:
+        break;
+    }
+
+    return 1.0f;   // unsatisfied and structurally opaque
 }
+
+} // namespace
 
 float EpistemicDistanceHeuristic::operator()(const EpistemicState& s,
-                                              const PlanningTask& task) const {
-
-    std::unordered_map<
-        HoldsKey,
-        bool,
-        HoldsKeyHash
-    > cache;
-
+                                             const PlanningTask& task) const {
     const Formula& goal = *task.goal;
+    const auto designated = s.designated_bits();
 
     if (goal.kind == FormulaKind::And) {
         float total = 0.0f;
-
-        for (auto& c : goal.children) {
-            total += epistemic_distance_for_conjunct(
-                s,
-                s.designated,
-                *c,
-                0,
-                cache
-            );
-        }
-
+        for (const auto& c : goal.children)
+            total += epistemic_distance(s, designated, *c, 0);
         return total;
     }
-
-    return epistemic_distance_for_conjunct(
-        s,
-        s.designated,
-        goal,
-        0,
-        cache
-    );
+    return epistemic_distance(s, designated, goal, 0);
 }
 
-// Count worlds accessible from designated via agent ag where formula f fails.
-// Returns value in [0, 1] — fraction of accessible worlds that are counterexamples.
-static float kw_distance(const EpistemicState& s, AgentIdx ag, const Formula& f) {
-    if (ag >= s.accessibility.size()) return 1.0f;
+// h4 — knowledge spread.
+//
+// Aimed at goals that are conjunctions of Kw formulas across agents (Gossip,
+// Grapevine). Each unsatisfied conjunct contributes the fraction of the agent's
+// accessible worlds that still fail to resolve it, so the value falls smoothly
+// as knowledge propagates through the agent graph rather than dropping in
+// whole-conjunct steps.
+namespace {
 
-    size_t fails = 0, total = 0;
+float knowledge_spread(const EpistemicState& s, const Formula& f) {
+    const auto designated = s.designated_bits();
+    if (holds_throughout(s, designated, f)) return 0.0f;
 
-    for (WorldIdx w : s.designated) {
+    switch (f.kind) {
+    case FormulaKind::Or:
+        // Kw.box expanded to [i]φ ∨ [i]¬φ: whichever direction is nearer.
+        if (f.children.size() == 2)
+            return std::min(knowledge_spread(s, *f.children[0]),
+                            knowledge_spread(s, *f.children[1]));
+        break;
 
-        if (w >= s.accessibility[ag].size())
-            continue;
-
-        for (WorldIdx v : s.accessibility[ag][w]) {
-
-            if (!s.holds_at(f, v))
-                fails++;
-
-            total++;
-
-            if (total >= MAX_SAMPLE) goto kw_done;
-        }
+    case FormulaKind::Kw: {
+        const float to_true =
+            counterexample_ratio(s, designated, f.agent, *f.children[0]);
+        return std::min(to_true, 1.0f - to_true);
     }
 
-    kw_done:
+    case FormulaKind::Belief:
+        return counterexample_ratio(s, designated, f.agent, *f.children[0]);
 
-    if (total == 0) return 0.0f;
-
-    return static_cast<float>(fails) /
-           static_cast<float>(total);
-}
-
-// Recursively flatten a Kw formula [i]φ ∨ [i]¬φ into its two belief branches
-// and return the distance of the closer one — whichever direction
-// the agent is closer to knowing.
-static float kw_spread_conjunct(const EpistemicState& s, const Formula& f) {
-    if (s.satisfies(f)) return 0.0f;
-
-    // Kw.box expanded as Or{Belief, Belief}: take min branch distance
-    if (f.kind == FormulaKind::Or && f.children.size() == 2) {
-        float d0 = kw_spread_conjunct(s, *f.children[0]);
-        float d1 = kw_spread_conjunct(s, *f.children[1]);
-        return std::min(d0, d1);
-    }
-
-    if (f.kind == FormulaKind::Belief) {
-        AgentIdx ag = f.agent;
-        const Formula& inner = *f.children[0];
-        return kw_distance(s, ag, inner);
-    }
-
-    // Conjunction of Kw formulas (group Kw.box expands to And)
-    if (f.kind == FormulaKind::And) {
+    case FormulaKind::And: {
         float total = 0.0f;
-        for (auto& c : f.children)
-            total += kw_spread_conjunct(s, *c);
+        for (const auto& c : f.children) total += knowledge_spread(s, *c);
         return total;
     }
 
-    return s.satisfies(f) ? 0.0f : 1.0f;
+    default:
+        break;
+    }
+
+    return 1.0f;
 }
+
+} // namespace
 
 float KnowledgeSpreadHeuristic::operator()(const EpistemicState& s,
-                                            const PlanningTask& task) const {
+                                           const PlanningTask& task) const {
     const Formula& goal = *task.goal;
 
     if (goal.kind == FormulaKind::And) {
         float total = 0.0f;
-
-        for (auto& c : goal.children)
-            total += kw_spread_conjunct(s, *c);
-
+        for (const auto& c : goal.children) total += knowledge_spread(s, *c);
         return total;
     }
+    return knowledge_spread(s, goal);
+}
 
-    return kw_spread_conjunct(s, goal);
+// ─────────────────────────────────────────────────────────────────────────────
+// h5 / h6 — relaxed announcement closure
+//
+// See heuristic.hpp for the relaxation. The loop below is a fixpoint over a
+// shrinking world set: at each layer every designated event of every action
+// contributes its precondition extension as a pruning constraint, all of them
+// are applied at once, and the layer at which each goal conjunct first becomes
+// true is recorded.
+//
+// Cost is bounded by the fact that the world set strictly shrinks whenever a
+// layer makes progress, so there are at most |W| layers; kMaxLayers caps it
+// further for the pathological case.
+// ─────────────────────────────────────────────────────────────────────────────
+
+namespace {
+
+constexpr std::size_t kMaxLayers = 32;
+
+// Top-level conjuncts of the goal, which is how every heuristic here decomposes
+// it. A non-conjunctive goal is treated as a single conjunct.
+std::vector<const Formula*> goal_conjuncts(const Formula& goal) {
+    std::vector<const Formula*> out;
+    if (goal.kind == FormulaKind::And) {
+        out.reserve(goal.children.size());
+        for (const auto& c : goal.children) out.push_back(c.get());
+    } else {
+        out.push_back(&goal);
+    }
+    return out;
+}
+
+// Does agent `ag` tell events e and f apart under action `a`?
+//
+// Optimistically: true if *any* observability case distinguishes them. The real
+// update picks the first case whose guard holds at the source world, which is
+// world-dependent; taking the union over cases can only make knowledge easier
+// to acquire, which is the direction a relaxation must err in.
+//
+// An agent with no observability cases falls back, in the real update, to full
+// uncertainty (R^E_i(e) = E), and so distinguishes nothing.
+bool distinguishes(const Action& a, AgentIdx ag, EventIdx e, EventIdx f) {
+    if (ag >= a.obs_cases.size()) return false;
+    for (const ObsCase& c : a.obs_cases[ag]) {
+        if (e >= c.relation.size()) continue;
+        if (!c.relation[e].count(f)) return true;
+    }
+    return false;
+}
+
+// One relaxed step, applied in place. Returns true if anything changed.
+//
+// Two monotone effects are modelled, both of which only ever remove structure:
+//
+//   Worlds. Each designated event contributes its precondition extension as a
+//   pruning constraint — the worlds an announcement of that event eliminates.
+//   The event is skipped when it is inconsistent with W* (it could not have
+//   fired), when it prunes nothing, or when applying it would empty W*: the
+//   relaxation may discard possible worlds freely, but a model with no actual
+//   world represents no situation at all.
+//
+//   Edges. This is what the world-elimination-only version missed, and why it
+//   was flat on private announcements. When agent i can tell event e from event
+//   f, the product update leaves no R_i edge from a world where pre(e) held to
+//   one where pre(f) held: i has observed which of the two occurred, so those
+//   worlds are no longer mutually accessible for i. Relaxed, that is
+//
+//       R_i ← R_i \ ( sat(pre(e)) × sat(pre(f)) )
+//
+//   applied for every distinguishing agent and every ordered pair of designated
+//   events. Gossip and Grapevine make progress entirely through this term —
+//   their announcements have trivial preconditions and eliminate no worlds at
+//   all, so a relaxation that only prunes worlds reaches its fixpoint at layer
+//   zero and reports nothing.
+bool relaxed_step(EpistemicState& m, const PlanningTask& task) {
+    const std::uint32_t nw = m.num_worlds;
+
+    std::vector<bits::Word> keep(m.rel_words, 0);
+    bits::fill_all(keep, nw);
+
+    bool progress = false;
+
+    // Extensions are copied out because several are held live at once and the
+    // model is mutated below, which invalidates the state's satisfaction cache.
+    std::vector<bits::Word> ext_e, ext_f;
+
+    for (const Action& a : task.actions) {
+        std::vector<EventIdx> events(a.designated_events.begin(),
+                                     a.designated_events.end());
+        std::sort(events.begin(), events.end());
+
+        // ── Edge cuts ───────────────────────────────────────────────────────
+        for (EventIdx e : events) {
+            if (e >= a.events.size()) continue;
+            m.sat_copy(*a.events[e].precondition, ext_e);
+            if (bits::empty(ext_e)) continue;
+
+            for (EventIdx f : events) {
+                if (f == e || f >= a.events.size()) continue;
+                m.sat_copy(*a.events[f].precondition, ext_f);
+                if (bits::empty(ext_f)) continue;
+
+                for (AgentIdx ag = 0; ag < m.num_agents; ++ag) {
+                    if (!distinguishes(a, ag, e, f)) continue;
+
+                    bits::for_each(ext_e, [&](std::uint32_t w) {
+                        auto row = m.succ(ag, w);
+                        if (!bits::intersects(row, ext_f)) return;
+                        bits::andnot_into(row, ext_f);
+                        progress = true;
+                    });
+                }
+            }
+        }
+    }
+
+    if (progress) m.invalidate();
+
+    // ── World prunes ────────────────────────────────────────────────────────
+    const auto designated = m.designated_bits();
+    for (const Action& a : task.actions) {
+        for (EventIdx e : a.designated_events) {
+            if (e >= a.events.size()) continue;
+
+            m.sat_copy(*a.events[e].precondition, ext_e);
+
+            if (!bits::intersects(ext_e, designated)) continue;
+            if (bits::subset_of(keep, ext_e))          continue;
+
+            std::vector<bits::Word> cand = keep;
+            bits::and_into(cand, ext_e);
+            if (!bits::intersects(cand, designated)) continue;
+
+            keep     = std::move(cand);
+            progress = true;
+        }
+    }
+
+    if (bits::count(keep) != nw) {
+        std::vector<WorldIdx> remap;
+        m = restrict_state(m, keep, remap);
+    }
+
+    return progress;
+}
+
+} // namespace
+
+float RelaxedClosureHeuristic::operator()(const EpistemicState& s,
+                                          const PlanningTask& task) const {
+    const std::vector<const Formula*> conjuncts = goal_conjuncts(*task.goal);
+
+    // level[i] = layer at which conjunct i first held, or npos if never.
+    constexpr std::size_t npos = static_cast<std::size_t>(-1);
+    std::vector<std::size_t> level(conjuncts.size(), npos);
+    std::size_t remaining = conjuncts.size();
+
+    EpistemicState model = s;
+    std::size_t    layer = 0;
+
+    for (;;) {
+        for (std::size_t i = 0; i < conjuncts.size(); ++i) {
+            if (level[i] != npos) continue;
+            if (model.satisfies(*conjuncts[i])) { level[i] = layer; --remaining; }
+        }
+        if (remaining == 0) break;
+        if (layer >= kMaxLayers) break;
+
+        if (!relaxed_step(model, task)) break;   // fixpoint: nothing more to remove
+        ++layer;
+    }
+
+    // Conjuncts the closure never resolved sit one layer past the horizon, with
+    // a residual in [0,1) from the current state so the estimate still has a
+    // gradient rather than collapsing to a constant.
+    const auto score = [&](std::size_t i) -> float {
+        if (level[i] != npos) return static_cast<float>(level[i]);
+        const float residual =
+            std::min(1.0f, epistemic_distance(s, s.designated_bits(), *conjuncts[i], 0));
+        return static_cast<float>(layer + 1) + residual;
+    };
+
+    if (agg_ == RelaxedAggregation::Max) {
+        float worst = 0.0f;
+        for (std::size_t i = 0; i < conjuncts.size(); ++i)
+            worst = std::max(worst, score(i));
+        return worst;
+    }
+
+    float total = 0.0f;
+    for (std::size_t i = 0; i < conjuncts.size(); ++i) total += score(i);
+    return total;
 }

@@ -13,7 +13,7 @@ struct Heuristic {
 // Not/And/Or that bottoms out in atoms without crossing a modal operator.
 // A goal that returns false here is purely epistemic (KD45 belief operators
 // with no bare atom conjunct) and should be routed to AO* + KnowledgeSpread.
-static bool has_atom_conjunct(const Formula& f) {
+[[nodiscard]] inline bool has_atom_conjunct(const Formula& f) {
     switch (f.kind) {
         case FormulaKind::Top:
         case FormulaKind::Bot:
@@ -80,4 +80,59 @@ struct EpistemicDistanceHeuristic : Heuristic {
 struct KnowledgeSpreadHeuristic : Heuristic {
     float operator()(const EpistemicState& s,
                      const PlanningTask& task) const override;
+};
+
+// h5 / h6: relaxed announcement closure.
+//
+// The four heuristics above are all goal counting. None of them solves a
+// relaxed problem, so none of them estimates a *distance*: they measure how
+// wrong the current state is, not how much work remains. On any domain where
+// several actions must be chained before the first goal conjunct becomes true,
+// they are flat.
+//
+// The relaxation here is specific to epistemic planning. In classical planning
+// one relaxes by ignoring delete effects, because progress is monotone growth
+// of a fact set. In DEL, the actions that establish knowledge are announcements
+// and sensing, which carry no ontic effect at all — they make progress by
+// *eliminating worlds* an agent considers possible. The monotone quantity is
+// therefore the world set, shrinking rather than growing, and the natural
+// relaxation is to apply every eliminating action at once and ignore the
+// interference between them:
+//
+//   W_0 = W
+//   W_{k+1} = W_k ∩ ⋂ { sat_{M|W_k}(pre(e)) : a ∈ A, e ∈ E_d(a) }
+//
+// where an event is skipped if including it would empty W*. Each layer costs
+// one action in the relaxed plan, so the layer at which a goal conjunct first
+// becomes true is a lower bound on the number of steps needed to establish it —
+// the epistemic analogue of a relaxed planning graph's fact levels.
+//
+// The closure ignores three things, and is a lower bound because of it: that
+// announcements have preconditions which must themselves be established, that
+// events which prune well in the relaxation may be inconsistent with the actual
+// world, and that ontic effects can restore uncertainty. It costs
+// O(L · |A| · |E| · |φ| · |W|²/64) with L ≤ |W| layers, which the bit-matrix
+// representation makes cheap enough to run at every node.
+//
+// Two aggregations over the per-conjunct levels, as with h_max and h_add:
+//
+//   rpg   max over goal conjuncts   — lower bound, safe under-estimate
+//   radd  sum over goal conjuncts   — assumes conjuncts are independent;
+//                                     over-estimates when they share work, but
+//                                     far better guided on conjunctive goals
+//                                     such as Gossip and Grapevine
+//
+// Conjuncts the closure cannot resolve fall back to a residual epistemic
+// distance offset past the last layer, so the estimate degrades to a gradient
+// rather than to a constant.
+enum class RelaxedAggregation { Max, Add };
+
+struct RelaxedClosureHeuristic : Heuristic {
+    explicit RelaxedClosureHeuristic(RelaxedAggregation agg) : agg_(agg) {}
+
+    float operator()(const EpistemicState& s,
+                     const PlanningTask& task) const override;
+
+private:
+    RelaxedAggregation agg_;
 };

@@ -1,52 +1,46 @@
 #include "plansys2_epistemic_planner/action.hpp"
 #include "plansys2_epistemic_planner/state.hpp"
 
-// applicable: strong conformant-planning applicability.
+// Applicability reduces to two set tests once preconditions are evaluated as
+// extensions over the whole model. The previous implementation looped over
+// designated worlds calling holds_at per world, re-descending the precondition
+// each time; here sat(pre(e)) is computed once and memoised on the state, so
+// the product update that follows reuses it.
+
+// Strong, conformant applicability.
 //
-// For ontic actions (single designated event):
-//   Every designated world must satisfy the precondition of the designated event.
-//   An ontic action applied when some designated worlds fail the precondition
-//   would silently prune those worlds from the successor's designated set,
-//   making the goal appear satisfied in a state that only represents the
-//   subset of actual worlds where the action could execute — which is unsound.
+// Ontic actions (|E_d| = 1) require W* ⊆ sat(pre(e)). An ontic action fired
+// when only some designated worlds satisfy the precondition would silently drop
+// the others from W'*, producing a state that conflates partial execution with
+// full execution and can report spurious goal satisfaction.
 //
-// For sensing actions (multiple designated events):
-//   At least one (designated world, designated event) pair must satisfy the
-//   precondition. Sensing actions use product_update_split which partitions
-//   the successor by event; worlds where a given event's precondition fails
-//   simply don't appear in that event's branch — this is the intended semantics.
+// Sensing actions (|E_d| ≥ 2) require only W* ∩ sat(pre(e)) ≠ ∅ for some
+// designated event. They branch through product_update_split, so worlds where
+// different events fire land in separate subtrees and no conflation occurs.
 bool Action::applicable(const EpistemicState& s) const {
     if (designated_events.empty()) return false;
+    if (bits::empty(s.designated_bits())) return false;
 
     if (is_ontic()) {
-        // ∀ w ∈ W* : M,w ⊨ pre(e)  for the single designated event e
-        EventIdx eid = *designated_events.begin();
+        const EventIdx eid = *designated_events.begin();
         if (eid >= events.size()) return false;
-        const FormulaPtr& pre = events[eid].precondition;
-        for (WorldIdx w : s.designated)
-            if (!s.holds_at(*pre, w)) return false;
-        return !s.designated.empty();
+        return bits::subset_of(s.designated_bits(),
+                               s.sat(*events[eid].precondition));
     }
 
-    // Sensing: ∃ (w,e) ∈ W* × E_d : M,w ⊨ pre(e)
-    for (EventIdx eid : designated_events) {
-        if (eid >= events.size()) continue;
-        for (WorldIdx w : s.designated)
-            if (s.holds_at(*events[eid].precondition, w))
-                return true;
-    }
-    return false;
+    return applicable_weak(s);
 }
 
-// applicable_weak: existential check used for heuristic ranking in AO* only.
-// Never used to decide whether a successor is actually generated.
+// Existential applicability, used only to shortlist actions for heuristic
+// ranking. Never decides whether a successor is generated.
 bool Action::applicable_weak(const EpistemicState& s) const {
     if (designated_events.empty()) return false;
+
     for (EventIdx eid : designated_events) {
         if (eid >= events.size()) continue;
-        for (WorldIdx w : s.designated)
-            if (s.holds_at(*events[eid].precondition, w))
-                return true;
+        if (bits::intersects(s.designated_bits(),
+                             s.sat(*events[eid].precondition)))
+            return true;
     }
     return false;
 }

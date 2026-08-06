@@ -1,0 +1,376 @@
+// Copyright 2026 Intelligent Robotics Lab
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "plansys2_epistemic_planner/epistemic_plan_solver.hpp"
+
+#include <algorithm>
+#include <cstdio>
+#include <filesystem>
+#include <fstream>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+
+#include <unistd.h>
+
+#include <nlohmann/json.hpp>
+
+#include "plansys2_epistemic_planner/formula.hpp"
+#include "plansys2_epistemic_planner/heuristic.hpp"
+#include "plansys2_epistemic_planner/parser.hpp"
+#include "plansys2_epistemic_planner/selection_policy.hpp"
+#include "plansys2_epistemic_planner/validator.hpp"
+#include "pluginlib/class_list_macros.hpp"
+
+namespace plansys2
+{
+
+namespace
+{
+
+/// Aletheia's parser reads from a path. Writing the JSON to a temporary file
+/// keeps the vendored parser untouched; it costs one small write per call,
+/// which is immaterial next to the search itself.
+class TempTask
+{
+public:
+  explicit TempTask(const std::string & contents)
+  {
+    path_ = std::filesystem::temp_directory_path() /
+      ("eplansys-task-" + std::to_string(::getpid()) + "-" +
+      std::to_string(counter_++) + ".json");
+    std::ofstream out(path_);
+    out << contents;
+  }
+
+  ~TempTask()
+  {
+    std::error_code ec;
+    std::filesystem::remove(path_, ec);
+  }
+
+  TempTask(const TempTask &) = delete;
+  TempTask & operator=(const TempTask &) = delete;
+
+  std::string path() const {return path_.string();}
+
+private:
+  std::filesystem::path path_;
+  static inline unsigned counter_ = 0;
+};
+
+/// True when the string parses as an object carrying the grounded-task key.
+bool is_epistemic_task_json(const std::string & s)
+{
+  if (s.find("planning-task-info") == std::string::npos) {
+    return false;   // cheap reject before paying for a parse
+  }
+  try {
+    const auto j = nlohmann::json::parse(s);
+    return j.is_object() && j.contains("planning-task-info");
+  } catch (const nlohmann::json::exception &) {
+    return false;
+  }
+}
+
+/// A policy tree that never offers a choice is a linear plan wearing a tree's
+/// clothes; flattening it discards nothing and needs no warning.
+bool branches_anywhere(const std::shared_ptr<PlanNode> & node)
+{
+  if (!node) {
+    return false;
+  }
+  if (node->branches.size() > 1) {
+    return true;
+  }
+  for (const auto & [event, child] : node->branches) {
+    (void)event;
+    if (branches_anywhere(child)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Follow the lowest event index at each node — the same rule serialize.py
+/// uses for competition output.
+void flatten(const std::shared_ptr<PlanNode> & node, std::vector<std::string> & out)
+{
+  if (!node) {
+    return;
+  }
+  out.push_back(node->action);
+  if (node->branches.empty()) {
+    return;
+  }
+  const auto lowest = std::min_element(
+    node->branches.begin(), node->branches.end(),
+    [](const auto & a, const auto & b) {return a.first < b.first;});
+  flatten(lowest->second, out);
+}
+
+std::unique_ptr<Heuristic> make_heuristic(const std::string & label)
+{
+  if (label == "ug") {return std::make_unique<UnsatisfiedGoalHeuristic>();}
+  if (label == "ed") {return std::make_unique<EpistemicDistanceHeuristic>();}
+  if (label == "ks") {return std::make_unique<KnowledgeSpreadHeuristic>();}
+  if (label == "wc") {return std::make_unique<WorldCountHeuristic>();}
+  if (label == "rpg") {
+    return std::make_unique<RelaxedClosureHeuristic>(RelaxedAggregation::Max);
+  }
+  if (label == "radd") {
+    return std::make_unique<RelaxedClosureHeuristic>(RelaxedAggregation::Add);
+  }
+  return nullptr;
+}
+
+plansys2_msgs::msg::Plan to_plan_msg(const std::vector<std::string> & actions)
+{
+  plansys2_msgs::msg::Plan plan;
+  plan.items.reserve(actions.size());
+
+  // Aletheia is a classical-time planner: actions are sequential and
+  // untimed. Emit unit durations at consecutive times so the executor sees a
+  // well-ordered sequence rather than a pile of simultaneous actions.
+  float t = 0.0f;
+  for (const auto & a : actions) {
+    plansys2_msgs::msg::PlanItem item;
+    item.time = t;
+    item.action = a;
+    item.duration = 1.0f;
+    plan.items.push_back(item);
+    t += 1.0f;
+  }
+  return plan;
+}
+
+}  // namespace
+
+EpistemicPlanSolver::EpistemicPlanSolver()
+{
+}
+
+void EpistemicPlanSolver::configure(
+  rclcpp_lifecycle::LifecycleNode::SharedPtr lc_node,
+  const std::string & plugin_name)
+{
+  lc_node_ = lc_node;
+
+  task_file_parameter_name_ = plugin_name + ".task_file";
+  heuristic_parameter_name_ = plugin_name + ".heuristic";
+  strategy_parameter_name_ = plugin_name + ".strategy";
+  policy_file_parameter_name_ = plugin_name + ".policy_file";
+  conditional_parameter_name_ = plugin_name + ".conditional_plan";
+
+  const auto declare = [&](const std::string & name, const std::string & def) {
+      if (!lc_node_->has_parameter(name)) {
+        lc_node_->declare_parameter<std::string>(name, def);
+      }
+    };
+
+  declare(task_file_parameter_name_, "");
+  declare(heuristic_parameter_name_, "");     // empty: leave it to the policy
+  declare(strategy_parameter_name_, "");      // empty: leave it to the policy
+  declare(policy_file_parameter_name_, "");
+  declare(conditional_parameter_name_, "flatten");
+}
+
+std::string EpistemicPlanSolver::parameter(const std::string & name) const
+{
+  if (!lc_node_ || !lc_node_->has_parameter(name)) {
+    return "";
+  }
+  return lc_node_->get_parameter(name).as_string();
+}
+
+std::optional<PlanningTask> EpistemicPlanSolver::resolve_task(
+  const std::string & problem, std::string & error) const
+{
+  try {
+    if (is_epistemic_task_json(problem)) {
+      TempTask tmp(problem);
+      return load_task(tmp.path());
+    }
+
+    const std::string task_file = parameter(task_file_parameter_name_);
+    if (!task_file.empty()) {
+      if (!std::filesystem::exists(task_file)) {
+        error = "task_file does not exist: " + task_file;
+        return std::nullopt;
+      }
+      return load_task(task_file);
+    }
+  } catch (const std::exception & e) {
+    error = std::string("could not load epistemic task: ") + e.what();
+    return std::nullopt;
+  }
+
+  error =
+    "the problem string is not a grounded epistemic task and no task_file "
+    "parameter is set. This planner reads the IePC epistemic JSON format; "
+    "PDDL cannot express event models or per-agent observability, so no "
+    "translation from the PDDL problem is attempted.";
+  return std::nullopt;
+}
+
+std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
+  const std::string & domain, const std::string & problem,
+  const std::string & node_namespace, const rclcpp::Duration solver_timeout)
+{
+  (void)domain;          // the epistemic task is self-contained
+  (void)node_namespace;
+
+  cancel_requested_ = false;
+
+  // The interned-formula registry is global and outlives any one task, so a
+  // long-lived planner node would otherwise accumulate every formula of every
+  // task it has ever solved. Clear it once nothing from the previous solve is
+  // alive, which is here, before the next task is parsed.
+  formula_registry_reset();
+
+  std::string error;
+  auto task_opt = resolve_task(problem, error);
+  if (!task_opt) {
+    RCLCPP_ERROR(lc_node_->get_logger(), "[epistemic] %s", error.c_str());
+    return std::nullopt;
+  }
+  const PlanningTask & task = *task_opt;
+
+  // Selection policy: explicit parameters win, otherwise the rule table
+  // decides from the task's structure.
+  SelectionPolicy policy;
+  try {
+    const std::string policy_file = parameter(policy_file_parameter_name_);
+    policy = policy_file.empty() ? SelectionPolicy::builtin()
+      : SelectionPolicy::load(policy_file);
+  } catch (const std::exception & e) {
+    RCLCPP_ERROR(lc_node_->get_logger(), "[epistemic] selection policy: %s", e.what());
+    return std::nullopt;
+  }
+
+  const TaskFeatures features = TaskFeatures::extract(task);
+
+  std::string heuristic_label = parameter(heuristic_parameter_name_);
+  if (heuristic_label.empty()) {
+    heuristic_label = select(policy.heuristic_rules, features).outcome;
+  }
+  std::string strategy_label = parameter(strategy_parameter_name_);
+  if (strategy_label.empty()) {
+    strategy_label = select(policy.strategy_rules, features).outcome;
+  }
+
+  std::unique_ptr<Heuristic> h = make_heuristic(heuristic_label);
+  if (!h) {
+    RCLCPP_ERROR(
+      lc_node_->get_logger(), "[epistemic] unknown heuristic '%s'",
+      heuristic_label.c_str());
+    return std::nullopt;
+  }
+
+  const Deadline deadline =
+    std::chrono::steady_clock::now() +
+    std::chrono::nanoseconds(solver_timeout.nanoseconds());
+
+  RCLCPP_INFO(
+    lc_node_->get_logger(),
+    "[epistemic] strategy=%s heuristic=%s worlds=%zu designated=%zu actions=%zu",
+    strategy_label.c_str(), heuristic_label.c_str(),
+    static_cast<std::size_t>(task.init.num_worlds),
+    static_cast<std::size_t>(task.init.num_designated()),
+    static_cast<std::size_t>(task.num_actions()));
+
+  std::vector<std::string> actions;
+
+  if (strategy_label == "aostar") {
+    auto result = aostar::search(task, *h, 0, deadline);
+    if (!result) {
+      RCLCPP_WARN(lc_node_->get_logger(), "[epistemic] no solution found");
+      return std::nullopt;
+    }
+
+    // An empty tree means the goal already held: a valid, empty plan.
+    if (!result->plan_tree) {
+      return to_plan_msg({});
+    }
+
+    const auto vr = validate(task, result->plan_tree);
+    if (!vr.valid) {
+      RCLCPP_ERROR(
+        lc_node_->get_logger(), "[epistemic] plan failed validation: %s",
+        vr.error.c_str());
+      return std::nullopt;
+    }
+
+    if (branches_anywhere(result->plan_tree)) {
+      const std::string mode = parameter(conditional_parameter_name_);
+      if (mode == "reject") {
+        RCLCPP_ERROR(
+          lc_node_->get_logger(),
+          "[epistemic] the solution is a branching policy, which "
+          "plansys2_msgs/Plan cannot represent, and conditional_plan is "
+          "'reject'. Representing it faithfully needs a policy message and a "
+          "branching executor.");
+        return std::nullopt;
+      }
+      RCLCPP_WARN(
+        lc_node_->get_logger(),
+        "[epistemic] the solution is a branching policy; returning only the "
+        "lowest-event branch because plansys2_msgs/Plan is a flat sequence. "
+        "This plan is valid only if execution takes that contingency.");
+    }
+
+    flatten(result->plan_tree, actions);
+
+  } else if (strategy_label == "ehc" || strategy_label == "gbfs") {
+    auto result = strategy_label == "ehc"
+      ? ehc::search(task, *h, 0, deadline)
+      : gbfs::search(task, *h, 0, deadline);
+
+    if (!result && strategy_label == "ehc") {
+      RCLCPP_INFO(lc_node_->get_logger(), "[epistemic] EHC failed, falling back to GBFS");
+      result = gbfs::search(task, *h, 0, deadline);
+    }
+    if (!result) {
+      RCLCPP_WARN(lc_node_->get_logger(), "[epistemic] no solution found");
+      return std::nullopt;
+    }
+    actions = result->plan;
+
+  } else {
+    RCLCPP_ERROR(
+      lc_node_->get_logger(), "[epistemic] unknown strategy '%s'",
+      strategy_label.c_str());
+    return std::nullopt;
+  }
+
+  RCLCPP_INFO(lc_node_->get_logger(), "[epistemic] plan length %zu", actions.size());
+  return to_plan_msg(actions);
+}
+
+bool EpistemicPlanSolver::isDomainValid(
+  const std::string & domain, const std::string & node_namespace)
+{
+  (void)domain;
+  (void)node_namespace;
+
+  // The epistemic task is self-contained and carries no separate domain, so
+  // there is nothing here to validate. Reporting false would stop the planner
+  // node from coming up; the task itself is checked when it is loaded.
+  return true;
+}
+
+}  // namespace plansys2
+
+PLUGINLIB_EXPORT_CLASS(plansys2::EpistemicPlanSolver, plansys2::PlanSolverBase)

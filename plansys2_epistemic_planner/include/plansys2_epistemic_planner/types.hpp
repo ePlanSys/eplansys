@@ -1,25 +1,24 @@
 #pragma once
-#include <vector>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <memory>
-#include <optional>
-#include <variant>
-#include <cstdint>
+#include <vector>
 
-// Atom / agent indices
-using AtomIdx  = uint32_t;
-using AgentIdx = uint32_t;
-using WorldIdx = uint32_t;
-using EventIdx = uint32_t;
-using ActionIdx= uint32_t;
+// Atom / agent / world / event indices.
+using AtomIdx   = std::uint32_t;
+using AgentIdx  = std::uint32_t;
+using WorldIdx  = std::uint32_t;
+using EventIdx  = std::uint32_t;
+using ActionIdx = std::uint32_t;
 
-// Adjacency list: world -> set of reachable worlds 
-using RelRow   = std::unordered_set<WorldIdx>;
-using Relation = std::vector<RelRow>;     // [world_idx] -> reachable
+// Sentinel for "no such world", used by the dense (world, event) product table.
+inline constexpr WorldIdx kNoWorld = std::numeric_limits<WorldIdx>::max();
 
-// Forward declarations 
+// Forward declarations
 struct Formula;
 struct Action;
 struct EpistemicState;

@@ -1,8 +1,13 @@
 #pragma once
 #include "plansys2_epistemic_planner/state.hpp"
 
-// Compute the bisimulation contraction of s.
-// Returns a smallest state bisimilar to s (same formula truth values).
-// Call this after every product_update() to keep state sizes manageable.
-// Takes s by value so callers can std::move into it without an extra copy.
-EpistemicState bisim_contract(EpistemicState s);
+// Bisimulation contraction with canonical labelling.
+//
+// Returns the smallest state bisimilar to `s`, with its worlds numbered in an
+// order that depends only on the model's structure — never on the numbering the
+// caller happened to supply. Two bisimilar states therefore come back
+// byte-identical, which is what makes fingerprint equality a sound test for
+// "the planner has already seen this epistemic situation".
+//
+// Call after every product update. Takes by value so callers can std::move in.
+[[nodiscard]] EpistemicState bisim_contract(EpistemicState s);

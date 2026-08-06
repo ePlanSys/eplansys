@@ -1,5 +1,6 @@
 #include "plansys2_epistemic_planner/parser.hpp"
 #include "plansys2_epistemic_planner/formula.hpp"
+#include "plansys2_epistemic_planner/heuristic.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <stdexcept>
@@ -310,40 +311,34 @@ PlanningTask load_task(const std::string& json_path) {
 
     {
         WorldIdx idx = 0;
-        for (auto& w : is.at("worlds")) {
-            std::string wname = w.get<std::string>();
-            world_idx[wname] = idx++;
-
-            World world_obj;
-            world_obj.id = world_idx[wname];
-            task.init.worlds.push_back(std::move(world_obj));
-        }
+        for (auto& w : is.at("worlds"))
+            world_idx[w.get<std::string>()] = idx++;
     }
 
-    size_t nw = task.init.worlds.size();
+    size_t nw = world_idx.size();
+
+    // The model is allocated up front as three flat bit arrays; every field
+    // below writes bits into them rather than growing per-world containers.
+    task.init.allocate(static_cast<std::uint32_t>(nw),
+                       static_cast<std::uint32_t>(task.num_atoms()),
+                       static_cast<std::uint32_t>(na));
 
     for (auto& [wname, atoms] : is.at("labels").items()) {
         auto it = world_idx.find(wname);
         if (it == world_idx.end()) continue;
 
-        WorldIdx wi = it->second;
         for (auto& a : atoms) {
-            std::string aname = a.get<std::string>();
-            auto ait = task.atom_index.find(aname);
+            auto ait = task.atom_index.find(a.get<std::string>());
             if (ait != task.atom_index.end())
-                task.init.worlds[wi].atoms.insert(ait->second);
+                task.init.set_atom(it->second, ait->second);
         }
     }
 
     for (auto& d : is.at("designated")) {
-        std::string wname = d.get<std::string>();
-        auto it = world_idx.find(wname);
+        auto it = world_idx.find(d.get<std::string>());
         if (it != world_idx.end())
-            task.init.designated.insert(it->second);
+            task.init.set_designated(it->second);
     }
-
-    task.init.accessibility.resize(na, Relation(nw));
-    task.init.num_agents = na;
 
     for (auto& [agent_name, rows] : is.at("relations").items()) {
         auto ait = task.agent_index.find(agent_name);
@@ -355,13 +350,10 @@ PlanningTask load_task(const std::string& json_path) {
             auto sit = world_idx.find(src_wname);
             if (sit == world_idx.end()) continue;
 
-            WorldIdx src = sit->second;
-
             for (auto& t : targets) {
-                std::string twname = t.get<std::string>();
-                auto tit = world_idx.find(twname);
+                auto tit = world_idx.find(t.get<std::string>());
                 if (tit != world_idx.end())
-                    task.init.accessibility[ag][src].insert(tit->second);
+                    task.init.add_edge(ag, sit->second, tit->second);
             }
         }
     }
@@ -490,12 +482,70 @@ PlanningTask load_task(const std::string& json_path) {
     task.goal =
         unwrap_formula(j.at("goal"), task.atom_index, task.agent_index);
 
+    // Detect partial observability.
+    //
+    // A domain has partial observability iff at least one action has agents
+    // with heterogeneous observability — some Fully observable, others
+    // Oblivious or conditional. In the parsed representation this shows up as
+    // obs_cases[ag][0].relation differing between agents: Fully has the
+    // identity relation (e -> {e} for all events), Oblivious maps every event
+    // to {nil} (the single non-designated event), and conditional cases have
+    // world-dependent rows.
+    //
+    // Comparing obs_cases sizes across agents is insufficient — Gossip assigns
+    // exactly one ObsCase per agent (all have size 1) but with structurally
+    // different relations. We instead compare the actual relation vectors of
+    // the first ObsCase across agents: if any two agents disagree the domain
+    // has partial observability.
+    task.partial_obs = false;
+    for (auto& act : task.actions) {
+        if (act.obs_cases.size() < 2) continue;
+
+        size_t ref_ag = act.obs_cases.size();
+        for (size_t ag = 0; ag < act.obs_cases.size(); ag++) {
+            if (!act.obs_cases[ag].empty()) { ref_ag = ag; break; }
+        }
+        if (ref_ag == act.obs_cases.size()) continue;
+
+        const auto& ref_rel = act.obs_cases[ref_ag][0].relation;
+        for (size_t ag = ref_ag + 1; ag < act.obs_cases.size(); ag++) {
+            if (act.obs_cases[ag].empty()) continue;
+            const auto& ag_rel = act.obs_cases[ag][0].relation;
+            if (ag_rel.size() != ref_rel.size()) {
+                task.partial_obs = true;
+                break;
+            }
+            bool differs = false;
+            for (size_t ei = 0; ei < ref_rel.size() && !differs; ei++)
+                if (ag_rel[ei] != ref_rel[ei])
+                    differs = true;
+            if (differs) {
+                task.partial_obs = true;
+                break;
+            }
+        }
+        if (task.partial_obs) break;
+    }
+
+    // Detect Kw-only goal.
+    //
+    // A goal is Kw-only if it is a single Kw formula or a conjunction where
+    // every top-level conjunct is a Kw formula (FormulaKind::Kw, or an Or of
+    // two Belief formulas that the parser expands Kw into). We check the
+    // top-level structure only — deeper nesting is handled by the heuristic.
+    // has_atom_conjunct (defined in heuristic.hpp) returns true iff the formula
+    // has any bare atom at the top level, so goal_kw_only = !has_atom_conjunct.
+    task.goal_kw_only = task.goal && !has_atom_conjunct(*task.goal);
+
     std::cerr << "[parser] Loaded: "
               << task.num_atoms()   << " atoms, "
               << task.num_agents()  << " agents, "
-              << task.init.worlds.size() << " worlds ("
-              << task.init.designated.size() << " designated), "
-              << task.num_actions() << " actions.\n";
+              << task.init.num_worlds << " worlds ("
+              << task.init.num_designated() << " designated), "
+              << task.num_actions() << " actions"
+              << "  partial_obs=" << task.partial_obs
+              << "  goal_kw_only=" << task.goal_kw_only
+              << "\n";
 
     return task;
 }

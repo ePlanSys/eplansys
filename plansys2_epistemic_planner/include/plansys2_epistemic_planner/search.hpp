@@ -1,28 +1,47 @@
 #pragma once
-#include "plansys2_epistemic_planner/task.hpp"
 #include "plansys2_epistemic_planner/heuristic.hpp"
-#include <optional>
-#include <vector>
-#include <string>
-#include <memory>
+#include "plansys2_epistemic_planner/outcome.hpp"
+#include "plansys2_epistemic_planner/task.hpp"
+
 #include <chrono>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
-// Shared planner instrumentation and runtime statistics.
-// Tracks search effort, heuristic behavior, frontier growth,
-// plateau escapes, and total runtime.
+// Shared planner instrumentation.
+//
+// Beyond effort counters, this records why branches were discarded. The product
+// update can decline to produce a successor for three distinct reasons — the
+// action was inapplicable, the pre-contraction world bound fired, or KD45
+// seriality repair emptied the designated set — and only the first is a
+// property of the domain. Collapsing them (as a bare nullopt did) made it
+// impossible to tell a genuinely dead branch from one the planner chose to
+// prune, which matters when reading a failed run.
 struct PlannerStats {
-    size_t nodes_expanded{0};
-    size_t nodes_generated{0};
+    std::size_t nodes_expanded{0};
+    std::size_t nodes_generated{0};
 
-    size_t dead_ends{0};
+    std::size_t dead_ends{0};
+    std::size_t duplicates_pruned{0};
 
-    size_t heuristic_calls{0};
-    size_t heuristic_improvements{0};
-    size_t heuristic_stalls{0};
+    std::size_t pruned_world_cap{0};
+    std::size_t pruned_non_serial{0};
+    std::size_t pruned_inapplicable{0};
 
-    size_t plateau_escapes{0};
+    std::size_t heuristic_calls{0};
+    std::size_t heuristic_improvements{0};
+    std::size_t heuristic_stalls{0};
 
-    size_t max_frontier_size{0};
+    std::size_t plateau_escapes{0};
+
+    std::size_t max_frontier_size{0};
+    std::size_t closed_size{0};
+
+    // Bytes of Kripke-model storage held live by the search at its peak. With
+    // the bit-matrix representation this is the planner's dominant allocation,
+    // so it is the number worth reporting.
+    std::size_t peak_state_bytes{0};
 
     float initial_h{0.f};
     float best_h{0.f};
@@ -32,85 +51,86 @@ struct PlannerStats {
 
     std::chrono::steady_clock::time_point start_time;
 
-    void start_timer() {
-        start_time = std::chrono::steady_clock::now();
-    }
+    void start_timer() { start_time = std::chrono::steady_clock::now(); }
 
     void stop_timer() {
-        elapsed_sec =
-            std::chrono::duration<double>(
-                std::chrono::steady_clock::now() - start_time
-            ).count();
+        elapsed_sec = std::chrono::duration<double>(
+                          std::chrono::steady_clock::now() - start_time).count();
+    }
+
+    void record_prune(PruneReason r) noexcept {
+        switch (r) {
+            case PruneReason::WorldCapExceeded: ++pruned_world_cap;    break;
+            case PruneReason::NonSerial:        ++pruned_non_serial;   break;
+            case PruneReason::Inapplicable:     ++pruned_inapplicable; break;
+            case PruneReason::None:                                    break;
+        }
     }
 };
 
 // Linear-plan search result.
 struct SearchResult {
     std::vector<std::string> plan;
-    PlannerStats stats;
+    PlannerStats             stats;
 };
+
+using Deadline = std::chrono::steady_clock::time_point;
 
 namespace gbfs {
 
-// Greedy Best-First Search.
-// Returns the plan (action name sequence) on success, or nullopt if no
-// plan exists within the given limits.
+// Greedy best-first search over bisimulation-contracted, canonically-labelled
+// states. Duplicate detection is by 128-bit fingerprint, which is exact up to
+// bisimilarity: two states representing the same epistemic situation under
+// different world numberings are recognised as one.
 //
 // max_nodes: expansion limit (0 = unlimited)
-std::optional<SearchResult> search(const PlanningTask& task,
-                                   const Heuristic& h,
-                                   size_t max_nodes = 0);
+// deadline:  wall-clock deadline, checked once per expansion
+[[nodiscard]] std::optional<SearchResult>
+search(const PlanningTask& task, const Heuristic& h,
+       std::size_t max_nodes = 0, Deadline deadline = Deadline::max());
 
 } // namespace gbfs
 
-// Conditional plan (AND-OR search)
+// ── Conditional plans (AND-OR search) ───────────────────────────────────────
 
-// A node in a conditional plan tree.
-// - action: the action to execute at this point
-// - branches: one entry per sensing outcome (EventIdx tags which event fired).
-//   For ontic actions there is exactly one branch with EventIdx = the single
-//   designated event. For sensing actions there is one branch per designated
-//   event whose precondition was satisfiable.
-// - A null PlanNode pointer in a branch means that branch is already at goal.
+// A node in a conditional plan.
+//
+// `branches` holds one entry per sensing outcome, tagged by the event that
+// fired. Ontic actions have exactly one branch. A null subtree pointer means
+// that branch is already at the goal.
 struct PlanNode {
     std::string action;
     std::vector<std::pair<EventIdx, std::shared_ptr<PlanNode>>> branches;
 };
 
-// Conditional-plan search result.
 struct ConditionalSearchResult {
     std::shared_ptr<PlanNode> plan_tree;   // null = already at goal
-    PlannerStats stats;
+    PlannerStats              stats;
 };
 
 namespace aostar {
 
-using Deadline = std::chrono::steady_clock::time_point;
-
-// Iterative-deepening AND-OR search.
-// Returns a conditional plan tree on success, or nullopt if no plan exists
-// within the given depth limit or before the deadline is reached.
+// Iterative-deepening AND-OR search with a memo that persists across the
+// deepening iterations.
 //
-// max_depth: depth limit (0 = unlimited, use with care)
-// deadline:  wall-clock deadline; defaults to max (no timeout)
-std::optional<ConditionalSearchResult>
-search(const PlanningTask& task,
-       const Heuristic& h,
-       size_t max_depth = 0,
-       Deadline deadline = Deadline::max());
+// max_depth: depth limit (0 = unlimited)
+// deadline:  wall-clock deadline
+[[nodiscard]] std::optional<ConditionalSearchResult>
+search(const PlanningTask& task, const Heuristic& h,
+       std::size_t max_depth = 0, Deadline deadline = Deadline::max());
 
 } // namespace aostar
 
-// Enforced Hill Climbing.
-// Greedily follows any h-improving successor. When stuck on a plateau,
-// runs a BFS to escape to the nearest state with strictly lower h.
-// Complete on solvable problems. Faster than GBFS on well-guided domains.
-//
-// max_nodes: expansion limit across both greedy and BFS phases (0 = unlimited)
 namespace ehc {
 
-std::optional<SearchResult> search(const PlanningTask& task,
-                                   const Heuristic& h,
-                                   size_t max_nodes = 0);
+// Enforced hill climbing. Descends to any h-improving successor; on a plateau,
+// runs a breadth-first search for the nearest strictly better state, sharing
+// its visited set with the descent so the two phases cannot cycle against each
+// other.
+//
+// max_nodes: expansion limit across both phases (0 = unlimited)
+[[nodiscard]] std::optional<SearchResult>
+search(const PlanningTask& task, const Heuristic& h,
+       std::size_t max_nodes = 0, Deadline deadline = Deadline::max());
 
 } // namespace ehc
