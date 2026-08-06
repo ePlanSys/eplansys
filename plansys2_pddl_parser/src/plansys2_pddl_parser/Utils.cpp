@@ -1489,10 +1489,11 @@ bool checkParamTypeEquivalence(
 bool compare_str_case_insensitive(const std::string & a, const std::string & b)
 {
   return a.size() == b.size() &&
-         std::equal(a.begin(), a.end(), b.begin(), b.end(),
-           [](unsigned char ac, unsigned char bc) {
-             return std::tolower(ac) == std::tolower(bc);
-          });
+         std::equal(
+    a.begin(), a.end(), b.begin(), b.end(),
+    [](unsigned char ac, unsigned char bc) {
+      return std::tolower(ac) == std::tolower(bc);
+    });
 }
 
 }  // namespace pddl

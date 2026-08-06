@@ -77,7 +77,7 @@ void Exists::parse(Stringreader & f, TokenStruct<std::string> & ts, Domain & d)
 
   unsigned int count = 0;
   for (auto & tm : es.tokenMap) {
-    if(ts.tokenMap.count(tm.first)) {
+    if (ts.tokenMap.count(tm.first)) {
       ts.tokenMap[tm.first] = ts.size() + count;
       count++;
     }
