@@ -28,11 +28,18 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-22.04
+    # setup-ros on a bare runner installs the tooling (colcon, rosdep, vcstool)
+    # but not a ROS distribution, so plansys2_msgs failed to configure with
+    # "No 'rosidl_typesupport_c' found" — there was no typesupport or RMW
+    # implementation for rosidl to generate against.
+    #
+    # The official ros:humble image carries ros-base, which includes
+    # rosidl_typesupport_{c,cpp,fastrtps_*} and rmw_fastrtps_cpp, and it is the
+    # environment this chain was verified in. Same reasoning as rolling.yaml.
+    container:
+      image: ros:humble
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup ROS 2
-        uses: ros-tooling/setup-ros@0.7.15
 
       - name: Build and test
         uses: ros-tooling/action-ros-ci@0.4.5
