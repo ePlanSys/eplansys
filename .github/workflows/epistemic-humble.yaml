@@ -1,0 +1,47 @@
+name: epistemic-planner (humble)
+
+# Builds and tests the epistemic planner and the packages it depends on:
+# plansys2_msgs, plansys2_pddl_parser, plansys2_core, then
+# plansys2_epistemic_planner itself (action-ros-ci builds --packages-up-to
+# the named package).
+#
+# Humble rather than rolling, for two reasons found by reproducing both in
+# their respective containers:
+#
+#   - rolling removed ament_index_cpp/get_package_share_directory.hpp, which
+#     plansys2_pddl_parser's test still includes. Humble still ships it.
+#   - the fork's sources are the rolling branch, so packages outside this
+#     dependency chain (plansys2_lifecycle_manager and everything after it)
+#     use rclcpp::experimental::executors, which does not exist in Humble.
+#     Widening the package list here will fail until those are ported.
+#
+# This chain needs no source dependencies, so no vcs-repo-file-url: popf and
+# cascade_lifecycle are only required by packages further down the graph.
+
+on:
+  push:
+    branches: [ rolling ]
+  pull_request:
+    branches: [ rolling ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup ROS 2
+        uses: ros-tooling/setup-ros@0.7.15
+
+      - name: Build and test
+        uses: ros-tooling/action-ros-ci@0.4.5
+        with:
+          package-name: plansys2_epistemic_planner
+          target-ros2-distro: humble
+          colcon-defaults: |
+            {
+              "test": {
+                "parallel-workers" : 1
+              }
+            }
