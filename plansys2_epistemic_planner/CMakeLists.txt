@@ -11,9 +11,9 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(plansys2_core REQUIRED)
 find_package(plansys2_msgs REQUIRED)
 find_package(pluginlib REQUIRED)
+find_package(nlohmann_json 3.10 REQUIRED)
 
 set(EPISTEMIC_SOURCES
-  src/types.cpp
   src/formula.cpp
   src/state.cpp
   src/action.cpp
@@ -23,6 +23,7 @@ set(EPISTEMIC_SOURCES
   src/search.cpp
   src/parser.cpp
   src/validator.cpp
+  src/selection_policy.cpp
   src/epistemic_plan_solver.cpp
 )
 
@@ -38,6 +39,7 @@ target_link_libraries(${PROJECT_NAME}
   pluginlib::pluginlib
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
+  nlohmann_json::nlohmann_json
 )
 target_compile_definitions(${PROJECT_NAME} PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
