@@ -13,14 +13,19 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-24.04
+    # ROS 2 rolling moved to Ubuntu 26.04 (resolute); no rolling binaries are
+    # published for noble any more. Building in ubuntu:noble left setup-ros
+    # with nothing to install, so the first package failed on
+    # find_package(ament_cmake) — ROS itself was absent, not any one package.
+    #
+    # The official ros:rolling image already carries a matching ROS on the
+    # right platform, which is why the separate setup-ros step is gone.
     container:
-      image: ubuntu:noble
+      image: ros:rolling
     steps:
       - uses: actions/checkout@v4
       - name: Install popf deps
         run: apt-get update && apt-get install -y libfl-dev
-      - name: Setup ROS 2
-        uses: ros-tooling/setup-ros@0.7.15
       - name: build and test
         uses: ros-tooling/action-ros-ci@0.4.5
         with:
