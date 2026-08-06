@@ -39,6 +39,17 @@ jobs:
         with:
           package-name: plansys2_epistemic_planner
           target-ros2-distro: humble
+          # Temporary, while a find_package(plansys2_msgs) failure that does
+          # not reproduce locally is being diagnosed.
+          #   --executor sequential      forces true build ordering, so a
+          #                              missing dependency edge cannot hide
+          #                              behind concurrent execution
+          #   --event-handlers console_direct+
+          #                              unbuffers per-package output, which
+          #                              console_cohesion+ groups on completion
+          #                              and thereby scrambles apparent order
+          # Remove both once the cause is known; sequential builds are slower.
+          colcon-extra-args: --executor sequential --event-handlers console_direct+
           colcon-defaults: |
             {
               "test": {
