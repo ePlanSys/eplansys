@@ -15,6 +15,12 @@
 #
 # model_file is still required by the launch file and still feeds the domain
 # expert; the epistemic solver ignores it.
+#
+# Executing a policy also needs the epistemic state running and holding the
+# same task, which is a separate node:
+#
+#   ros2 run plansys2_epistemic_executor epistemic_state_node \
+#     --ros-args -p task_file:=<the same grounded task JSON>
 plansys2:
   ros__parameters:
     use_real_time: false
@@ -53,12 +59,24 @@ planner:
       # than reaching the executor as a name it cannot resolve.
       action_mapping: ""
 
-      # What to do when the solution is a branching policy, which
-      # plansys2_msgs/Plan cannot represent:
-      #   flatten - return the lowest-event branch and warn (default)
-      #   reject  - fail the request rather than return a plan that is only
-      #             valid if execution takes that one contingency
-      conditional_plan: "flatten"
+      # What to do with a branching solution:
+      #   policy  - keep the branches, in the epistemic fields of the Plan.
+      #             Needs the executor settings below; this is the mode the
+      #             epistemic behavior tree exists for.
+      #   flatten - return the lowest-event branch and warn. The result is a
+      #             plain sequence, valid only if execution takes that one
+      #             contingency, and runnable by a stock PlanSys2 executor.
+      #   reject  - fail rather than return a plan that is only conditionally
+      #             valid.
+      conditional_plan: "policy"
 executor:
   ros__parameters:
-    bt_builder_plugin: "SimpleBTBuilder"
+    # Renders the policy as a tree: the PlanSys2 action subtree with a
+    # knowledge guard and a DEL update around it, and a branch on what was
+    # observed. A plan without branches renders as the usual sequence.
+    bt_builder_plugin: "EpistemicBTBuilder"
+
+    # The nodes that tree uses, which the executor does not know by itself.
+    # Loading them rather than linking them is what keeps plansys2_executor
+    # independent of the epistemic packages.
+    bt_node_plugins: ["libplansys2_epistemic_bt_nodes.so"]
