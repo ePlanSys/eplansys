@@ -8,7 +8,7 @@ var searchData=
   ['plan_5',['Plan',['../dir_6b63f3249921a3f8e02165ffdec19911.html#autotoc_md37',1,'Plan'],['../dir_9b0abd63a5dc0185381abd9b6ad205c1.html#autotoc_md43',1,'Plan'],['../dir_2732dfd336a16fc97ec6034634f8e4b7.html#autotoc_md49',1,'Plan'],['../dir_14b2764f2ef59c512b88d85deb70172c.html#autotoc_md55',1,'Plan']]],
   ['plan_20solver_6',['POPF Plan solver',['../dir_23aa792e5703e12cc6d16601ac2e0035.html#autotoc_md26',1,'']]],
   ['planner_7',['Planner',['../dir_3c7693bbfaac5db58bcc3462d13a32be.html#autotoc_md24',1,'']]],
-  ['planning_20system_20for_20ros2_8',['ePlanSys — Epistemic Planning System for ROS2',['../index.html',1,'']]],
+  ['planning_20system_20for_20ros2_8',['ePlanSys. Epistemic Planning System for ROS2',['../index.html',1,'']]],
   ['plansys2_9',['PlanSys2',['../dir_6b63f3249921a3f8e02165ffdec19911.html#autotoc_md33',1,'PlanSys2'],['../dir_9b0abd63a5dc0185381abd9b6ad205c1.html#autotoc_md39',1,'PlanSys2'],['../dir_2732dfd336a16fc97ec6034634f8e4b7.html#autotoc_md45',1,'PlanSys2'],['../dir_14b2764f2ef59c512b88d85deb70172c.html#autotoc_md51',1,'PlanSys2']]],
   ['plansys2_20actions_10',['ROS2 node for implementing &lt;span class=&quot;tt&quot;&gt;plansys2&lt;/span&gt; actions',['../dir_bdc1a66e15f7eaa40d71189504882d79.html#autotoc_md2',1,'']]],
   ['plansys2_20and_20terminal_11',['Working with Plansys2 and Terminal',['../md_plansys2__docs_2tutorials_2tut__1__terminal.html',1,'']]],

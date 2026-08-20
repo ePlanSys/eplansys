@@ -17,7 +17,7 @@ var searchData=
   ['fluents_14',['fluents',['../classparser_1_1pddl_1_1Domain.html#ae075fcb84ac2fcbb3f7b1690ec59079f',1,'parser::pddl::Domain']]],
   ['for_20calling_20ros2_20action_20servers_15',['BT node for calling ROS2 action servers',['../dir_bdc1a66e15f7eaa40d71189504882d79.html#autotoc_md3',1,'']]],
   ['for_20implementing_20plansys2_20actions_16',['ROS2 node for implementing &lt;span class=&quot;tt&quot;&gt;plansys2&lt;/span&gt; actions',['../dir_bdc1a66e15f7eaa40d71189504882d79.html#autotoc_md2',1,'']]],
-  ['for_20ros2_17',['ePlanSys — Epistemic Planning System for ROS2',['../index.html',1,'']]],
+  ['for_20ros2_17',['ePlanSys. Epistemic Planning System for ROS2',['../index.html',1,'']]],
   ['forall_18',['Forall',['../classparser_1_1pddl_1_1Forall.html',1,'Forall'],['../classparser_1_1pddl_1_1Forall.html#ac096101d6796a8e85983bc2cb4319cab',1,'parser::pddl::Forall::Forall()'],['../classparser_1_1pddl_1_1Forall.html#a6f204567621d8368986e2ce356b70cfb',1,'parser::pddl::Forall::Forall(const Forall *f, Domain &amp;d)']]],
   ['forall_2ecpp_19',['Forall.cpp',['../Forall_8cpp.html',1,'']]],
   ['forall_2ehpp_20',['Forall.hpp',['../Forall_8hpp.html',1,'']]],

@@ -106,5 +106,5 @@ var searchData=
   ['success_103',['SUCCESS',['../classplansys2_1_1ActionExecutor.html#a67a0db04d321a74b7e7fcfd3f1a3f70bac7f69f7c9e5aea9b8f54cf02870e2bf8',1,'plansys2::ActionExecutor']]],
   ['success_104',['success',['../classtest__planner__node_1_1MockPlanSolver.html#ac6ee8d13bf1e292b3c1660a66e846fa7',1,'test_planner_node::MockPlanSolver']]],
   ['supertype_105',['supertype',['../classparser_1_1pddl_1_1Type.html#a9b2f7ee52ee7f442eb42db66e5f6b2ac',1,'parser::pddl::Type']]],
-  ['system_20for_20ros2_106',['ePlanSys — Epistemic Planning System for ROS2',['../index.html',1,'']]]
+  ['system_20for_20ros2_106',['ePlanSys. Epistemic Planning System for ROS2',['../index.html',1,'']]]
 ];

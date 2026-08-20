@@ -84,7 +84,7 @@ var searchData=
   ['plannernode_2ecpp_81',['PlannerNode.cpp',['../PlannerNode_8cpp.html',1,'']]],
   ['plannernode_2ehpp_82',['PlannerNode.hpp',['../PlannerNode_8hpp.html',1,'']]],
   ['plannertest_83',['PlannerTest',['../classPlannerTest.html',1,'']]],
-  ['planning_20system_20for_20ros2_84',['ePlanSys — Epistemic Planning System for ROS2',['../index.html',1,'']]],
+  ['planning_20system_20for_20ros2_84',['ePlanSys. Epistemic Planning System for ROS2',['../index.html',1,'']]],
   ['planruntineinfo_85',['PlanRuntineInfo',['../structplansys2_1_1PlanRuntineInfo.html',1,'plansys2']]],
   ['plansolverbase_86',['PlanSolverBase',['../classplansys2_1_1PlanSolverBase.html',1,'PlanSolverBase'],['../classplansys2__support__py_1_1core_1_1PlanSolverBase_1_1PlanSolverBase.html',1,'PlanSolverBase'],['../classplansys2_1_1PlanSolverBase.html#a787b4f8077d680d53405a15867ab2503',1,'plansys2::PlanSolverBase::PlanSolverBase()']]],
   ['plansolverbase_2ecpp_87',['PlanSolverBase.cpp',['../PlanSolverBase_8cpp.html',1,'']]],

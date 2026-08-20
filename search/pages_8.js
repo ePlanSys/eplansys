@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['epistemic_20planning_20system_20for_20ros2_0',['ePlanSys — Epistemic Planning System for ROS2',['../index.html',1,'']]],
-  ['eplansys_20—_20epistemic_20planning_20system_20for_20ros2_1',['ePlanSys — Epistemic Planning System for ROS2',['../index.html',1,'']]],
+  ['epistemic_20planning_20system_20for_20ros2_0',['ePlanSys. Epistemic Planning System for ROS2',['../index.html',1,'']]],
+  ['eplansys_20epistemic_20planning_20system_20for_20ros2_1',['ePlanSys. Epistemic Planning System for ROS2',['../index.html',1,'']]],
   ['errors_20in_20pddl_2',['1. How to debug errors in PDDL?',['../md_plansys2__docs_2FAQ.html#autotoc_md7',1,'']]],
   ['example_3',['Patrolling example',['../md_plansys2__docs_2tutorials_2tut__2__patrol.html',1,'']]],
   ['executor_4',['Executor',['../dir_9931cc05355fa70814732d5351597405.html#autotoc_md13',1,'']]],
