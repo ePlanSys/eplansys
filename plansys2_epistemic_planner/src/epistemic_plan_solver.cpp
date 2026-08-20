@@ -27,6 +27,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "plansys2_epistemic_planner/action_mapping.hpp"
 #include "plansys2_epistemic_planner/formula.hpp"
 #include "plansys2_epistemic_planner/heuristic.hpp"
 #include "plansys2_epistemic_planner/parser.hpp"
@@ -136,22 +137,32 @@ std::unique_ptr<Heuristic> make_heuristic(const std::string & label)
   return nullptr;
 }
 
-plansys2_msgs::msg::Plan to_plan_msg(const std::vector<std::string> & actions)
+/// Translate a grounded plan into a Plan message, or report the first action
+/// the mapping does not cover. Aletheia is a classical-time planner: actions
+/// are sequential and untimed, so they are laid out back to back, each
+/// starting when the previous one ends.
+std::optional<plansys2_msgs::msg::Plan> to_plan_msg(
+  const std::vector<std::string> & actions,
+  const ActionMapping & mapping,
+  std::string & error)
 {
   plansys2_msgs::msg::Plan plan;
   plan.items.reserve(actions.size());
 
-  // Aletheia is a classical-time planner: actions are sequential and
-  // untimed. Emit unit durations at consecutive times so the executor sees a
-  // well-ordered sequence rather than a pile of simultaneous actions.
   float t = 0.0f;
   for (const auto & a : actions) {
+    const auto mapped = mapping.translate(a);
+    if (!mapped) {
+      error = "no mapping for grounded action '" + a + "'";
+      return std::nullopt;
+    }
+
     plansys2_msgs::msg::PlanItem item;
     item.time = t;
-    item.action = a;
-    item.duration = 1.0f;
+    item.action = mapped->action;
+    item.duration = mapped->duration;
     plan.items.push_back(item);
-    t += 1.0f;
+    t += mapped->duration;
   }
   return plan;
 }
@@ -173,6 +184,7 @@ void EpistemicPlanSolver::configure(
   strategy_parameter_name_ = plugin_name + ".strategy";
   policy_file_parameter_name_ = plugin_name + ".policy_file";
   conditional_parameter_name_ = plugin_name + ".conditional_plan";
+  action_mapping_parameter_name_ = plugin_name + ".action_mapping";
 
   const auto declare = [&](const std::string & name, const std::string & def) {
       if (!lc_node_->has_parameter(name)) {
@@ -185,6 +197,7 @@ void EpistemicPlanSolver::configure(
   declare(strategy_parameter_name_, "");      // empty: leave it to the policy
   declare(policy_file_parameter_name_, "");
   declare(conditional_parameter_name_, "flatten");
+  declare(action_mapping_parameter_name_, "");   // empty: naming convention
 }
 
 std::string EpistemicPlanSolver::parameter(const std::string & name) const
@@ -260,6 +273,29 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
     return std::nullopt;
   }
 
+  // Load the mapping before searching: a mapping file that cannot be read is
+  // worth reporting immediately rather than after the search has spent the
+  // whole timeout producing a plan that cannot be translated.
+  ActionMapping mapping = ActionMapping::conventional();
+  const std::string mapping_file = parameter(action_mapping_parameter_name_);
+  if (!mapping_file.empty()) {
+    try {
+      mapping = ActionMapping::load(mapping_file);
+    } catch (const std::exception & e) {
+      RCLCPP_ERROR(lc_node_->get_logger(), "[epistemic] action mapping: %s", e.what());
+      return std::nullopt;
+    }
+    RCLCPP_INFO(
+      lc_node_->get_logger(), "[epistemic] action mapping: %zu entries from %s",
+      mapping.size(), mapping_file.c_str());
+  } else {
+    RCLCPP_WARN(
+      lc_node_->get_logger(),
+      "[epistemic] no action_mapping set; falling back to the naming "
+      "convention, which guesses parameter order from the grounded name. Set "
+      "action_mapping before dispatching to real actions.");
+  }
+
   const TaskFeatures features = TaskFeatures::extract(task);
 
   std::string heuristic_label = parameter(heuristic_parameter_name_);
@@ -302,7 +338,8 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
 
     // An empty tree means the goal already held: a valid, empty plan.
     if (!result->plan_tree) {
-      return to_plan_msg({});
+      std::string unused;
+      return to_plan_msg({}, mapping, unused);
     }
 
     const auto vr = validate(task, result->plan_tree);
@@ -356,7 +393,19 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
   }
 
   RCLCPP_INFO(lc_node_->get_logger(), "[epistemic] plan length %zu", actions.size());
-  return to_plan_msg(actions);
+
+  std::string mapping_error;
+  auto plan = to_plan_msg(actions, mapping, mapping_error);
+  if (!plan) {
+    // The plan is sound; it just cannot be expressed in the executor's
+    // vocabulary. Returning it anyway would have the executor reject or, worse,
+    // silently skip the action.
+    RCLCPP_ERROR(
+      lc_node_->get_logger(),
+      "[epistemic] %s. Add it to the action_mapping file.", mapping_error.c_str());
+    return std::nullopt;
+  }
+  return plan;
 }
 
 bool EpistemicPlanSolver::isDomainValid(

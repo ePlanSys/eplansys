@@ -30,4 +30,13 @@ inline std::string task_path(const std::string & name)
   return std::string(EPISTEMIC_TEST_TASK_DIR) + "/" + name + ".json";
 }
 
+#ifdef EPISTEMIC_EXAMPLE_MAPPING_DIR
+/// The action mappings shipped in examples/mappings, tested against the tasks
+/// they translate so the two cannot drift apart unnoticed.
+inline std::string mapping_path(const std::string & name)
+{
+  return std::string(EPISTEMIC_EXAMPLE_MAPPING_DIR) + "/" + name + ".json";
+}
+#endif
+
 #endif  // TASK_FIXTURES_HPP_

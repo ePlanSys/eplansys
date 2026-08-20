@@ -14,6 +14,7 @@ find_package(pluginlib REQUIRED)
 find_package(nlohmann_json 3.10 REQUIRED)
 
 set(EPISTEMIC_SOURCES
+  src/action_mapping.cpp
   src/formula.cpp
   src/state.cpp
   src/action.cpp
@@ -47,6 +48,11 @@ pluginlib_export_plugin_description_file(plansys2_core plansys2_epistemic_planne
 
 install(DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
+)
+
+# Example action mappings, referenced by the action_mapping parameter.
+install(DIRECTORY examples
+  DESTINATION share/${PROJECT_NAME}
 )
 
 install(TARGETS ${PROJECT_NAME}

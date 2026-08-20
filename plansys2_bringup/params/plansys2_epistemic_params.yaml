@@ -42,6 +42,17 @@ planner:
       # Path to a JSON selection policy replacing the built-in rule table.
       policy_file: ""
 
+      # Path to a JSON map from grounded epistemic action names to PlanSys2
+      # action expressions, e.g. {"ask_c1": {"action": "(ask c1)",
+      # "duration": 2.0}}. See examples/mappings in the planner package.
+      #
+      # Leaving it empty falls back to a naming convention that splits the
+      # grounded name at its first underscore. That convention cannot know the
+      # parameter order the domain declares, so set this before dispatching to
+      # real actions; an action the map does not cover fails the request rather
+      # than reaching the executor as a name it cannot resolve.
+      action_mapping: ""
+
       # What to do when the solution is a branching policy, which
       # plansys2_msgs/Plan cannot represent:
       #   flatten - return the lowest-event branch and warn (default)

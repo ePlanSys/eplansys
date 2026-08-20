@@ -45,7 +45,14 @@ namespace plansys2
  *    genuine PDDL problem is rejected with an explanatory error rather than
  *    silently mis-planned.
  *
- * 2. `plansys2_msgs::msg::Plan` is a flat sequence of timed PlanItems and
+ * 2. Aletheia's action names and PlanSys2's are different vocabularies. plank
+ *    grounds an action into a single token ("pickup-A-hold_r2"), while the
+ *    executor splits "(pickup r2 A)" into a name and parameters and looks the
+ *    name up in the PDDL domain to find the BT that drives the hardware. The
+ *    plan is therefore translated through an `action_mapping` before it
+ *    leaves this plugin; see ActionMapping.
+ *
+ * 3. `plansys2_msgs::msg::Plan` is a flat sequence of timed PlanItems and
  *    cannot represent a branch. Aletheia returns a policy tree for any sensing
  *    domain. See `conditional_plan` below for how that is resolved; the
  *    faithful fix is a policy message and a branching executor, which is a
@@ -59,6 +66,12 @@ namespace plansys2
  *                    the choice to the selection policy.
  *   strategy         gbfs | ehc | aostar. Empty (default) as above.
  *   policy_file      Selection-policy JSON overriding the built-in rules.
+ *   action_mapping   Path to a JSON map from grounded epistemic action names
+ *                    to PlanSys2 action expressions, optionally with
+ *                    durations. Empty (default) falls back to a naming
+ *                    convention that guesses parameter order and is not
+ *                    suitable for dispatching to real actions. An action the
+ *                    map does not cover fails the request.
  *   conditional_plan How to return a branching policy through a flat Plan:
  *                      "flatten" (default) — follow the lowest event index at
  *                          each branch and warn. The result is valid only if
@@ -99,6 +112,7 @@ private:
   std::string strategy_parameter_name_;
   std::string policy_file_parameter_name_;
   std::string conditional_parameter_name_;
+  std::string action_mapping_parameter_name_;
 };
 
 }  // namespace plansys2

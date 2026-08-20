@@ -1,0 +1,4 @@
+{
+  "ask_c1": {"action": "(ask c1)", "duration": 2.0},
+  "ask_c2": {"action": "(ask c2)", "duration": 2.0}
+}
