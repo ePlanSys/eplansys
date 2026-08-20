@@ -31,7 +31,7 @@ html_theme_options = {
     'titles_only': False,
 }
 html_static_path = []
-html_logo = 'eplansys.png'
+html_logo = 'eplansys.svg'
 html_show_sphinx = False
 html_show_sourcelink = False
 
