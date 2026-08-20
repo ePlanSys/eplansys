@@ -69,6 +69,21 @@ planner:
       #   reject  - fail rather than return a plan that is only conditionally
       #             valid.
       conditional_plan: "policy"
+
+      # The same planning is available from an external Aletheia binary rather
+      # than in process, through plansys2_aletheia_plan_solver. It takes these
+      # parameters under the same names, so switching is a matter of naming the
+      # other plugin:
+      #
+      #   plan_solver_plugins: ["ALETHEIA"]
+      #   ALETHEIA:
+      #     plugin: "plansys2/AletheiaPlanSolver"
+      #     command: "/abs/path/to/epistemic_planner"
+      #     conditional_plan: "policy"
+      #
+      # In-process is the better default: no fork, no serialisation, and no
+      # binary to install. Use the subprocess plugin when the planner is built
+      # and versioned separately from this workspace.
 executor:
   ros__parameters:
     # Renders the policy as a tree: the PlanSys2 action subtree with a

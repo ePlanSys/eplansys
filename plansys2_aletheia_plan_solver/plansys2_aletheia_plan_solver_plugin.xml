@@ -1,0 +1,14 @@
+<class_libraries>
+  <library path="plansys2_aletheia_plan_solver">
+    <class name="plansys2/AletheiaPlanSolver"
+           type="plansys2::AletheiaPlanSolver"
+           base_class_type="plansys2::PlanSolverBase">
+      <description>
+        Runs the Aletheia epistemic planner as an external process, reading its
+        plan file back as a policy. Equivalent in result to
+        plansys2/EpistemicPlanSolver, which performs the same search in
+        process.
+      </description>
+    </class>
+  </library>
+</class_libraries>

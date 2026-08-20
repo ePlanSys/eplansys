@@ -48,7 +48,7 @@ jobs:
           # plansys2_msgs and the planner, not on plansys2_executor. Only
           # plansys2_epistemic_bt_builder does, which is why it is a separate
           # package and why it is absent from this list — see rolling.yaml.
-          package-name: plansys2_epistemic_planner plansys2_epistemic_msgs plansys2_epistemic_executor
+          package-name: plansys2_epistemic_planner plansys2_epistemic_msgs plansys2_epistemic_executor plansys2_aletheia_plan_solver
           target-ros2-distro: humble
           # Temporary, while a find_package(plansys2_msgs) failure that does
           # not reproduce locally is being diagnosed.
