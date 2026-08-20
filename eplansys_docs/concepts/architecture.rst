@@ -98,6 +98,45 @@ configure time:
 The solver validates a solution before returning it, and a plan that fails
 validation is not returned at all.
 
+Running the planner as a subprocess
+-----------------------------------
+
+``plansys2_aletheia_plan_solver`` provides a second plan solver plugin,
+``plansys2/AletheiaPlanSolver``, which reaches the same planner by running its
+binary rather than by linking it. It is to the epistemic planner what
+``plansys2_popf_plan_solver`` is to POPF: an adapter that writes the input to a
+file, runs a process under the solver timeout, and reads its output back.
+
+.. code-block:: yaml
+
+   planner:
+     ros__parameters:
+       plan_solver_plugins: ["ALETHEIA"]
+       ALETHEIA:
+         plugin: "plansys2/AletheiaPlanSolver"
+         command: "/abs/path/to/epistemic_planner"
+         conditional_plan: "policy"
+
+It adds three parameters to the six above: ``command``, the binary, which
+defaults to ``epistemic_planner`` on the path; ``arguments``, appended
+verbatim; and ``output_dir``, where the task, the plan and the planner's log
+are written. The other six keep their names and meanings, so a parameters file
+moves between the two plugins by changing ``plugin`` alone.
+
+The plan file names actions and event indices only. What a branch is taken on,
+what an action requires to be known, and what the goal is are properties of the
+task rather than of the plan, so the task is parsed on this side as well and
+the conversion is performed by ``plansys2_epistemic_planner``'s own policy
+serialisation. The returned plan is also validated against the task as parsed
+here, in addition to the planner's own validation: the two can disagree only if
+the binary and the workspace were built from different sources, which is the
+failure a separately built planner introduces.
+
+The in-process plugin remains the better default, since it costs no process
+launch, no serialisation, and no separately installed binary. The subprocess
+plugin is for a planner versioned apart from the workspace, one run under its
+own resource limits, or one being compared against the in-process build.
+
 Policies
 --------
 
@@ -281,6 +320,9 @@ Package boundaries
    * - ``plansys2_epistemic_bt_builder``
      - The ``BTBuilder`` plugin
      - Yes
+   * - ``plansys2_aletheia_plan_solver``
+     - The subprocess plan solver plugin
+     - No
 
 The builder is a separate package because it is the only piece that needs the
 executor's plugin API. Keeping it apart lets everything else build and be
