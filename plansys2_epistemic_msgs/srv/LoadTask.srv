@@ -1,0 +1,20 @@
+# Initialise the epistemic state from a grounded task.
+#
+# The state node holds one task at a time: its Kripke model, the event models
+# of its actions, and the vocabulary both are expressed in. Loading a task
+# resets the model to that task's initial state.
+
+# The grounded task in the IePC JSON format, inline. Empty to load from a path
+# instead.
+string task_json
+
+# Path to the same thing on disk. Ignored when task_json is set.
+string task_file
+---
+bool success
+string error
+
+# What was loaded, for the caller to check it got the task it meant.
+uint32 num_worlds
+uint32 num_agents
+uint32 num_actions

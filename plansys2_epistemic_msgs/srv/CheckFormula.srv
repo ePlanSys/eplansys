@@ -1,0 +1,10 @@
+# Ask whether an epistemic formula holds in the current state.
+#
+# This is what a knowledge precondition and an epistemic goal both reduce to.
+# The formula is written the way the policy carries it — "(K r1 (clear
+# corridor))", "(Kw A tails)" — over the vocabulary of the loaded task.
+string formula
+---
+bool success       # false when no task is loaded or the formula does not parse
+bool holds         # meaningful only when success is true
+string error

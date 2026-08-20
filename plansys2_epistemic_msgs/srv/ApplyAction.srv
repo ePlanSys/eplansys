@@ -1,0 +1,26 @@
+# Advance the epistemic state by one executed action.
+#
+# The action is named in the task's own vocabulary — the grounded name the
+# planner searched over, which travels on PlanItem.epistemic_action. Applying
+# it performs the DEL product update, which is what makes the executor's model
+# of what the agents know follow what they actually did.
+string epistemic_action
+
+# For a sensing action, the outcome the robot observed, named by the event that
+# fired. Leave empty to let the model decide: when the state designates a
+# single world the outcome is determined and the response reports it. When it
+# does not, the model genuinely cannot know, and an observation is required
+# rather than guessed.
+string observed_outcome
+---
+bool success
+string error
+
+# The outcome that occurred, for a sensing action: either the observation that
+# was passed in, or the one the model determined. Empty for an ontic action,
+# whose effect does not depend on an observation.
+string outcome
+
+# The state after the update, for the caller to log or display.
+uint32 num_worlds
+uint32 num_designated
