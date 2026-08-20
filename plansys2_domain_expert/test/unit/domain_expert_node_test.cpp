@@ -17,6 +17,8 @@
 #include <regex>
 #include <iostream>
 #include <memory>
+#include <atomic>
+#include <thread>
 
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
@@ -47,6 +49,52 @@ public:
   }
 };
 
+// Stops the spin thread and joins it however the test body is left.
+//
+// A failing ASSERT_* returns from the test body, which used to skip the
+// trailing t.join(). ~std::thread on a still-joinable thread calls
+// std::terminate, so a timing-sensitive assertion turned into
+// "terminate called without an active exception" and the process aborted
+// before gtest could report which assertion failed.
+class SpinThreadGuard
+{
+public:
+  SpinThreadGuard(std::atomic<bool> & finish, std::thread & t)
+  : finish_(finish), t_(t) {}
+
+  ~SpinThreadGuard()
+  {
+    finish_ = true;
+    if (t_.joinable()) {
+      t_.join();
+    }
+  }
+
+private:
+  std::atomic<bool> & finish_;
+  std::thread & t_;
+};
+
+// Waits for a lifecycle transition to land instead of assuming it fits in a
+// fixed sleep. The transitions here took longer than the half second the test
+// used to allow whenever the machine was loaded, which is what made this test
+// fail intermittently in CI.
+template<class NodeT, class ClockNodeT>
+bool wait_for_state(
+  const NodeT & node, const ClockNodeT & clock_node, uint8_t state_id,
+  double timeout_s = 5.0)
+{
+  rclcpp::Rate rate(20);
+  auto start = clock_node->now();
+  while ((clock_node->now() - start).seconds() < timeout_s) {
+    if (node->get_current_state().id() == state_id) {
+      return true;
+    }
+    rate.sleep();
+  }
+  return node->get_current_state().id() == state_id;
+}
+
 TEST(domain_expert, lifecycle)
 {
   {
@@ -61,20 +109,16 @@ TEST(domain_expert, lifecycle)
 
     exe.add_node(domain_node->get_node_base_interface());
 
-    bool finish = false;
+    std::atomic<bool> finish = false;
     std::thread t([&]() {
         while (!finish) {exe.spin_some();}
       });
+    SpinThreadGuard thread_guard(finish, t);
 
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
 
-    {
-      rclcpp::Rate rate(10);
-      auto start = test_node->now();
-      while ((test_node->now() - start).seconds() < 0.5) {
-        rate.sleep();
-      }
-    }
+    wait_for_state(
+      domain_node, test_node, lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     ASSERT_EQ(
     domain_node->get_current_state().id(),
@@ -82,13 +126,8 @@ TEST(domain_expert, lifecycle)
 
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
-    {
-      rclcpp::Rate rate(10);
-      auto start = test_node->now();
-      while ((test_node->now() - start).seconds() < 0.5) {
-        rate.sleep();
-      }
-    }
+    wait_for_state(
+      domain_node, test_node, lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 
     ASSERT_EQ(
     domain_node->get_current_state().id(),
@@ -112,8 +151,6 @@ TEST(domain_expert, lifecycle)
 
     ASSERT_EQ(domain_str, domain_str_p);
 
-    finish = true;
-    t.join();
   }
   plansys2::drain_ros(200ms);
 }
@@ -132,10 +169,11 @@ TEST(domain_expert, lifecycle_error)
 
     exe.add_node(domain_node->get_node_base_interface());
 
-    bool finish = false;
+    std::atomic<bool> finish = false;
     std::thread t([&]() {
         while (!finish) {exe.spin_some();}
       });
+    SpinThreadGuard thread_guard(finish, t);
 
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
 
@@ -146,13 +184,16 @@ TEST(domain_expert, lifecycle_error)
         rate.sleep();
       }
     }
+    // The failed configure leaves the node back in UNCONFIGURED, so the settle
+    // time above stays: what this adds is patience for the transition itself
+    // finishing on a loaded machine, where the node is still CONFIGURING.
+    wait_for_state(
+      domain_node, test_node, lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
 
     ASSERT_EQ(
     domain_node->get_current_state().id(),
     lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
 
-    finish = true;
-    t.join();
   }
   plansys2::drain_ros(200ms);
 }
