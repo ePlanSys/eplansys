@@ -1,0 +1,29 @@
+# lcov configuration for the rolling CI coverage run.
+#
+# colcon-lcov-result ships its own lcovrc, but two things in it break under the
+# lcov 2.x that ubuntu ships: several option names are now deprecated, and the
+# consistency checker is fatal by default. GCC's gcov emits line/function
+# records for gtest bodies that lcov 2.x judges inconsistent, e.g.
+#
+#   lcov: ERROR: (inconsistent) mismatched end line for
+#         _ZN41GraphExportToDOTTest_export_dot_file_Test8TestBodyEv
+#
+# which aborts the run and leaves no total_coverage.info at all. --lcov-args
+# cannot reach the aggregation step (colcon appends it only to the capture
+# command), so the switch has to live here.
+
+# Do not treat gcov's line/function bookkeeping for gtest bodies as fatal.
+check_data_consistency = 0
+
+# Same intent as the bundled file, under the names lcov 2.x expects.
+function_coverage = 1
+branch_coverage = 1
+
+# Coverage of this tree only, not of /opt/ros or the toolchain headers.
+geninfo_external = 0
+
+# The workspace is built with --symlink-install.
+lcov_follow = 1
+
+# Less verbose output
+lcov_quiet = 1

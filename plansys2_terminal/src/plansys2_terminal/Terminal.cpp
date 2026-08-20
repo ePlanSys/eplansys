@@ -314,12 +314,17 @@ Terminal::clean_command(std::string & command)
   }
 
   // remove from spaces
-  while (*command.begin() == ' ') {
+  while (!command.empty() && command.front() == ' ') {
     command.erase(0, 1);
   }
 
   // remove trailing spaces
-  while (command[command.size() - 1] == ' ') {
+  //
+  // A blank line reaches here from process_source, and on an empty string
+  // command.size() - 1 wraps to SIZE_MAX. That read is out of range, which
+  // rolling's libstdc++ catches with _GLIBCXX_ASSERTIONS and aborts the
+  // process, taking the whole terminal_test binary down with it.
+  while (!command.empty() && command.back() == ' ') {
     command.pop_back();
   }
 }

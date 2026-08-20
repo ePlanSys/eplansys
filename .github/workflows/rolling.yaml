@@ -32,8 +32,25 @@ jobs:
       # colcon-common-extensions, which is all the ros:rolling image carries,
       # so colcon rejected them as an invalid choice. setup-ros used to install
       # these; since the container replaced it, install them here.
+      # python3-pytest-cov backs the coverage-pytest mixin below, which is what
+      # gives plansys2_support_py and plansys2_tui_cli coverage.
       - name: Install the colcon coverage extensions
-        run: apt-get install -y lcov python3-colcon-lcov-result python3-colcon-coveragepy-result
+        run: apt-get install -y lcov python3-colcon-lcov-result python3-colcon-coveragepy-result python3-pytest-cov
+
+      # Two pieces of setup that have to happen before action-ros-ci runs.
+      #
+      # The image already registers a mixin repository called 'default', and
+      # the action runs a bare 'colcon mixin add default' whose non-zero exit
+      # is not ignored, so the job would die on "a repository with the name
+      # 'default' already exists". Dropping it first lets the action add it.
+      #
+      # The lcovrc goes to an absolute path because the action copies the
+      # checkout into ros_ws/src/<random>/, so nothing in the repo has a path
+      # that can be named in colcon-defaults below.
+      - name: Prepare the coverage configuration
+        run: |
+          colcon mixin remove default || true
+          cp .github/lcovrc /tmp/lcovrc
       - name: build and test
         uses: ros-tooling/action-ros-ci@0.4.5
         with:
@@ -41,10 +58,39 @@ jobs:
           target-ros2-distro: rolling
           # Temporary diagnostic; see epistemic-humble.yaml for the rationale.
           colcon-extra-args: --executor sequential --event-handlers console_direct+
+          # coverage-gcc puts --coverage on the C/C++ flags and coverage-pytest
+          # turns on AMENT_CMAKE_PYTEST_WITH_COVERAGE; without them the build is
+          # uninstrumented, gcov writes nothing, and lcov-result reports an
+          # empty total_coverage.info. action-ros-ci runs 'colcon mixin
+          # add/update' only when this input mentions "mixin", which is what
+          # makes colcon-mixin-repository below take effect.
+          #
+          # The lcov-result entries are the only way to reach that verb: the
+          # action composes its command line itself. lcov 2.x treats gcov's
+          # bookkeeping for gtest bodies as a fatal inconsistency, which aborts
+          # the run and produces no total_coverage.info; lcov-args covers the
+          # capture step and the config file covers aggregation, which
+          # lcov-args does not reach.
+          #
+          # packages-ignore lists the ament_cmake packages that produce no
+          # .gcda at all: they are launch/config only, so no coverage.info is
+          # written for them, and colcon-lcov-result stats that file without
+          # checking it exists. The resulting FileNotFoundError aborts the
+          # aggregation for every package, not just those, and leaves no
+          # total_coverage.info for Codecov to upload.
           colcon-defaults: |
             {
+              "build": {
+                "mixin": ["coverage-gcc", "coverage-pytest"]
+              },
               "test": {
+                "mixin": ["coverage-pytest"],
                 "parallel-workers" : 1
+              },
+              "lcov-result": {
+                "lcov-config-file": "/tmp/lcovrc",
+                "lcov-args": ["--ignore-errors", "inconsistent,corrupt,mismatch,unused,empty,negative,source,graph,gcov,deprecated"],
+                "packages-ignore": ["plansys2_bringup", "plansys2_tools", "plansys2_epistemic_bt_builder"]
               }
             }
           vcs-repo-file-url: ${GITHUB_WORKSPACE}/dependency_repos.repos
@@ -55,7 +101,9 @@ jobs:
       - name: Codecov
         uses: codecov/codecov-action@v5.4.0
         with:
-          file: ros_ws/lcov/total_coverage.info
+          # v5 takes 'files', not the 'file' of older majors; the old name was
+          # silently ignored, leaving Codecov to guess by searching the tree.
+          files: ros_ws/lcov/total_coverage.info
           flags: unittests
           name: codecov-umbrella
           # yml: ./codecov.yml

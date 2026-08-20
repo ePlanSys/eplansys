@@ -43,6 +43,7 @@
 #include "plansys2_executor/behavior_tree/apply_atend_effect_node.hpp"
 #include "plansys2_executor/BTUtils.hpp"
 #include "plansys2_executor/JSONUtils.hpp"
+#include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 namespace plansys2
 {
