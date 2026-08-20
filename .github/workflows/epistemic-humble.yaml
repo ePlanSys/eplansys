@@ -71,6 +71,13 @@ jobs:
           # package and why it is absent from this list — see rolling.yaml.
           package-name: plansys2_epistemic_planner plansys2_epistemic_msgs plansys2_epistemic_executor plansys2_aletheia_plan_solver
           target-ros2-distro: humble
+          # action-ros-ci runs 'colcon lcov-result' and 'colcon
+          # coveragepy-result' unless this is off, and the ros:humble image
+          # carries only colcon-common-extensions, which provides neither:
+          # the run died on "invalid choice: 'coveragepy-result'". Nothing
+          # consumes coverage from this job (only rolling.yaml uploads to
+          # Codecov), so turn it off rather than install the extensions.
+          coverage-result: false
           # Temporary, while a find_package(plansys2_msgs) failure that does
           # not reproduce locally is being diagnosed.
           #   --executor sequential      forces true build ordering, so a
