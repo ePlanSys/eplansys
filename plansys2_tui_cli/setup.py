@@ -23,7 +23,16 @@ setup(
     maintainer_email='fmrico@gmail.com',
     description='PlanSys2 TUI (Textual) and ros2cli tools.',
     license='Apache-2.0',
-    tests_require=['pytest'],
+    # colcon selects its Python test runner by looking for a 'test' extra;
+    # setuptools drops the older tests_require, so declaring it that way left
+    # colcon falling back to 'python -m unittest', which ignores the
+    # norecursedirs in setup.cfg and tries to import the vendored textual tree
+    # as a test module. Same form as plansys2_support_py.
+    extras_require={
+        'test': [
+            'pytest',
+        ],
+    },
     entry_points={
         'console_scripts': [
             'plansys2_tui = plansys2_tui_cli.tui.app:run_app',
