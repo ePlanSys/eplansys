@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>plansys2_epistemic_bt_builder</name>
+  <version>0.1.0</version>
+  <description>
+    The BTBuilder plugin that renders epistemic policies. Kept apart from
+    plansys2_epistemic_executor because it is the only piece that needs
+    plansys2_executor, which leaves the rest buildable and testable against a
+    released distribution.
+  </description>
+  <maintainer email="thesis@eplansys.dev">Thesis Dev</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>pluginlib</depend>
+  <depend>plansys2_msgs</depend>
+  <depend>plansys2_executor</depend>
+  <depend>plansys2_epistemic_executor</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <plansys2_executor plugin="${prefix}/plugins.xml"/>
+  </export>
+</package>
