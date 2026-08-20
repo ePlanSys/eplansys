@@ -20,6 +20,9 @@
   <depend>plansys2_lifecycle_manager</depend>
 
   <exec_depend>launch_ros</exec_depend>
+  <!-- Needed only by params/plansys2_epistemic_params.yaml, which loads the
+       solver as a pluginlib class; nothing here links against it. -->
+  <exec_depend>plansys2_epistemic_planner</exec_depend>
 
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_lint_auto</test_depend>

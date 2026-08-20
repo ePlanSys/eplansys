@@ -1,0 +1,53 @@
+# Parameters for running PlanSys2 with the epistemic plan solver.
+#
+# Pass it explicitly, since the default params file keeps POPF:
+#
+#   ros2 launch plansys2_bringup plansys2_bringup_launch_monolithic.py \
+#     model_file:=<domain.pddl> \
+#     params_file:=<share>/plansys2_bringup/params/plansys2_epistemic_params.yaml
+#
+# The solver reads the IePC grounded-task JSON, not PDDL. It takes the task
+# from whichever of these arrives first:
+#
+#   - the `problem` string of planner/get_plan, when that string is itself a
+#     task JSON (it is recognised by its "planning-task-info" key), or
+#   - the `task_file` parameter below.
+#
+# model_file is still required by the launch file and still feeds the domain
+# expert; the epistemic solver ignores it.
+plansys2:
+  ros__parameters:
+    use_real_time: false
+planner_client:
+  ros__parameters:
+    plan_solver_timeout: 15.0
+planner:
+  ros__parameters:
+    plan_solver_timeout: 15.0
+    plan_solver_plugins: ["EPISTEMIC"]
+    EPISTEMIC:
+      plugin: "plansys2/EpistemicPlanSolver"
+
+      # Absolute path to a grounded task JSON. Leave empty to require the task
+      # to arrive in the get_plan request instead.
+      task_file: ""
+
+      # Empty means the built-in selection policy decides from the task's own
+      # structure, which is the intended default. Set explicitly to pin one:
+      #   heuristic: ug | ed | ks | wc | rpg | radd
+      #   strategy:  gbfs | ehc | aostar
+      heuristic: ""
+      strategy: ""
+
+      # Path to a JSON selection policy replacing the built-in rule table.
+      policy_file: ""
+
+      # What to do when the solution is a branching policy, which
+      # plansys2_msgs/Plan cannot represent:
+      #   flatten - return the lowest-event branch and warn (default)
+      #   reject  - fail the request rather than return a plan that is only
+      #             valid if execution takes that one contingency
+      conditional_plan: "flatten"
+executor:
+  ros__parameters:
+    bt_builder_plugin: "SimpleBTBuilder"
