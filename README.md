@@ -1,4 +1,4 @@
-# ePlanSys — Epistemic Planning System for ROS2
+# ePlanSys. Epistemic Planning System for ROS2
 
 ![ePlanSys Logo](eplansys_docs/eplansys.png)
 
