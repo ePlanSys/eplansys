@@ -2,8 +2,8 @@
 
 ![ePlanSys Logo](eplansys_docs/eplansys.png)
 
-[![epistemic-planner (humble)](https://github.com/HanielUlises/eplansys/actions/workflows/epistemic-humble.yaml/badge.svg?branch=rolling)](https://github.com/HanielUlises/eplansys/actions/workflows/epistemic-humble.yaml)
-[![rolling](https://github.com/HanielUlises/eplansys/actions/workflows/rolling.yaml/badge.svg?branch=rolling)](https://github.com/HanielUlises/eplansys/actions/workflows/rolling.yaml)
+[![epistemic-planner (humble)](https://github.com/ePlanSys/eplansys/actions/workflows/epistemic-humble.yaml/badge.svg?branch=rolling)](https://github.com/ePlanSys/eplansys/actions/workflows/epistemic-humble.yaml)
+[![rolling](https://github.com/ePlanSys/eplansys/actions/workflows/rolling.yaml/badge.svg?branch=rolling)](https://github.com/ePlanSys/eplansys/actions/workflows/rolling.yaml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![ROS2](https://img.shields.io/badge/ROS2-Humble%20%7C%20Jazzy-blue)](https://docs.ros.org)
 [![IεPC 2026](https://img.shields.io/badge/IεPC_2026-Intermediate-purple)](https://sites.google.com/view/epistemic-competition/)
@@ -25,6 +25,6 @@ ROS2 deployment.
 
 We want to invite you to contribute to this Open Source project!
 
-**Visit the [PlanSys2 Web Page](https://plansys2.github.io) for tutorials and background.**
+**Documentation: [eplansys.github.io/eplansys](https://eplansys.github.io/eplansys)**
 
-<img src="eplansys_docs/eplansys.png" alt="ePlanSys" width="200"/>
+**Visit the [PlanSys2 Web Page](https://plansys2.github.io) for tutorials and background.**
