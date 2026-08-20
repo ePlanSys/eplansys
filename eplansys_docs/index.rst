@@ -43,6 +43,10 @@ Packages
      - The ``plansys2::EpistemicBTBuilder`` plugin for ``plansys2_executor``,
        kept in its own package because it is the only piece that depends on
        the executor.
+   * - ``plansys2_aletheia_plan_solver``
+     - An alternative plan solver plugin that runs the same planner as an
+       external process rather than in process, for deployments where the
+       planner binary is built and versioned separately.
 
 Contents
 --------
