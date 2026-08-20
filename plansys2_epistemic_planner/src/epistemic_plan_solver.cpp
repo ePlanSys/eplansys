@@ -31,6 +31,7 @@
 #include "plansys2_epistemic_planner/formula.hpp"
 #include "plansys2_epistemic_planner/heuristic.hpp"
 #include "plansys2_epistemic_planner/parser.hpp"
+#include "plansys2_epistemic_planner/policy_plan.hpp"
 #include "plansys2_epistemic_planner/selection_policy.hpp"
 #include "plansys2_epistemic_planner/validator.hpp"
 #include "pluginlib/class_list_macros.hpp"
@@ -350,15 +351,37 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
       return std::nullopt;
     }
 
+    const std::string mode = parameter(conditional_parameter_name_);
+
+    // "policy" keeps the branches. The Plan message carries them in the
+    // epistemic fields of its items, and an executor with an epistemic BT
+    // builder runs the branch the world turns out to take. The other two modes
+    // predate that path and are kept for a plain PlanSys2 executor, which can
+    // only run a sequence.
+    if (mode == "policy") {
+      std::string policy_error;
+      auto policy = to_policy_plan(task, result->plan_tree, mapping, policy_error);
+      if (!policy) {
+        RCLCPP_ERROR(
+          lc_node_->get_logger(),
+          "[epistemic] %s. Add it to the action_mapping file.", policy_error.c_str());
+        return std::nullopt;
+      }
+      RCLCPP_INFO(
+        lc_node_->get_logger(), "[epistemic] policy with %zu nodes%s",
+        policy->items.size(),
+        policy_branches(result->plan_tree) ? ", branching" : ", linear");
+      return policy;
+    }
+
     if (branches_anywhere(result->plan_tree)) {
-      const std::string mode = parameter(conditional_parameter_name_);
       if (mode == "reject") {
         RCLCPP_ERROR(
           lc_node_->get_logger(),
-          "[epistemic] the solution is a branching policy, which "
+          "[epistemic] the solution is a branching policy, which a flat "
           "plansys2_msgs/Plan cannot represent, and conditional_plan is "
-          "'reject'. Representing it faithfully needs a policy message and a "
-          "branching executor.");
+          "'reject'. Set conditional_plan to 'policy' to keep the branches, "
+          "which needs an executor using the epistemic BT builder.");
         return std::nullopt;
       }
       RCLCPP_WARN(

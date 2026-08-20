@@ -23,6 +23,7 @@ set(EPISTEMIC_SOURCES
   src/heuristic.cpp
   src/search.cpp
   src/parser.cpp
+  src/policy_plan.cpp
   src/validator.cpp
   src/selection_policy.cpp
   src/epistemic_plan_solver.cpp
