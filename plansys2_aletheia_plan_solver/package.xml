@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>plansys2_aletheia_plan_solver</name>
+  <version>0.1.0</version>
+  <description>
+    Plan solver plugin that runs the Aletheia epistemic planner as an external
+    process, the way plansys2_popf_plan_solver runs POPF. The same planning is
+    available in-process from plansys2_epistemic_planner; this package exists
+    for deployments that keep the planner binary outside the ROS process, and
+    it reuses that package's parser, validator and policy serialisation rather
+    than reimplementing them.
+  </description>
+  <maintainer email="thesis@eplansys.dev">Thesis Dev</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>pluginlib</depend>
+  <depend>plansys2_core</depend>
+  <depend>plansys2_msgs</depend>
+  <depend>plansys2_epistemic_planner</depend>
+  <depend>nlohmann-json-dev</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <plansys2_core plugin="${prefix}/plansys2_aletheia_plan_solver_plugin.xml"/>
+  </export>
+</package>
