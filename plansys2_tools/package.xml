@@ -12,7 +12,12 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <build_depend>qtbase5-dev</build_depend>
+  <!-- rqt is Qt5 up to Iron and Qt6 from Jazzy onward, and a plugin must be
+       built against the same major version as qt_gui_cpp. Both dev packages
+       are named here, conditionally, so that whichever one CMake picks is
+       actually installed. -->
+  <build_depend condition="$ROS_DISTRO == 'foxy' or $ROS_DISTRO == 'galactic' or $ROS_DISTRO == 'humble' or $ROS_DISTRO == 'iron'">qtbase5-dev</build_depend>
+  <build_depend condition="$ROS_DISTRO == 'jazzy' or $ROS_DISTRO == 'kilted' or $ROS_DISTRO == 'rolling'">qt6-base-dev</build_depend>
 
   <depend>rclcpp</depend>
   <depend>rclcpp_lifecycle</depend>
