@@ -71,6 +71,12 @@ ExecutorNode::ExecutorNode(const rclcpp::NodeOptions & options)
   this->declare_parameter<std::string>("default_end_action_bt_xml_filename", "");
   this->declare_parameter<std::string>("bt_builder_plugin", "");
   this->declare_parameter<int>("action_time_precision", 3);
+  // Behavior tree node libraries to load before building a tree, by file name
+  // or path. This is how a tree can use nodes the executor does not know: the
+  // epistemic ones, for instance, which guard actions with what agents know
+  // and branch on what was observed. Without it, extending the node set means
+  // editing the factory below, and so depending on whatever provides them.
+  this->declare_parameter("bt_node_plugins", std::vector<std::string>{});
   this->declare_parameter<bool>("enable_dotgraph_legend", true);
   this->declare_parameter<bool>("print_graph", false);
   this->declare_parameter("action_timeouts.actions", std::vector<std::string>{});
@@ -464,6 +470,21 @@ ExecutorNode::get_tree_from_plan(PlanRuntineInfo & runtime_info)
   out.close();
 
   BT::BehaviorTreeFactory factory;
+
+  for (const auto & plugin : this->get_parameter("bt_node_plugins").as_string_array()) {
+    try {
+      factory.registerFromPlugin(plugin);
+      RCLCPP_INFO(get_logger(), "Loaded behavior tree nodes from %s", plugin.c_str());
+    } catch (const std::exception & e) {
+      // A tree that names a node the factory does not have fails to parse a
+      // moment later with a far less obvious message, so say it here.
+      RCLCPP_ERROR(
+        get_logger(), "Could not load behavior tree nodes from %s: %s",
+        plugin.c_str(), e.what());
+      return false;
+    }
+  }
+
   factory.registerNodeType<ExecuteAction>("ExecuteAction");
   factory.registerNodeType<WaitAction>("WaitAction");
   factory.registerNodeType<CheckAction>("CheckAction");
@@ -478,6 +499,9 @@ ExecutorNode::get_tree_from_plan(PlanRuntineInfo & runtime_info)
   auto blackboard = BT::Blackboard::create();
 
   blackboard->set("action_map", runtime_info.action_map);
+  // The plan itself, for nodes that need more of it than one action: a policy
+  // executed as a tree needs the branch structure its items carry.
+  blackboard->set("current_plan", runtime_info.complete_plan);
   blackboard->set("action_graph", action_graph);
   blackboard->set("node", shared_from_this());
   blackboard->set("domain_client", domain_client_);
