@@ -26,6 +26,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install popf deps
         run: apt-get update && apt-get install -y libfl-dev
+
+      # coverage-result below makes action-ros-ci run 'colcon lcov-result' and
+      # 'colcon coveragepy-result'. Neither verb comes from
+      # colcon-common-extensions, which is all the ros:rolling image carries,
+      # so colcon rejected them as an invalid choice. setup-ros used to install
+      # these; since the container replaced it, install them here.
+      - name: Install the colcon coverage extensions
+        run: apt-get install -y lcov python3-colcon-lcov-result python3-colcon-coveragepy-result
       - name: build and test
         uses: ros-tooling/action-ros-ci@0.4.5
         with:
