@@ -1,0 +1,2443 @@
+{
+  "planning-task-info": {
+    "problem": "cb-1",
+    "domain": "coin-in-the-box",
+    "libraries": [
+      "intermediate"
+    ],
+    "requirements": [
+      ":common-knowledge",
+      ":disjunctive-list-formulas",
+      ":disjunctive-preconditions",
+      ":equality",
+      ":events-conditions",
+      ":finitary-S5-theories",
+      ":group-modalities",
+      ":knowing-whether",
+      ":list-comprehensions",
+      ":lists",
+      ":modal-goals",
+      ":modal-preconditions",
+      ":multi-pointed-models",
+      ":negative-list-formulas",
+      ":negative-preconditions",
+      ":ontic-actions",
+      ":partial-observability",
+      ":static-common-knowledge",
+      ":universal-preconditions"
+    ],
+    "agents-number": 3,
+    "atoms-number": 8,
+    "facts-number": 0,
+    "actions-number": 21,
+    "initial-worlds-number": 2,
+    "goal-modal-depth": 1,
+    "goal-size": 2
+  },
+  "language": {
+    "atoms": [
+      "has-key_A",
+      "has-key_B",
+      "has-key_C",
+      "looking_A",
+      "looking_B",
+      "looking_C",
+      "opened",
+      "tails"
+    ],
+    "agents": [
+      "A",
+      "B",
+      "C"
+    ]
+  },
+  "facts": [],
+  "initial-state": {
+    "worlds": [
+      "w0",
+      "w1"
+    ],
+    "relations": {
+      "A": {
+        "w0": [
+          "w0",
+          "w1"
+        ],
+        "w1": [
+          "w0",
+          "w1"
+        ]
+      },
+      "B": {
+        "w0": [
+          "w0",
+          "w1"
+        ],
+        "w1": [
+          "w0",
+          "w1"
+        ]
+      },
+      "C": {
+        "w0": [
+          "w0",
+          "w1"
+        ],
+        "w1": [
+          "w0",
+          "w1"
+        ]
+      }
+    },
+    "labels": {
+      "w0": [
+        "has-key_A",
+        "looking_A"
+      ],
+      "w1": [
+        "has-key_A",
+        "looking_A",
+        "tails"
+      ]
+    },
+    "designated": [
+      "w1"
+    ]
+  },
+  "actions": {
+    "open_A": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-open",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-open": [
+            "e-open"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-open": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-open"
+      ],
+      "preconditions": {
+        "e-open": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "connective": "not",
+                "formula": "opened"
+              },
+              "looking_A",
+              "has-key_A"
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-open": {
+          "opened": {
+            "formula": "true"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "looking_B"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_B"
+            }
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "looking_C"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_C"
+            }
+          }
+        }
+      }
+    },
+    "open_B": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-open",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-open": [
+            "e-open"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-open": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-open"
+      ],
+      "preconditions": {
+        "e-open": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "connective": "not",
+                "formula": "opened"
+              },
+              "looking_B",
+              "has-key_B"
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-open": {
+          "opened": {
+            "formula": "true"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "looking_A"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_A"
+            }
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "looking_C"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_C"
+            }
+          }
+        }
+      }
+    },
+    "open_C": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-open",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-open": [
+            "e-open"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-open": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-open"
+      ],
+      "preconditions": {
+        "e-open": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "connective": "not",
+                "formula": "opened"
+              },
+              "looking_C",
+              "has-key_C"
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-open": {
+          "opened": {
+            "formula": "true"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "looking_A"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_A"
+            }
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "looking_B"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_B"
+            }
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "signal_A_B": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-signal",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-signal": [
+            "e-signal"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-signal": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-signal"
+      ],
+      "preconditions": {
+        "e-signal": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_A",
+              {
+                "connective": "not",
+                "formula": "looking_B"
+              },
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "A",
+                  "B"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_A",
+                    {
+                      "connective": "not",
+                      "formula": "looking_B"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-signal": {
+          "looking_B": {
+            "formula": "true"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "signal_A_C": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-signal",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-signal": [
+            "e-signal"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-signal": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-signal"
+      ],
+      "preconditions": {
+        "e-signal": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_A",
+              {
+                "connective": "not",
+                "formula": "looking_C"
+              },
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "A",
+                  "C"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_A",
+                    {
+                      "connective": "not",
+                      "formula": "looking_C"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-signal": {
+          "looking_C": {
+            "formula": "true"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "signal_B_A": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-signal",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-signal": [
+            "e-signal"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-signal": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-signal"
+      ],
+      "preconditions": {
+        "e-signal": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_B",
+              {
+                "connective": "not",
+                "formula": "looking_A"
+              },
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "B",
+                  "A"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_B",
+                    {
+                      "connective": "not",
+                      "formula": "looking_A"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-signal": {
+          "looking_A": {
+            "formula": "true"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "signal_B_C": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-signal",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-signal": [
+            "e-signal"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-signal": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-signal"
+      ],
+      "preconditions": {
+        "e-signal": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_B",
+              {
+                "connective": "not",
+                "formula": "looking_C"
+              },
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "B",
+                  "C"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_B",
+                    {
+                      "connective": "not",
+                      "formula": "looking_C"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-signal": {
+          "looking_C": {
+            "formula": "true"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "signal_C_A": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-signal",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-signal": [
+            "e-signal"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-signal": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-signal"
+      ],
+      "preconditions": {
+        "e-signal": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_C",
+              {
+                "connective": "not",
+                "formula": "looking_A"
+              },
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "C",
+                  "A"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_C",
+                    {
+                      "connective": "not",
+                      "formula": "looking_A"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-signal": {
+          "looking_A": {
+            "formula": "true"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "signal_C_B": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-signal",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-signal": [
+            "e-signal"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-signal": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-signal"
+      ],
+      "preconditions": {
+        "e-signal": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_C",
+              {
+                "connective": "not",
+                "formula": "looking_B"
+              },
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "C",
+                  "B"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_C",
+                    {
+                      "connective": "not",
+                      "formula": "looking_B"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-signal": {
+          "looking_B": {
+            "formula": "true"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "distract_A_B": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-distract",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-distract": [
+            "e-distract"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-distract": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-distract"
+      ],
+      "preconditions": {
+        "e-distract": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_A",
+              "looking_B",
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "A",
+                  "B"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_A",
+                    "looking_B"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-distract": {
+          "looking_B": {
+            "formula": "false"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "distract_A_C": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-distract",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-distract": [
+            "e-distract"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-distract": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-distract"
+      ],
+      "preconditions": {
+        "e-distract": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_A",
+              "looking_C",
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "A",
+                  "C"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_A",
+                    "looking_C"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-distract": {
+          "looking_C": {
+            "formula": "false"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "distract_B_A": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-distract",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-distract": [
+            "e-distract"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-distract": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-distract"
+      ],
+      "preconditions": {
+        "e-distract": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_B",
+              "looking_A",
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "B",
+                  "A"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_B",
+                    "looking_A"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-distract": {
+          "looking_A": {
+            "formula": "false"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "distract_B_C": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-distract",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-distract": [
+            "e-distract"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-distract": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-distract"
+      ],
+      "preconditions": {
+        "e-distract": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_B",
+              "looking_C",
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "B",
+                  "C"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_B",
+                    "looking_C"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-distract": {
+          "looking_C": {
+            "formula": "false"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "distract_C_A": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-distract",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-distract": [
+            "e-distract"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-distract": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-distract"
+      ],
+      "preconditions": {
+        "e-distract": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_C",
+              "looking_A",
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "C",
+                  "A"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_C",
+                    "looking_A"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-distract": {
+          "looking_A": {
+            "formula": "false"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "distract_C_B": {
+      "action-type": "private-ontic",
+      "events": [
+        "e-distract",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-distract": [
+            "e-distract"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-distract": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-distract"
+      ],
+      "preconditions": {
+        "e-distract": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "looking_C",
+              "looking_B",
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "C",
+                  "B"
+                ],
+                "formula": {
+                  "connective": "and",
+                  "formulas": [
+                    "looking_C",
+                    "looking_B"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-distract": {
+          "looking_B": {
+            "formula": "false"
+          }
+        },
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Oblivious": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "peek_A": {
+      "action-type": "quasi-private-sensing",
+      "events": [
+        "e-peek-pos",
+        "e-peek-neg",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-peek-pos": [
+            "e-peek-pos"
+          ],
+          "e-peek-neg": [
+            "e-peek-neg"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Partially": {
+          "e-peek-pos": [
+            "e-peek-pos",
+            "e-peek-neg"
+          ],
+          "e-peek-neg": [
+            "e-peek-pos",
+            "e-peek-neg"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-peek-pos": [
+            "nil"
+          ],
+          "e-peek-neg": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-peek-pos",
+        "e-peek-neg"
+      ],
+      "preconditions": {
+        "e-peek-pos": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "connective": "and",
+                "formulas": [
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_A",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "A"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_A"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_B",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "B"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_A"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_C",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "C"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_A"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "tails"
+            ]
+          }
+        },
+        "e-peek-neg": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "connective": "and",
+                "formulas": [
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_A",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "A"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_A"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_B",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "B"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_A"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_C",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "C"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_A"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "connective": "not",
+                "formula": "tails"
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-peek-pos": null,
+        "e-peek-neg": null,
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Partially": {
+            "formula": "looking_B"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_B"
+            }
+          }
+        },
+        "C": {
+          "Partially": {
+            "formula": "looking_C"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_C"
+            }
+          }
+        }
+      }
+    },
+    "peek_B": {
+      "action-type": "quasi-private-sensing",
+      "events": [
+        "e-peek-pos",
+        "e-peek-neg",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-peek-pos": [
+            "e-peek-pos"
+          ],
+          "e-peek-neg": [
+            "e-peek-neg"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Partially": {
+          "e-peek-pos": [
+            "e-peek-pos",
+            "e-peek-neg"
+          ],
+          "e-peek-neg": [
+            "e-peek-pos",
+            "e-peek-neg"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-peek-pos": [
+            "nil"
+          ],
+          "e-peek-neg": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-peek-pos",
+        "e-peek-neg"
+      ],
+      "preconditions": {
+        "e-peek-pos": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "connective": "and",
+                "formulas": [
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_A",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "A"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_B"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_B",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "B"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_B"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_C",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "C"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_B"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "tails"
+            ]
+          }
+        },
+        "e-peek-neg": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "connective": "and",
+                "formulas": [
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_A",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "A"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_B"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_B",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "B"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_B"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_C",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "C"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_B"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "connective": "not",
+                "formula": "tails"
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-peek-pos": null,
+        "e-peek-neg": null,
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Partially": {
+            "formula": "looking_A"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_A"
+            }
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Partially": {
+            "formula": "looking_C"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_C"
+            }
+          }
+        }
+      }
+    },
+    "peek_C": {
+      "action-type": "quasi-private-sensing",
+      "events": [
+        "e-peek-pos",
+        "e-peek-neg",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-peek-pos": [
+            "e-peek-pos"
+          ],
+          "e-peek-neg": [
+            "e-peek-neg"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Partially": {
+          "e-peek-pos": [
+            "e-peek-pos",
+            "e-peek-neg"
+          ],
+          "e-peek-neg": [
+            "e-peek-pos",
+            "e-peek-neg"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-peek-pos": [
+            "nil"
+          ],
+          "e-peek-neg": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-peek-pos",
+        "e-peek-neg"
+      ],
+      "preconditions": {
+        "e-peek-pos": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "connective": "and",
+                "formulas": [
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_A",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "A"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_C"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_B",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "B"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_C"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_C",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "C"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_C"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "tails"
+            ]
+          }
+        },
+        "e-peek-neg": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "connective": "and",
+                "formulas": [
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_A",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "A"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_C"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_B",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "B"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_C"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_C",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "C"
+                        ],
+                        "formula": {
+                          "connective": "and",
+                          "formulas": [
+                            "opened",
+                            "looking_C"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "connective": "not",
+                "formula": "tails"
+              }
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-peek-pos": null,
+        "e-peek-neg": null,
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Partially": {
+            "formula": "looking_A"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_A"
+            }
+          }
+        },
+        "B": {
+          "Partially": {
+            "formula": "looking_B"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_B"
+            }
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "shout-tails_A": {
+      "action-type": "private-announcement",
+      "events": [
+        "e-shout-tails",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-shout-tails": [
+            "e-shout-tails"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-shout-tails": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-shout-tails"
+      ],
+      "preconditions": {
+        "e-shout-tails": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "A"
+                ],
+                "formula": "tails"
+              },
+              {
+                "connective": "and",
+                "formulas": [
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_A",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "A"
+                        ],
+                        "formula": "looking_A"
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_B",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "B"
+                        ],
+                        "formula": "looking_A"
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_C",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "C"
+                        ],
+                        "formula": "looking_A"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "looking_A"
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-shout-tails": null,
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "looking_B"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_B"
+            }
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "looking_C"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_C"
+            }
+          }
+        }
+      }
+    },
+    "shout-tails_B": {
+      "action-type": "private-announcement",
+      "events": [
+        "e-shout-tails",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-shout-tails": [
+            "e-shout-tails"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-shout-tails": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-shout-tails"
+      ],
+      "preconditions": {
+        "e-shout-tails": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "B"
+                ],
+                "formula": "tails"
+              },
+              {
+                "connective": "and",
+                "formulas": [
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_A",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "A"
+                        ],
+                        "formula": "looking_B"
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_B",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "B"
+                        ],
+                        "formula": "looking_B"
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_C",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "C"
+                        ],
+                        "formula": "looking_B"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "looking_B"
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-shout-tails": null,
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "looking_A"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_A"
+            }
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "looking_C"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_C"
+            }
+          }
+        }
+      }
+    },
+    "shout-tails_C": {
+      "action-type": "private-announcement",
+      "events": [
+        "e-shout-tails",
+        "nil"
+      ],
+      "relations": {
+        "Fully": {
+          "e-shout-tails": [
+            "e-shout-tails"
+          ],
+          "nil": [
+            "nil"
+          ]
+        },
+        "Oblivious": {
+          "e-shout-tails": [
+            "nil"
+          ],
+          "nil": [
+            "nil"
+          ]
+        }
+      },
+      "designated": [
+        "e-shout-tails"
+      ],
+      "preconditions": {
+        "e-shout-tails": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "modality-name": "box",
+                "modality-index": [
+                  "C"
+                ],
+                "formula": "tails"
+              },
+              {
+                "connective": "and",
+                "formulas": [
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_A",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "A"
+                        ],
+                        "formula": "looking_C"
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_B",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "B"
+                        ],
+                        "formula": "looking_C"
+                      }
+                    ]
+                  },
+                  {
+                    "connective": "imply",
+                    "formulas": [
+                      "looking_C",
+                      {
+                        "modality-name": "box",
+                        "modality-index": [
+                          "C"
+                        ],
+                        "formula": "looking_C"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "looking_C"
+            ]
+          }
+        },
+        "nil": {
+          "formula": "true"
+        }
+      },
+      "effects": {
+        "e-shout-tails": null,
+        "nil": null
+      },
+      "observability-conditions": {
+        "A": {
+          "Fully": {
+            "formula": "looking_A"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_A"
+            }
+          }
+        },
+        "B": {
+          "Fully": {
+            "formula": "looking_B"
+          },
+          "Oblivious": {
+            "formula": {
+              "connective": "not",
+              "formula": "looking_B"
+            }
+          }
+        },
+        "C": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    }
+  },
+  "goal": {
+    "formula": {
+      "modality-name": "box",
+      "modality-index": [
+        "A"
+      ],
+      "formula": "tails"
+    }
+  }
+}

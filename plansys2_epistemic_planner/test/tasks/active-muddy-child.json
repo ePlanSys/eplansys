@@ -1,0 +1,1257 @@
+{
+  "planning-task-info": {
+    "problem": "amc-1",
+    "domain": "active-muddy-child",
+    "libraries": [
+      "intermediate"
+    ],
+    "requirements": [
+      ":common-knowledge",
+      ":disjunctive-list-formulas",
+      ":equality",
+      ":events-conditions",
+      ":finitary-S5-theories",
+      ":group-modalities",
+      ":knowing-whether",
+      ":list-comprehensions",
+      ":lists",
+      ":modal-goals",
+      ":modal-preconditions",
+      ":multi-pointed-models",
+      ":negative-list-formulas",
+      ":partial-observability",
+      ":static-common-knowledge"
+    ],
+    "agents-number": 5,
+    "atoms-number": 5,
+    "facts-number": 0,
+    "actions-number": 5,
+    "initial-worlds-number": 32,
+    "goal-modal-depth": 1,
+    "goal-size": 2
+  },
+  "language": {
+    "atoms": [
+      "muddy_Child1",
+      "muddy_Child2",
+      "muddy_Child3",
+      "muddy_Child4",
+      "muddy_Child5"
+    ],
+    "agents": [
+      "Child1",
+      "Child2",
+      "Child3",
+      "Child4",
+      "Child5"
+    ]
+  },
+  "facts": [],
+  "initial-state": {
+    "worlds": [
+      "w0",
+      "w1",
+      "w2",
+      "w3",
+      "w4",
+      "w5",
+      "w6",
+      "w7",
+      "w8",
+      "w9",
+      "w10",
+      "w11",
+      "w12",
+      "w13",
+      "w14",
+      "w15",
+      "w16",
+      "w17",
+      "w18",
+      "w19",
+      "w20",
+      "w21",
+      "w22",
+      "w23",
+      "w24",
+      "w25",
+      "w26",
+      "w27",
+      "w28",
+      "w29",
+      "w30",
+      "w31"
+    ],
+    "relations": {
+      "Child1": {
+        "w0": [
+          "w0",
+          "w16"
+        ],
+        "w1": [
+          "w1",
+          "w17"
+        ],
+        "w2": [
+          "w2",
+          "w18"
+        ],
+        "w3": [
+          "w3",
+          "w19"
+        ],
+        "w4": [
+          "w4",
+          "w20"
+        ],
+        "w5": [
+          "w5",
+          "w21"
+        ],
+        "w6": [
+          "w6",
+          "w22"
+        ],
+        "w7": [
+          "w7",
+          "w23"
+        ],
+        "w8": [
+          "w8",
+          "w24"
+        ],
+        "w9": [
+          "w9",
+          "w25"
+        ],
+        "w10": [
+          "w10",
+          "w26"
+        ],
+        "w11": [
+          "w11",
+          "w27"
+        ],
+        "w12": [
+          "w12",
+          "w28"
+        ],
+        "w13": [
+          "w13",
+          "w29"
+        ],
+        "w14": [
+          "w14",
+          "w30"
+        ],
+        "w15": [
+          "w15",
+          "w31"
+        ],
+        "w16": [
+          "w0",
+          "w16"
+        ],
+        "w17": [
+          "w1",
+          "w17"
+        ],
+        "w18": [
+          "w2",
+          "w18"
+        ],
+        "w19": [
+          "w3",
+          "w19"
+        ],
+        "w20": [
+          "w4",
+          "w20"
+        ],
+        "w21": [
+          "w5",
+          "w21"
+        ],
+        "w22": [
+          "w6",
+          "w22"
+        ],
+        "w23": [
+          "w7",
+          "w23"
+        ],
+        "w24": [
+          "w8",
+          "w24"
+        ],
+        "w25": [
+          "w9",
+          "w25"
+        ],
+        "w26": [
+          "w10",
+          "w26"
+        ],
+        "w27": [
+          "w11",
+          "w27"
+        ],
+        "w28": [
+          "w12",
+          "w28"
+        ],
+        "w29": [
+          "w13",
+          "w29"
+        ],
+        "w30": [
+          "w14",
+          "w30"
+        ],
+        "w31": [
+          "w15",
+          "w31"
+        ]
+      },
+      "Child2": {
+        "w0": [
+          "w0",
+          "w8"
+        ],
+        "w1": [
+          "w1",
+          "w9"
+        ],
+        "w2": [
+          "w2",
+          "w10"
+        ],
+        "w3": [
+          "w3",
+          "w11"
+        ],
+        "w4": [
+          "w4",
+          "w12"
+        ],
+        "w5": [
+          "w5",
+          "w13"
+        ],
+        "w6": [
+          "w6",
+          "w14"
+        ],
+        "w7": [
+          "w7",
+          "w15"
+        ],
+        "w8": [
+          "w0",
+          "w8"
+        ],
+        "w9": [
+          "w1",
+          "w9"
+        ],
+        "w10": [
+          "w2",
+          "w10"
+        ],
+        "w11": [
+          "w3",
+          "w11"
+        ],
+        "w12": [
+          "w4",
+          "w12"
+        ],
+        "w13": [
+          "w5",
+          "w13"
+        ],
+        "w14": [
+          "w6",
+          "w14"
+        ],
+        "w15": [
+          "w7",
+          "w15"
+        ],
+        "w16": [
+          "w16",
+          "w24"
+        ],
+        "w17": [
+          "w17",
+          "w25"
+        ],
+        "w18": [
+          "w18",
+          "w26"
+        ],
+        "w19": [
+          "w19",
+          "w27"
+        ],
+        "w20": [
+          "w20",
+          "w28"
+        ],
+        "w21": [
+          "w21",
+          "w29"
+        ],
+        "w22": [
+          "w22",
+          "w30"
+        ],
+        "w23": [
+          "w23",
+          "w31"
+        ],
+        "w24": [
+          "w16",
+          "w24"
+        ],
+        "w25": [
+          "w17",
+          "w25"
+        ],
+        "w26": [
+          "w18",
+          "w26"
+        ],
+        "w27": [
+          "w19",
+          "w27"
+        ],
+        "w28": [
+          "w20",
+          "w28"
+        ],
+        "w29": [
+          "w21",
+          "w29"
+        ],
+        "w30": [
+          "w22",
+          "w30"
+        ],
+        "w31": [
+          "w23",
+          "w31"
+        ]
+      },
+      "Child3": {
+        "w0": [
+          "w0",
+          "w4"
+        ],
+        "w1": [
+          "w1",
+          "w5"
+        ],
+        "w2": [
+          "w2",
+          "w6"
+        ],
+        "w3": [
+          "w3",
+          "w7"
+        ],
+        "w4": [
+          "w0",
+          "w4"
+        ],
+        "w5": [
+          "w1",
+          "w5"
+        ],
+        "w6": [
+          "w2",
+          "w6"
+        ],
+        "w7": [
+          "w3",
+          "w7"
+        ],
+        "w8": [
+          "w8",
+          "w12"
+        ],
+        "w9": [
+          "w9",
+          "w13"
+        ],
+        "w10": [
+          "w10",
+          "w14"
+        ],
+        "w11": [
+          "w11",
+          "w15"
+        ],
+        "w12": [
+          "w8",
+          "w12"
+        ],
+        "w13": [
+          "w9",
+          "w13"
+        ],
+        "w14": [
+          "w10",
+          "w14"
+        ],
+        "w15": [
+          "w11",
+          "w15"
+        ],
+        "w16": [
+          "w16",
+          "w20"
+        ],
+        "w17": [
+          "w17",
+          "w21"
+        ],
+        "w18": [
+          "w18",
+          "w22"
+        ],
+        "w19": [
+          "w19",
+          "w23"
+        ],
+        "w20": [
+          "w16",
+          "w20"
+        ],
+        "w21": [
+          "w17",
+          "w21"
+        ],
+        "w22": [
+          "w18",
+          "w22"
+        ],
+        "w23": [
+          "w19",
+          "w23"
+        ],
+        "w24": [
+          "w24",
+          "w28"
+        ],
+        "w25": [
+          "w25",
+          "w29"
+        ],
+        "w26": [
+          "w26",
+          "w30"
+        ],
+        "w27": [
+          "w27",
+          "w31"
+        ],
+        "w28": [
+          "w24",
+          "w28"
+        ],
+        "w29": [
+          "w25",
+          "w29"
+        ],
+        "w30": [
+          "w26",
+          "w30"
+        ],
+        "w31": [
+          "w27",
+          "w31"
+        ]
+      },
+      "Child4": {
+        "w0": [
+          "w0",
+          "w2"
+        ],
+        "w1": [
+          "w1",
+          "w3"
+        ],
+        "w2": [
+          "w0",
+          "w2"
+        ],
+        "w3": [
+          "w1",
+          "w3"
+        ],
+        "w4": [
+          "w4",
+          "w6"
+        ],
+        "w5": [
+          "w5",
+          "w7"
+        ],
+        "w6": [
+          "w4",
+          "w6"
+        ],
+        "w7": [
+          "w5",
+          "w7"
+        ],
+        "w8": [
+          "w8",
+          "w10"
+        ],
+        "w9": [
+          "w9",
+          "w11"
+        ],
+        "w10": [
+          "w8",
+          "w10"
+        ],
+        "w11": [
+          "w9",
+          "w11"
+        ],
+        "w12": [
+          "w12",
+          "w14"
+        ],
+        "w13": [
+          "w13",
+          "w15"
+        ],
+        "w14": [
+          "w12",
+          "w14"
+        ],
+        "w15": [
+          "w13",
+          "w15"
+        ],
+        "w16": [
+          "w16",
+          "w18"
+        ],
+        "w17": [
+          "w17",
+          "w19"
+        ],
+        "w18": [
+          "w16",
+          "w18"
+        ],
+        "w19": [
+          "w17",
+          "w19"
+        ],
+        "w20": [
+          "w20",
+          "w22"
+        ],
+        "w21": [
+          "w21",
+          "w23"
+        ],
+        "w22": [
+          "w20",
+          "w22"
+        ],
+        "w23": [
+          "w21",
+          "w23"
+        ],
+        "w24": [
+          "w24",
+          "w26"
+        ],
+        "w25": [
+          "w25",
+          "w27"
+        ],
+        "w26": [
+          "w24",
+          "w26"
+        ],
+        "w27": [
+          "w25",
+          "w27"
+        ],
+        "w28": [
+          "w28",
+          "w30"
+        ],
+        "w29": [
+          "w29",
+          "w31"
+        ],
+        "w30": [
+          "w28",
+          "w30"
+        ],
+        "w31": [
+          "w29",
+          "w31"
+        ]
+      },
+      "Child5": {
+        "w0": [
+          "w0",
+          "w1"
+        ],
+        "w1": [
+          "w0",
+          "w1"
+        ],
+        "w2": [
+          "w2",
+          "w3"
+        ],
+        "w3": [
+          "w2",
+          "w3"
+        ],
+        "w4": [
+          "w4",
+          "w5"
+        ],
+        "w5": [
+          "w4",
+          "w5"
+        ],
+        "w6": [
+          "w6",
+          "w7"
+        ],
+        "w7": [
+          "w6",
+          "w7"
+        ],
+        "w8": [
+          "w8",
+          "w9"
+        ],
+        "w9": [
+          "w8",
+          "w9"
+        ],
+        "w10": [
+          "w10",
+          "w11"
+        ],
+        "w11": [
+          "w10",
+          "w11"
+        ],
+        "w12": [
+          "w12",
+          "w13"
+        ],
+        "w13": [
+          "w12",
+          "w13"
+        ],
+        "w14": [
+          "w14",
+          "w15"
+        ],
+        "w15": [
+          "w14",
+          "w15"
+        ],
+        "w16": [
+          "w16",
+          "w17"
+        ],
+        "w17": [
+          "w16",
+          "w17"
+        ],
+        "w18": [
+          "w18",
+          "w19"
+        ],
+        "w19": [
+          "w18",
+          "w19"
+        ],
+        "w20": [
+          "w20",
+          "w21"
+        ],
+        "w21": [
+          "w20",
+          "w21"
+        ],
+        "w22": [
+          "w22",
+          "w23"
+        ],
+        "w23": [
+          "w22",
+          "w23"
+        ],
+        "w24": [
+          "w24",
+          "w25"
+        ],
+        "w25": [
+          "w24",
+          "w25"
+        ],
+        "w26": [
+          "w26",
+          "w27"
+        ],
+        "w27": [
+          "w26",
+          "w27"
+        ],
+        "w28": [
+          "w28",
+          "w29"
+        ],
+        "w29": [
+          "w28",
+          "w29"
+        ],
+        "w30": [
+          "w30",
+          "w31"
+        ],
+        "w31": [
+          "w30",
+          "w31"
+        ]
+      }
+    },
+    "labels": {
+      "w0": [],
+      "w1": [
+        "muddy_Child5"
+      ],
+      "w2": [
+        "muddy_Child4"
+      ],
+      "w3": [
+        "muddy_Child4",
+        "muddy_Child5"
+      ],
+      "w4": [
+        "muddy_Child3"
+      ],
+      "w5": [
+        "muddy_Child3",
+        "muddy_Child5"
+      ],
+      "w6": [
+        "muddy_Child3",
+        "muddy_Child4"
+      ],
+      "w7": [
+        "muddy_Child3",
+        "muddy_Child4",
+        "muddy_Child5"
+      ],
+      "w8": [
+        "muddy_Child2"
+      ],
+      "w9": [
+        "muddy_Child2",
+        "muddy_Child5"
+      ],
+      "w10": [
+        "muddy_Child2",
+        "muddy_Child4"
+      ],
+      "w11": [
+        "muddy_Child2",
+        "muddy_Child4",
+        "muddy_Child5"
+      ],
+      "w12": [
+        "muddy_Child2",
+        "muddy_Child3"
+      ],
+      "w13": [
+        "muddy_Child2",
+        "muddy_Child3",
+        "muddy_Child5"
+      ],
+      "w14": [
+        "muddy_Child2",
+        "muddy_Child3",
+        "muddy_Child4"
+      ],
+      "w15": [
+        "muddy_Child2",
+        "muddy_Child3",
+        "muddy_Child4",
+        "muddy_Child5"
+      ],
+      "w16": [
+        "muddy_Child1"
+      ],
+      "w17": [
+        "muddy_Child1",
+        "muddy_Child5"
+      ],
+      "w18": [
+        "muddy_Child1",
+        "muddy_Child4"
+      ],
+      "w19": [
+        "muddy_Child1",
+        "muddy_Child4",
+        "muddy_Child5"
+      ],
+      "w20": [
+        "muddy_Child1",
+        "muddy_Child3"
+      ],
+      "w21": [
+        "muddy_Child1",
+        "muddy_Child3",
+        "muddy_Child5"
+      ],
+      "w22": [
+        "muddy_Child1",
+        "muddy_Child3",
+        "muddy_Child4"
+      ],
+      "w23": [
+        "muddy_Child1",
+        "muddy_Child3",
+        "muddy_Child4",
+        "muddy_Child5"
+      ],
+      "w24": [
+        "muddy_Child1",
+        "muddy_Child2"
+      ],
+      "w25": [
+        "muddy_Child1",
+        "muddy_Child2",
+        "muddy_Child5"
+      ],
+      "w26": [
+        "muddy_Child1",
+        "muddy_Child2",
+        "muddy_Child4"
+      ],
+      "w27": [
+        "muddy_Child1",
+        "muddy_Child2",
+        "muddy_Child4",
+        "muddy_Child5"
+      ],
+      "w28": [
+        "muddy_Child1",
+        "muddy_Child2",
+        "muddy_Child3"
+      ],
+      "w29": [
+        "muddy_Child1",
+        "muddy_Child2",
+        "muddy_Child3",
+        "muddy_Child5"
+      ],
+      "w30": [
+        "muddy_Child1",
+        "muddy_Child2",
+        "muddy_Child3",
+        "muddy_Child4"
+      ],
+      "w31": [
+        "muddy_Child1",
+        "muddy_Child2",
+        "muddy_Child3",
+        "muddy_Child4",
+        "muddy_Child5"
+      ]
+    },
+    "designated": [
+      "w28"
+    ]
+  },
+  "actions": {
+    "ask_Child1": {
+      "action-type": "public-sensing",
+      "events": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "relations": {
+        "Fully": {
+          "e-ask-pos": [
+            "e-ask-pos"
+          ],
+          "e-ask-neg": [
+            "e-ask-neg"
+          ]
+        }
+      },
+      "designated": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "preconditions": {
+        "e-ask-pos": {
+          "formula": {
+            "modality-name": "Kw.box",
+            "modality-index": [
+              "Child1"
+            ],
+            "formula": "muddy_Child1"
+          }
+        },
+        "e-ask-neg": {
+          "formula": {
+            "modality-name": "Kw.diamond",
+            "modality-index": [
+              "Child1"
+            ],
+            "formula": "muddy_Child1"
+          }
+        }
+      },
+      "effects": {
+        "e-ask-pos": null,
+        "e-ask-neg": null
+      },
+      "observability-conditions": {
+        "Child1": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child2": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child3": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child4": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child5": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "ask_Child2": {
+      "action-type": "public-sensing",
+      "events": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "relations": {
+        "Fully": {
+          "e-ask-pos": [
+            "e-ask-pos"
+          ],
+          "e-ask-neg": [
+            "e-ask-neg"
+          ]
+        }
+      },
+      "designated": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "preconditions": {
+        "e-ask-pos": {
+          "formula": {
+            "modality-name": "Kw.box",
+            "modality-index": [
+              "Child2"
+            ],
+            "formula": "muddy_Child2"
+          }
+        },
+        "e-ask-neg": {
+          "formula": {
+            "modality-name": "Kw.diamond",
+            "modality-index": [
+              "Child2"
+            ],
+            "formula": "muddy_Child2"
+          }
+        }
+      },
+      "effects": {
+        "e-ask-pos": null,
+        "e-ask-neg": null
+      },
+      "observability-conditions": {
+        "Child1": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child2": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child3": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child4": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child5": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "ask_Child3": {
+      "action-type": "public-sensing",
+      "events": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "relations": {
+        "Fully": {
+          "e-ask-pos": [
+            "e-ask-pos"
+          ],
+          "e-ask-neg": [
+            "e-ask-neg"
+          ]
+        }
+      },
+      "designated": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "preconditions": {
+        "e-ask-pos": {
+          "formula": {
+            "modality-name": "Kw.box",
+            "modality-index": [
+              "Child3"
+            ],
+            "formula": "muddy_Child3"
+          }
+        },
+        "e-ask-neg": {
+          "formula": {
+            "modality-name": "Kw.diamond",
+            "modality-index": [
+              "Child3"
+            ],
+            "formula": "muddy_Child3"
+          }
+        }
+      },
+      "effects": {
+        "e-ask-pos": null,
+        "e-ask-neg": null
+      },
+      "observability-conditions": {
+        "Child1": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child2": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child3": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child4": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child5": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "ask_Child4": {
+      "action-type": "public-sensing",
+      "events": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "relations": {
+        "Fully": {
+          "e-ask-pos": [
+            "e-ask-pos"
+          ],
+          "e-ask-neg": [
+            "e-ask-neg"
+          ]
+        }
+      },
+      "designated": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "preconditions": {
+        "e-ask-pos": {
+          "formula": {
+            "modality-name": "Kw.box",
+            "modality-index": [
+              "Child4"
+            ],
+            "formula": "muddy_Child4"
+          }
+        },
+        "e-ask-neg": {
+          "formula": {
+            "modality-name": "Kw.diamond",
+            "modality-index": [
+              "Child4"
+            ],
+            "formula": "muddy_Child4"
+          }
+        }
+      },
+      "effects": {
+        "e-ask-pos": null,
+        "e-ask-neg": null
+      },
+      "observability-conditions": {
+        "Child1": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child2": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child3": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child4": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child5": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "ask_Child5": {
+      "action-type": "public-sensing",
+      "events": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "relations": {
+        "Fully": {
+          "e-ask-pos": [
+            "e-ask-pos"
+          ],
+          "e-ask-neg": [
+            "e-ask-neg"
+          ]
+        }
+      },
+      "designated": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "preconditions": {
+        "e-ask-pos": {
+          "formula": {
+            "modality-name": "Kw.box",
+            "modality-index": [
+              "Child5"
+            ],
+            "formula": "muddy_Child5"
+          }
+        },
+        "e-ask-neg": {
+          "formula": {
+            "modality-name": "Kw.diamond",
+            "modality-index": [
+              "Child5"
+            ],
+            "formula": "muddy_Child5"
+          }
+        }
+      },
+      "effects": {
+        "e-ask-pos": null,
+        "e-ask-neg": null
+      },
+      "observability-conditions": {
+        "Child1": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child2": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child3": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child4": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "Child5": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    }
+  },
+  "goal": {
+    "formula": {
+      "modality-name": "Kw.box",
+      "modality-index": [
+        "Child1"
+      ],
+      "formula": "muddy_Child1"
+    }
+  }
+}

@@ -1,0 +1,275 @@
+{
+  "planning-task-info": {
+    "problem": "muddy-children-2",
+    "domain": "muddy-children",
+    "libraries": [
+      "intermediate"
+    ],
+    "requirements": [
+      ":common-knowledge",
+      ":disjunctive-list-formulas",
+      ":disjunctive-preconditions",
+      ":equality",
+      ":events-conditions",
+      ":finitary-S5-theories",
+      ":group-modalities",
+      ":knowing-whether",
+      ":list-comprehensions",
+      ":lists",
+      ":modal-goals",
+      ":modal-preconditions",
+      ":multi-pointed-models",
+      ":negative-list-formulas",
+      ":negative-preconditions",
+      ":partial-observability",
+      ":static-common-knowledge"
+    ],
+    "agents-number": 2,
+    "atoms-number": 2,
+    "facts-number": 0,
+    "actions-number": 2,
+    "initial-worlds-number": 4,
+    "goal-modal-depth": 1,
+    "goal-size": 5
+  },
+  "language": {
+    "atoms": [
+      "muddy_c1",
+      "muddy_c2"
+    ],
+    "agents": [
+      "c1",
+      "c2"
+    ]
+  },
+  "facts": [],
+  "initial-state": {
+    "worlds": [
+      "w0",
+      "w1",
+      "w2",
+      "w3"
+    ],
+    "relations": {
+      "c1": {
+        "w0": [
+          "w0",
+          "w2"
+        ],
+        "w1": [
+          "w1",
+          "w3"
+        ],
+        "w2": [
+          "w0",
+          "w2"
+        ],
+        "w3": [
+          "w1",
+          "w3"
+        ]
+      },
+      "c2": {
+        "w0": [
+          "w0",
+          "w1"
+        ],
+        "w1": [
+          "w0",
+          "w1"
+        ],
+        "w2": [
+          "w2",
+          "w3"
+        ],
+        "w3": [
+          "w2",
+          "w3"
+        ]
+      }
+    },
+    "labels": {
+      "w0": [],
+      "w1": [
+        "muddy_c2"
+      ],
+      "w2": [
+        "muddy_c1"
+      ],
+      "w3": [
+        "muddy_c1",
+        "muddy_c2"
+      ]
+    },
+    "designated": [
+      "w3"
+    ]
+  },
+  "actions": {
+    "ask_c1": {
+      "action-type": "public-sensing",
+      "events": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "relations": {
+        "Fully": {
+          "e-ask-pos": [
+            "e-ask-pos"
+          ],
+          "e-ask-neg": [
+            "e-ask-neg"
+          ]
+        }
+      },
+      "designated": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "preconditions": {
+        "e-ask-pos": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "muddy_c1",
+              {
+                "modality-name": "Kw.diamond",
+                "modality-index": [
+                  "c1"
+                ],
+                "formula": "muddy_c1"
+              }
+            ]
+          }
+        },
+        "e-ask-neg": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "connective": "not",
+                "formula": "muddy_c1"
+              },
+              {
+                "modality-name": "Kw.diamond",
+                "modality-index": [
+                  "c1"
+                ],
+                "formula": "muddy_c1"
+              }
+            ]
+          }
+        }
+      },
+      "effects": {
+        "e-ask-pos": null,
+        "e-ask-neg": null
+      },
+      "observability-conditions": {
+        "c1": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "c2": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    },
+    "ask_c2": {
+      "action-type": "public-sensing",
+      "events": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "relations": {
+        "Fully": {
+          "e-ask-pos": [
+            "e-ask-pos"
+          ],
+          "e-ask-neg": [
+            "e-ask-neg"
+          ]
+        }
+      },
+      "designated": [
+        "e-ask-pos",
+        "e-ask-neg"
+      ],
+      "preconditions": {
+        "e-ask-pos": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              "muddy_c2",
+              {
+                "modality-name": "Kw.diamond",
+                "modality-index": [
+                  "c2"
+                ],
+                "formula": "muddy_c2"
+              }
+            ]
+          }
+        },
+        "e-ask-neg": {
+          "formula": {
+            "connective": "and",
+            "formulas": [
+              {
+                "connective": "not",
+                "formula": "muddy_c2"
+              },
+              {
+                "modality-name": "Kw.diamond",
+                "modality-index": [
+                  "c2"
+                ],
+                "formula": "muddy_c2"
+              }
+            ]
+          }
+        }
+      },
+      "effects": {
+        "e-ask-pos": null,
+        "e-ask-neg": null
+      },
+      "observability-conditions": {
+        "c1": {
+          "Fully": {
+            "formula": "true"
+          }
+        },
+        "c2": {
+          "Fully": {
+            "formula": "true"
+          }
+        }
+      }
+    }
+  },
+  "goal": {
+    "formula": {
+      "connective": "and",
+      "formulas": [
+        {
+          "modality-name": "Kw.box",
+          "modality-index": [
+            "c1"
+          ],
+          "formula": "muddy_c1"
+        },
+        {
+          "modality-name": "Kw.box",
+          "modality-index": [
+            "c2"
+          ],
+          "formula": "muddy_c2"
+        }
+      ]
+    }
+  }
+}
