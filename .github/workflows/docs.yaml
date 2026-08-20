@@ -1,0 +1,76 @@
+name: docs
+
+# Builds the Sphinx site in eplansys_docs/ and publishes it to GitHub Pages at
+# https://eplansys.github.io/eplansys.
+#
+# The build runs on every pull request too, with -W so a warning fails it; only
+# a push to rolling deploys.
+#
+# Note that this deploys through the Pages artifact API, which requires the
+# repository's Pages source to be set to "GitHub Actions". doxygen-doc.yml
+# publishes to the gh-pages branch instead; a repository can serve only one of
+# the two, so the Doxygen output has to be folded into this build or hosted
+# elsewhere before both are live at once.
+
+on:
+  pull_request:
+    branches:
+      - rolling
+  push:
+    branches:
+      - rolling
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. A run already in progress is left to finish rather
+# than cancelled, so a published site is never half-replaced.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: eplansys_docs/requirements.txt
+
+      - name: Install docs dependencies
+        run: pip install -r eplansys_docs/requirements.txt
+
+      - name: Build
+        run: sphinx-build -b html eplansys_docs eplansys_docs/_build/html -W
+
+      - name: Setup Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/rolling'
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/rolling'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: eplansys_docs/_build/html
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/rolling'
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
