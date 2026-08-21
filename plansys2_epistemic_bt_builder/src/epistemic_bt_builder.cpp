@@ -50,8 +50,25 @@ void EpistemicBTBuilder::initialize(
   const std::string & bt_action_1, const std::string & bt_action_2, int precision)
 {
   (void)bt_action_2;   // there is one template here: a policy node is a policy node
-  bt_action_ = bt_action_1;
   precision_ = precision;
+
+  // The executor hands every builder the action template it is configured
+  // with, and its default is PlanSys2's — which has no CONTINUATIONS placeholder
+  // and so no place for the rest of the policy to go. Rendering it would
+  // produce a tree containing only the root action, which runs, succeeds, and
+  // leaves the mission undone. A template that cannot hold a policy is
+  // therefore refused in favour of the packaged one, loudly, because a
+  // deployment that meant to supply its own needs to know it was not used.
+  if (!bt_action_1.empty() && bt_action_1.find("CONTINUATIONS") == std::string::npos) {
+    RCLCPP_WARN(
+      logger(),
+      "the action template has no CONTINUATIONS placeholder, so a policy could "
+      "not be rendered into it; using the packaged epistemic template instead");
+    bt_action_.clear();
+    return;
+  }
+
+  bt_action_ = bt_action_1;
 }
 
 std::string EpistemicBTBuilder::get_tree(const plansys2_msgs::msg::Plan & current_plan)

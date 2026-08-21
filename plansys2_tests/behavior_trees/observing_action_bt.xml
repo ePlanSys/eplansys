@@ -1,0 +1,30 @@
+<!--
+  The per-node template for the corridor mission: the epistemic default, with
+  the observation bound.
+
+  ApplyEpistemicUpdate's `observed` port is the one thing the packaged template
+  leaves open, because what a robot saw is domain-specific and PlanSys2 carries
+  nothing back from a performer. Here it is filled by ObservedOutcome, which
+  reads the topic the fake performers report on. Without it the epistemic state
+  is asked to choose an outcome for a world it genuinely does not know, and
+  says so rather than guessing.
+
+  ObservedOutcome runs for every node, sensing or not: an ontic action ignores
+  the observation, so binding it unconditionally costs nothing and keeps one
+  template for the whole tree.
+-->
+<Sequence name="NODE_NAME">
+  <CheckKnowledge node="NODE_ID" action="ACTION_ID"/>
+  <WaitAtStartReq action="ACTION_ID"/>
+  <ApplyAtStartEffect action="ACTION_ID"/>
+  <ReactiveSequence name="ACTION_ID">
+    <CheckOverAllReq action="ACTION_ID"/>
+    <ExecuteAction action="ACTION_ID"/>
+  </ReactiveSequence>
+  <CheckAtEndReq action="ACTION_ID"/>
+  <ApplyAtEndEffect action="ACTION_ID"/>
+  <ObservedOutcome action="ACTION_ID" outcome="{observed_NODE_ID}"/>
+  <ApplyEpistemicUpdate node="NODE_ID" action="ACTION_ID" observed="{observed_NODE_ID}"
+    outcome="{OUTCOME_KEY}"/>
+CONTINUATIONS
+</Sequence>

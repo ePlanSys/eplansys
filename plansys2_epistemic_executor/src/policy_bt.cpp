@@ -172,6 +172,14 @@ std::string policy_to_bt(const Policy & policy, const std::string & action_bt, i
     goal_check = indent(3) + "<CheckEpistemicGoal goal=\"" + escape(policy.goal()) + "\"/>\n";
   }
 
+  // Nothing to run and nothing to check happens when the planner is handed a
+  // goal that already holds. The sequence still has to have a child:
+  // BehaviorTree.CPP rejects an empty one, and a tree that cannot be parsed is
+  // a worse answer to "there is nothing to do" than a tree that does nothing.
+  if (body.empty() && goal_check.empty()) {
+    body = indent(3) + "<AlwaysSuccess/>\n";
+  }
+
   return
     "<root BTCPP_format=\"4\" main_tree_to_execute=\"MainTree\">\n" +
     indent(1) + "<BehaviorTree ID=\"MainTree\">\n" +

@@ -13,6 +13,8 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>behaviortree_cpp</depend>
   <depend>plansys2_msgs</depend>
   <depend>plansys2_executor</depend>
 
@@ -26,6 +28,11 @@
   <test_depend>plansys2_problem_expert</test_depend>
   <test_depend>plansys2_planner</test_depend>
   <test_depend>plansys2_pddl_parser</test_depend>
+  <test_depend>plansys2_epistemic_executor</test_depend>
+  <!-- The builder is loaded by pluginlib at run time, by name, so nothing
+       links against it; without it here the epistemic test would build and
+       then fail to find its builder. -->
+  <test_depend>plansys2_epistemic_bt_builder</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

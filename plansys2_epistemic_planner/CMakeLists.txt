@@ -84,6 +84,10 @@ ament_export_dependencies(
   plansys2_epddl_grounder
   plansys2_msgs
   pluginlib
+  # In the exported target's link interface, so a package that links this one
+  # fails to configure without it — which nothing noticed while every consumer
+  # happened to find_package it for its own reasons.
+  nlohmann_json
 )
 
 ament_package()
