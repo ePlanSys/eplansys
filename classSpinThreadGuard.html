@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.17.0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ROS2 Plannimg System: File Members</title>
+<title>ROS2 Plannimg System: SpinThreadGuard Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="codefolding.js"></script>
 <script type="text/javascript" src="clipboard.js"></script>
@@ -74,8 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
     </li>
   </ul>
 </div><!-- main-nav -->
-</div><!-- top -->
-<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -97,13 +95,62 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 </div>
 
+</div><!-- top -->
+<div id="doc-content">
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="classSpinThreadGuard-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">SpinThreadGuard Class Reference</div></div>
+</div><!--header-->
 <div class="contents">
-<div class="textblock">Here is a list of all functions with links to the files they belong to:</div><br/>
-<div class="qindex"><a class="qindex" href="globals_func.html#index_b">B</a><div class="alphasepar"></div><a class="qindex" href="globals_func_c.html#index_c">C</a><div class="alphasepar"></div><a class="qindex" href="globals_func_i.html#index_i">I</a><div class="alphasepar"></div><a class="qindex" href="globals_func_m.html#index_m">M</a><div class="alphasepar"></div><a class="qindex" href="globals_func_o.html#index_o">O</a><div class="alphasepar"></div><a class="qindex" href="globals_func_p.html#index_p">P</a><div class="alphasepar"></div><a class="qindex" href="globals_func_t.html#index_t">T</a><div class="alphasepar"></div><a class="qindex" href="globals_func_w.html#index_w">W</a></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:ab7fc5e9e4bb2e4472b3368fc4998dbff" id="r_ab7fc5e9e4bb2e4472b3368fc4998dbff"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ab7fc5e9e4bb2e4472b3368fc4998dbff">SpinThreadGuard</a> (std::atomic&lt; <a class="el" href="classbool.html">bool</a> &gt; &amp;finish, std::thread &amp;t)</td></tr>
+<tr class="memitem:a7bbea412ebd0c2a5894c4956a194a839" id="r_a7bbea412ebd0c2a5894c4956a194a839"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a7bbea412ebd0c2a5894c4956a194a839">~SpinThreadGuard</a> ()</td></tr>
+</table>
+<a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ab7fc5e9e4bb2e4472b3368fc4998dbff" name="ab7fc5e9e4bb2e4472b3368fc4998dbff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7fc5e9e4bb2e4472b3368fc4998dbff">&#9670;&#160;</a></span>SpinThreadGuard()</h2>
 
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classSpinThreadGuard.html">SpinThreadGuard</a> </td>
+          <td>(</td>
+          <td class="paramtype">std::atomic&lt; <a class="el" href="classbool.html">bool</a> &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>finish</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::thread &amp;</td>          <td class="paramname"><span class="paramname"><em>t</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
-<h3 class="doxsection"><a id="index_b" name="index_b"></a>- b -</h3><ul>
-<li>BT_REGISTER_NODES()&#160;:&#160;<a class="el" href="CloseGripper_8cpp.html#a4f761ae5ffbaf6b0b834e47b8c53b2de">CloseGripper.cpp</a>, <a class="el" href="FailureNodes_8cpp.html#a4f761ae5ffbaf6b0b834e47b8c53b2de">FailureNodes.cpp</a>, <a class="el" href="Move_8cpp.html#a4f761ae5ffbaf6b0b834e47b8c53b2de">Move.cpp</a>, <a class="el" href="OpenGripper_8cpp.html#a4f761ae5ffbaf6b0b834e47b8c53b2de">OpenGripper.cpp</a></li>
+</div>
+</div>
+<a id="a7bbea412ebd0c2a5894c4956a194a839" name="a7bbea412ebd0c2a5894c4956a194a839"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7bbea412ebd0c2a5894c4956a194a839">&#9670;&#160;</a></span>~SpinThreadGuard()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">~<a class="el" href="classSpinThreadGuard.html">SpinThreadGuard</a> </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
+<li>plansys2_domain_expert/test/unit/<a class="el" href="domain__expert__node__test_8cpp.html">domain_expert_node_test.cpp</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

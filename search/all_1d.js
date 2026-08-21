@@ -20,8 +20,9 @@ var searchData=
   ['_7eoneof_17',['~Oneof',['../classparser_1_1pddl_1_1Oneof.html#ad398e62a89ae8068b0127013feb7ef40',1,'parser::pddl::Oneof']]],
   ['_7eor_18',['~Or',['../classparser_1_1pddl_1_1Or.html#a8bd0fd249a0ed0f57aff6abece5808f2',1,'parser::pddl::Or']]],
   ['_7eplannernode_19',['~PlannerNode',['../classplansys2_1_1PlannerNode.html#a10ae20b189dd786b467a8441316e13d7',1,'plansys2::PlannerNode']]],
-  ['_7estringreader_20',['~Stringreader',['../classparser_1_1pddl_1_1Stringreader.html#a472c0e8db928bf4775b1981ea667f70e',1,'parser::pddl::Stringreader']]],
-  ['_7etemporalaction_21',['~TemporalAction',['../classparser_1_1pddl_1_1TemporalAction.html#a4d641ae7cfdcf60201c03b444157fe3b',1,'parser::pddl::TemporalAction']]],
-  ['_7etype_22',['~Type',['../classparser_1_1pddl_1_1Type.html#ae748371673274c11b73ec33c000153db',1,'parser::pddl::Type']]],
-  ['_7ewhen_23',['~When',['../classparser_1_1pddl_1_1When.html#a8aa1fc719b49067b4cc978d0bd26289b',1,'parser::pddl::When']]]
+  ['_7espinthreadguard_20',['~SpinThreadGuard',['../classSpinThreadGuard.html#a7bbea412ebd0c2a5894c4956a194a839',1,'SpinThreadGuard']]],
+  ['_7estringreader_21',['~Stringreader',['../classparser_1_1pddl_1_1Stringreader.html#a472c0e8db928bf4775b1981ea667f70e',1,'parser::pddl::Stringreader']]],
+  ['_7etemporalaction_22',['~TemporalAction',['../classparser_1_1pddl_1_1TemporalAction.html#a4d641ae7cfdcf60201c03b444157fe3b',1,'parser::pddl::TemporalAction']]],
+  ['_7etype_23',['~Type',['../classparser_1_1pddl_1_1Type.html#ae748371673274c11b73ec33c000153db',1,'parser::pddl::Type']]],
+  ['_7ewhen_24',['~When',['../classparser_1_1pddl_1_1When.html#a8aa1fc719b49067b4cc978d0bd26289b',1,'parser::pddl::When']]]
 ];

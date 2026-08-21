@@ -172,7 +172,8 @@ var menudata={children:[
 {text:"p",url:"globals_p.html#index_p"},
 {text:"s",url:"globals_s.html#index_s"},
 {text:"t",url:"globals_t.html#index_t"},
-{text:"u",url:"globals_u.html#index_u"}]},
+{text:"u",url:"globals_u.html#index_u"},
+{text:"w",url:"globals_w.html#index_w"}]},
 {text:"Functions",url:"globals_func.html",children:[
 {text:"b",url:"globals_func.html#index_b"},
 {text:"c",url:"globals_func_c.html#index_c"},
@@ -180,6 +181,7 @@ var menudata={children:[
 {text:"m",url:"globals_func_m.html#index_m"},
 {text:"o",url:"globals_func_o.html#index_o"},
 {text:"p",url:"globals_func_p.html#index_p"},
-{text:"t",url:"globals_func_t.html#index_t"}]},
+{text:"t",url:"globals_func_t.html#index_t"},
+{text:"w",url:"globals_func_w.html#index_w"}]},
 {text:"Typedefs",url:"globals_type.html"},
 {text:"Macros",url:"globals_defs.html"}]}]}]}
