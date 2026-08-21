@@ -1,0 +1,38 @@
+(define (problem fleet-depot)
+
+  ;; Three robots at the depot. Neither route has been looked at, so both are
+  ;; open questions and the initial model designates four worlds — one per
+  ;; combination of the two corridors being blocked or clear.
+
+  (:domain robot-fleet-depot)
+
+  (:requirements
+    :equality :list-comprehensions
+    :finitary-S5-theories :modal-goals :knowing-whether
+    :multi-pointed-models
+  )
+
+  (:agents r1 r2 r3)
+
+  (:init
+    (:and
+      (:forall (?i - agent)
+        ([C. All] (and (not (at-north ?i)) (not (at-south ?i)))))
+      (:forall (?i - agent)
+        ([C. All] (<Kw. ?i> (blocked-north))))
+      (:forall (?i - agent)
+        ([C. All] (<Kw. ?i> (blocked-south))))
+    )
+  )
+
+  ;; Every robot must know the state of both routes before the fleet commits
+  ;; to one. Six conjuncts, and no robot can satisfy more than two of them by
+  ;; itself without talking.
+  (:goal
+    (and
+      ([Kw. r1] (blocked-north)) ([Kw. r1] (blocked-south))
+      ([Kw. r2] (blocked-north)) ([Kw. r2] (blocked-south))
+      ([Kw. r3] (blocked-north)) ([Kw. r3] (blocked-south))
+    )
+  )
+)

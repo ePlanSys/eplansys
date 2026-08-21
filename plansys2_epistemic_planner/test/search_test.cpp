@@ -14,7 +14,10 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <chrono>
+#include <functional>
+#include <set>
 #include <memory>
 #include <string>
 #include <vector>
@@ -197,6 +200,105 @@ TEST_F(SearchTest, AostarOnMultiPointedCoinBranchesAndValidates)
   EXPECT_TRUE(has_branch(result->plan_tree))
     << "with two designated worlds the sensing outcome is not determined, so "
     "the policy must branch on it";
+}
+
+// The fleet scenario, and the reason it was written: a grounded task that is
+// multi-pointed as the grounder produces it, rather than edited by hand into
+// being so. The corridor's state is genuinely open, the scout has to look, and
+// what it says afterwards depends on what it saw.
+TEST_F(SearchTest, AostarOnTheRobotFleetBranchesOnWhatTheScoutSees)
+{
+  const auto task = load_task(task_path("robot-fleet"));
+  EpistemicDistanceHeuristic h;
+
+  ASSERT_EQ(task.init.num_designated(), 2u)
+    << "the corridor's state must be undetermined for the mission to be one";
+
+  const auto result = aostar::search(task, h, 0, soon());
+
+  ASSERT_TRUE(result.has_value());
+  ASSERT_NE(result->plan_tree, nullptr) << "the goal must not already hold";
+
+  const auto validation = validate(task, result->plan_tree);
+  EXPECT_TRUE(validation.valid) << validation.error;
+  EXPECT_GT(validation.leaves_reached, 1u) << "a contingent policy has several leaves";
+
+  EXPECT_TRUE(has_branch(result->plan_tree))
+    << "the scout cannot know what it will see, so the policy must branch on it";
+
+  // Drive, look, and say what you saw. Pinning the shape rather than only the
+  // depth is what makes this a scenario rather than a benchmark: the point is
+  // that one robot goes and the other is told, not that a tree of some size
+  // came back.
+  const auto & drive = result->plan_tree;
+  EXPECT_EQ(drive->action.rfind("goto-junction_", 0), 0u) << drive->action;
+  ASSERT_EQ(drive->branches.size(), 1u) << "driving there has one outcome";
+
+  const auto & look = drive->branches.begin()->second;
+  ASSERT_NE(look, nullptr);
+  EXPECT_EQ(look->action.rfind("inspect_", 0), 0u) << look->action;
+  ASSERT_EQ(look->branches.size(), 2u)
+    << "looking is where the mission stops being a sequence";
+
+  // One branch reports a blockage and the other reports it clear. Which is
+  // which is decided at execution time, by what the camera actually saw.
+  std::vector<std::string> reports;
+  for (const auto & [event, child] : look->branches) {
+    (void)event;
+    ASSERT_NE(child, nullptr);
+    reports.push_back(child->action);
+  }
+  std::sort(reports.begin(), reports.end());
+  ASSERT_EQ(reports.size(), 2u);
+  EXPECT_EQ(reports[0].rfind("report-blocked_", 0), 0u) << reports[0];
+  EXPECT_EQ(reports[1].rfind("report-clear_", 0), 0u) << reports[1];
+
+  // And both reports come from the robot that looked, not from the one that
+  // was watching: only the robot that saw the corridor can say what is there.
+  const auto scout = look->action.substr(std::string("inspect_").size());
+  EXPECT_NE(reports[0].find(scout), std::string::npos) << reports[0];
+  EXPECT_NE(reports[1].find(scout), std::string::npos) << reports[1];
+}
+
+// One size up: three robots and two routes, so the fleet has to split the
+// survey and the robot that stayed behind learns both answers by listening.
+// Four leaves — one per way the two corridors can turn out.
+TEST_F(SearchTest, AostarOnTheDepotFleetSplitsTheSurvey)
+{
+  const auto task = load_task(task_path("robot-fleet-depot"));
+  EpistemicDistanceHeuristic h;
+
+  ASSERT_EQ(task.init.num_designated(), 4u) << "two open questions, four worlds";
+
+  const auto result = aostar::search(task, h, 0, soon());
+
+  ASSERT_TRUE(result.has_value());
+  ASSERT_NE(result->plan_tree, nullptr);
+
+  const auto validation = validate(task, result->plan_tree);
+  EXPECT_TRUE(validation.valid) << validation.error;
+  EXPECT_EQ(validation.leaves_reached, 4u);
+  EXPECT_TRUE(has_branch(result->plan_tree));
+
+  // Both routes get surveyed, and no robot surveys both: a robot dispatched
+  // down one cannot reach the other, so the plan has to use two of them.
+  std::set<std::string> inspectors;
+  std::function<void(const std::shared_ptr<PlanNode> &)> collect =
+    [&](const std::shared_ptr<PlanNode> & node) {
+      if (!node) {
+        return;
+      }
+      if (node->action.rfind("inspect-", 0) == 0) {
+        inspectors.insert(node->action);
+      }
+      for (const auto & [event, child] : node->branches) {
+        (void)event;
+        collect(child);
+      }
+    };
+  collect(result->plan_tree);
+
+  EXPECT_EQ(inspectors.size(), 2u) << "one look per route, no more and no less";
 }
 
 // A plan built for a different task must not validate against this one. If the

@@ -158,20 +158,31 @@ Checked-in tasks
    * - ``active-muddy-child.json``
      - Thirty-two initial worlds; the canonical partial-observability case.
    * - ``coin-in-the-box-multipointed.json``
-     - The only fixture whose solution is a branching policy.
+     - A branching policy, derived by hand rather than ground.
+   * - ``robot-fleet.json``
+     - The corridor fleet mission: ground, and branching.
+   * - ``robot-fleet-depot.json``
+     - Three robots and two routes; four leaves.
 
-Every task the grounder produces from the available EPDDL instances is
-single-pointed, with one designated world, so sensing has exactly one possible
-outcome and AO* returns a chain. Nothing in the workspace exercises contingent
-branching, which is precisely the path the solver flattens away when
-``conditional_plan`` is not ``policy``. ``coin-in-the-box-multipointed.json``
-is therefore derived by hand from ``coin-in-the-box.json`` with two edits: the
+Every task the grounder produced from the EPDDL instances *inherited* with this
+repository is single-pointed, with one designated world, so sensing has exactly
+one possible outcome and AO* returns a chain. That is a property of those
+instances rather than of the grounder: their ``:init`` theories assert a state
+for the thing being sensed. ``coin-in-the-box-multipointed.json`` was therefore
+derived by hand from ``coin-in-the-box.json`` with two edits: the
 initial state designates two worlds rather than one, so it is genuinely open
 whether the coin lies tails; and the goal is :math:`\mathit{Kw}_A(\mathit{tails})`
 rather than :math:`K_A(\mathit{tails})`, since knowing that the coin is tails is
 unachievable in the world where it is not. Its solution branches. If the EPDDL
 instance is ever written and grounded, the file should be replaced with the
 grounder's output.
+
+The fleet scenarios in ``<share>/plansys2_epddl_grounder/examples`` need no
+such editing. Their initial states leave the corridors open rather than
+asserting a state for them, so ``plank`` grounds them multi-pointed directly:
+two designated worlds for the corridor mission, four for the depot, eight for
+the survey. They are the fixtures that exercise contingent branching on a
+policy nobody hand-wrote.
 
 Action names
 ------------

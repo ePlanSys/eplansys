@@ -1,0 +1,131 @@
+(define (domain robot-fleet)
+
+  ;; A two-robot survey fleet, and the one thing a classical planner cannot
+  ;; express: a robot has to find something out, and then the rest of the fleet
+  ;; has to come to know it too.
+  ;;
+  ;; The corridor may be blocked by debris. Only a robot standing at the
+  ;; junction can see it, and a robot watching another one look learns that it
+  ;; looked, not what it saw. Both robots route around the corridor, so both
+  ;; have to end up knowing. Nothing about the corridor itself changes in this
+  ;; domain; what changes is who knows about it.
+
+  (:requirements
+    :equality :partial-observability :list-comprehensions :lists
+    :ontic-actions :group-modalities
+    :negative-preconditions :modal-preconditions :knowing-whether
+  )
+
+  (:action-type-libraries intermediate)
+
+  (:predicates
+    (blocked)                    ; the corridor is obstructed
+    (at-junction ?i - agent)     ; ?i is where the corridor can be seen
+  )
+
+  (:event nil)
+
+  ;--------------------DRIVE TO THE JUNCTION------------------
+  ;
+  ; The one ontic action: it changes the world rather than anyone's beliefs.
+  ; A fleet tracks its own members' positions, so this is public — every robot
+  ; sees it happen, and knows the others saw it.
+
+  (:event e-goto-junction
+    :parameters (?i - agent)
+    :precondition (not (at-junction ?i))
+    :effects (at-junction ?i)
+  )
+
+  (:action goto-junction
+    :parameters (?i - agent)
+    :action-type (public-ontic (e-goto-junction ?i))
+    :observability-conditions (default Fully)
+  )
+
+  ;--------------------LOOK DOWN THE CORRIDOR------------------
+  ;
+  ; Semi-private sensing: the robot that looks learns the answer, and the rest
+  ; of the fleet sees it look without learning what it saw. That is the honest
+  ; model of a camera on one robot — the others observe the behaviour, not the
+  ; image — and it is why the answer still has to be reported afterwards.
+  ;
+  ; Requiring that ?i does not already know whether the corridor is blocked
+  ; keeps a robot from inspecting twice to no effect.
+
+  (:event e-inspect-blocked
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (at-junction ?i)
+        (blocked)
+        (<Kw. ?i> (blocked)) )
+  )
+
+  (:event e-inspect-clear
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (at-junction ?i)
+        (not (blocked))
+        (<Kw. ?i> (blocked)) )
+  )
+
+  (:action inspect
+    :parameters (?i - agent)
+    :action-type (semi-private-sensing
+      (e-inspect-blocked ?i)
+      (e-inspect-clear ?i) )
+    :observability-conditions
+      (:and
+        (?i Fully)
+        (default Partially) )
+  )
+
+  ;--------------------REPORT OVER THE FLEET CHANNEL------------------
+  ;
+  ; Two actions rather than one, because a robot can only report what it
+  ; found. Which of them the plan uses is not known when the plan is built —
+  ; that is what makes the solution a policy with a branch rather than a
+  ; sequence, and it is the shape every sense-then-act mission has.
+  ;
+  ; The precondition is that the speaker knows, so the fleet cannot broadcast
+  ; a guess. Knowledge is factive, so a robot hearing "r1 knows the corridor
+  ; is blocked" learns that it is blocked.
+
+  (:event e-knows-blocked
+    :parameters (?i - agent)
+    :precondition ([?i] (blocked))
+  )
+
+  (:event e-not-knows-blocked
+    :parameters (?i - agent)
+    :precondition (not ([?i] (blocked)))
+  )
+
+  (:action report-blocked
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-knows-blocked ?i)
+      (e-not-knows-blocked ?i) )
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-knows-clear
+    :parameters (?i - agent)
+    :precondition ([?i] (not (blocked)))
+  )
+
+  (:event e-not-knows-clear
+    :parameters (?i - agent)
+    :precondition (not ([?i] (not (blocked))))
+  )
+
+  (:action report-clear
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-knows-clear ?i)
+      (e-not-knows-clear ?i) )
+    :observability-conditions (default Fully)
+  )
+)
