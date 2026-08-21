@@ -10,6 +10,14 @@ string task_json
 
 # Path to the same thing on disk. Ignored when task_json is set.
 string task_file
+
+# EPDDL sources to ground into the task, for callers that have the sources
+# rather than a grounded file. Both paths are required to use this route, and
+# it is taken only when neither task_json nor task_file is set. Libraries may
+# be left empty, which uses the packaged `intermediate` action-type library.
+string epddl_domain
+string epddl_problem
+string[] epddl_libraries
 ---
 bool success
 string error

@@ -6,21 +6,22 @@
 #     model_file:=<domain.pddl> \
 #     params_file:=<share>/plansys2_bringup/params/plansys2_epistemic_params.yaml
 #
-# The solver reads the IePC grounded-task JSON, not PDDL. It takes the task
-# from whichever of these arrives first:
+# The epistemic problem is stated in EPDDL, not in PDDL, and it is named by the
+# epddl_domain and epddl_problem parameters below rather than by the launch
+# file. plansys2_epddl_grounder grounds those sources through plank on first
+# use and again whenever they change.
 #
-#   - the `problem` string of planner/get_plan, when that string is itself a
-#     task JSON (it is recognised by its "planning-task-info" key), or
-#   - the `task_file` parameter below.
-#
-# model_file is still required by the launch file and still feeds the domain
-# expert; the epistemic solver ignores it.
+# model_file is still required by the launch file, still feeds the domain
+# expert, and is still what the executor consults to find the behavior tree
+# that drives the hardware for an action. It is the PDDL side of the same
+# mission; the epistemic side is the EPDDL pair.
 #
 # Executing a policy also needs the epistemic state running and holding the
-# same task, which is a separate node:
+# same task, which is a separate node. Point it at the same two files:
 #
-#   ros2 run plansys2_epistemic_executor epistemic_state_node \
-#     --ros-args -p task_file:=<the same grounded task JSON>
+#   ros2 run plansys2_epistemic_executor epistemic_state_node --ros-args \
+#     -p epddl_domain:=<the same domain.epddl> \
+#     -p epddl_problem:=<the same problem.epddl>
 plansys2:
   ros__parameters:
     use_real_time: false
@@ -34,8 +35,26 @@ planner:
     EPISTEMIC:
       plugin: "plansys2/EpistemicPlanSolver"
 
-      # Absolute path to a grounded task JSON. Leave empty to require the task
-      # to arrive in the get_plan request instead.
+      # The EPDDL sources. This is the ordinary way to state the problem, and
+      # the epistemic counterpart of model_file.
+      epddl_domain: ""
+      epddl_problem: ""
+
+      # Action-type libraries the domain declares in its
+      # `:action-type-libraries` clause. Empty supplies the `intermediate`
+      # library packaged with plansys2_epddl_grounder, which is the one the
+      # example domains use.
+      epddl_libraries: []
+
+      # Path to the plank binary. Empty takes the PLANK environment variable,
+      # then PATH — and building the workspace puts plank on PATH, so this is
+      # normally left alone.
+      plank_command: ""
+
+      # Absolute path to an already grounded task JSON, for a task ground
+      # outside this workspace. Ignored when the EPDDL sources above are set.
+      # Leave both empty to require the task to arrive in the get_plan request
+      # instead.
       task_file: ""
 
       # Empty means the built-in selection policy decides from the task's own
@@ -79,7 +98,11 @@ planner:
       #   ALETHEIA:
       #     plugin: "plansys2/AletheiaPlanSolver"
       #     command: "/abs/path/to/epistemic_planner"
+      #     task_file: "/abs/path/to/grounded-task.json"
       #     conditional_plan: "policy"
+      #
+      # That plugin reads a grounded task only; ground the EPDDL first with
+      # `ros2 run plansys2_epddl_grounder ground_epddl`.
       #
       # In-process is the better default: no fork, no serialisation, and no
       # binary to install. Use the subprocess plugin when the planner is built

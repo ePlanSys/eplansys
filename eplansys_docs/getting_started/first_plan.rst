@@ -5,13 +5,38 @@ This page runs the epistemic solver once, on a task that ships with the
 repository, and shows what it returns. It assumes a workspace built and
 sourced as described in :doc:`installation`.
 
-The task
---------
+The problem
+-----------
 
-The solver reads a grounded epistemic planning task in the IePC JSON format.
-It does not read EPDDL, and it does not translate the PDDL problem the domain
-expert holds; see :doc:`../concepts/epddl` for why. Several grounded tasks are
-checked into the planner package for its tests:
+The problem is stated in EPDDL: a domain and a problem file, the epistemic
+counterparts of a PDDL domain and problem. The smallest example ships with
+``plansys2_epddl_grounder``:
+
+.. code-block:: text
+
+   <share>/plansys2_epddl_grounder/examples/muddy-children-domain.epddl
+   <share>/plansys2_epddl_grounder/examples/muddy-children-problem.epddl
+
+The solver does not search over EPDDL directly. It grounds the sources first —
+building the initial Kripke model from the problem's finitary S5 theory and
+instantiating each action's event model over the agents — into the IePC JSON
+format it does search over. That is ``plank``'s work, run as a subprocess by
+``plansys2_epddl_grounder``; see :doc:`../concepts/epddl` for the format and
+:doc:`installation` for where the binary comes from.
+
+Grounding happens on first use and again whenever the sources change, so
+editing a domain and re-planning is enough. It can also be done by hand, which
+is the way to inspect the task or to check it into a test:
+
+.. code-block:: bash
+
+   ros2 run plansys2_epddl_grounder ground_epddl \
+     -d <share>/plansys2_epddl_grounder/examples/muddy-children-domain.epddl \
+     -p <share>/plansys2_epddl_grounder/examples/muddy-children-problem.epddl \
+     -o /tmp/muddy-children.json
+
+Several already grounded tasks are checked into the planner package for its
+tests, and can be used directly through ``task_file``:
 
 .. code-block:: text
 
@@ -21,7 +46,7 @@ checked into the planner package for its tests:
    plansys2_epistemic_planner/test/tasks/coin-in-the-box-multipointed.json
    plansys2_epistemic_planner/test/tasks/active-muddy-child.json
 
-``muddy-children-2.json`` is the smallest solvable one and is used below.
+``muddy-children-2.json`` is what grounding the example above produces.
 
 Parameters
 ----------
@@ -37,6 +62,10 @@ Parameters
        plan_solver_plugins: ["EPISTEMIC"]
        EPISTEMIC:
          plugin: "plansys2/EpistemicPlanSolver"
+         epddl_domain: ""
+         epddl_problem: ""
+         epddl_libraries: []
+         plank_command: ""
          task_file: ""
          heuristic: ""
          strategy: ""
@@ -57,26 +86,37 @@ Bringing up the system
      params_file:=<share>/plansys2_bringup/params/plansys2_epistemic_params.yaml
 
 ``model_file`` is required by the launch file and feeds the domain expert. The
-epistemic solver ignores it: the grounded task is self-contained.
+epistemic solver ignores it, but the executor does not: it is where the
+behavior tree that drives the hardware for each action is found. The PDDL and
+the EPDDL describe the same mission from two sides.
 
 Executing a policy also needs the epistemic state, which is a separate node and
-must hold the same task:
+must hold the same task. Point it at the same two files rather than at a copy:
 
 .. code-block:: bash
 
-   ros2 run plansys2_epistemic_executor epistemic_state_node \
-     --ros-args -p task_file:=<the same grounded task JSON>
+   ros2 run plansys2_epistemic_executor epistemic_state_node --ros-args \
+     -p epddl_domain:=<the same domain.epddl> \
+     -p epddl_problem:=<the same problem.epddl>
 
 Requesting a plan
 -----------------
 
-The solver takes the task from whichever of two sources arrives first: the
-``problem`` string of the ``planner/get_plan`` service, when that string is
-itself a grounded task JSON, or the ``task_file`` parameter. A task JSON is
-recognised by its ``planning-task-info`` key.
+The solver takes the task from the first of three sources that is available:
 
-If neither is supplied, the request fails with an explicit message rather than
-attempting a translation from PDDL.
+#. the ``problem`` string of the ``planner/get_plan`` service, when that string
+   is itself a grounded task JSON, recognised by its ``planning-task-info``
+   key. A task in the request describes one call and outranks anything
+   configured;
+#. the ``epddl_domain`` and ``epddl_problem`` parameters, ground as above;
+#. the ``task_file`` parameter.
+
+Setting both EPDDL sources and a ``task_file`` grounds the sources and warns:
+two descriptions of one problem drift apart, so name only one.
+
+If none is supplied, the request fails with an explicit message rather than
+attempting a translation from PDDL, which could not express event models or
+per-agent observability anyway.
 
 .. todo::
 

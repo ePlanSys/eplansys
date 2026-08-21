@@ -7,6 +7,15 @@ repositories:
     type: git
     url: https://github.com/fmrico/popf.git
     version: rolling-devel
+  # The EPDDL grounder plansys2_epddl_grounder runs. It is a plain CMake
+  # project rather than a ROS package, so colcon builds it as one and installs
+  # the binary into <prefix>/bin, which puts `plank` on PATH once the workspace
+  # is sourced. Without it the epistemic packages still build; only the EPDDL
+  # front end is unavailable, and it says so.
+  plank:
+    type: git
+    url: https://github.com/HanielUlises/plank.git
+    version: main
 #   behavior_tree_cpp:
 #     type: git
 #     url: https://github.com/BehaviorTree/BehaviorTree.CPP.git

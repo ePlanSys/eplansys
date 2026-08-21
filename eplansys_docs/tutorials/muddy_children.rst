@@ -12,14 +12,78 @@ The domain is worth running first because it is entirely epistemic: no action
 has an ontic effect, so a classical planner has nothing to work with, and every
 step of the solution is a change in the model rather than in the facts.
 
-The task
---------
+The problem
+-----------
 
-``plansys2_epistemic_planner/test/tasks/muddy-children-2.json`` is the
-two-child instance and the smallest solvable task in the repository. Its
-``planning-task-info`` records two agents and two atoms, and the requirements
-it declares include ``:common-knowledge``, ``:knowing-whether``,
-``:modal-goals`` and ``:modal-preconditions``.
+The two-child instance is the smallest solvable problem in the repository, and
+its EPDDL sources are packaged with the grounder:
+
+.. code-block:: text
+
+   <share>/plansys2_epddl_grounder/examples/muddy-children-domain.epddl
+   <share>/plansys2_epddl_grounder/examples/muddy-children-problem.epddl
+
+The domain is short enough to read in full. One predicate, two events for the
+two answers a child can give, and one action pairing them:
+
+.. code-block:: text
+
+   (:predicates (muddy ?i - agent))
+
+   (:event e-ask-pos
+     :parameters (?i - agent)
+     :precondition (and (muddy ?i) (<Kw. ?i> (muddy ?i))))
+
+   (:event e-ask-neg
+     :parameters (?i - agent)
+     :precondition (and (not (muddy ?i)) (<Kw. ?i> (muddy ?i))))
+
+   (:action ask
+     :parameters (?i - agent)
+     :action-type (public-sensing (e-ask-pos ?i) (e-ask-neg ?i))
+     :observability-conditions (default Fully))
+
+``<Kw. ?i>`` is "it is not the case that ``?i`` knows whether", so a child can
+answer only about a forehead it cannot yet settle — which is what makes the
+puzzle advance. ``public-sensing`` and ``Fully`` come from the ``intermediate``
+action-type library, which the grounder supplies.
+
+The problem file names the agents, states the initial situation as a finitary
+S5 theory, and sets a modal goal:
+
+.. code-block:: text
+
+   (:agents c1 c2)
+
+   (:init
+     (:and
+       (muddy c1) (muddy c2)
+       (:forall (?i ?j - agent | (/= ?i ?j))
+         ([C. All] ([Kw. ?i] (muddy ?j))))))
+
+   (:goal
+     (and ([Kw. c1] (muddy c1)) ([Kw. c2] (muddy c2))))
+
+Both children are muddy, it is common knowledge that each knows whether the
+*other* is muddy, and the goal is that each comes to know whether it is muddy
+itself. Grounding turns that theory into the four worlds — one per assignment
+of muddiness — and the two accessibility relations that make each child unable
+to tell its own state apart.
+
+Grounding it by hand shows exactly that:
+
+.. code-block:: bash
+
+   ros2 run plansys2_epddl_grounder ground_epddl \
+     -d <share>/plansys2_epddl_grounder/examples/muddy-children-domain.epddl \
+     -p <share>/plansys2_epddl_grounder/examples/muddy-children-problem.epddl \
+     -o /tmp/muddy-children-2.json
+
+The result is byte-for-byte the checked-in
+``plansys2_epistemic_planner/test/tasks/muddy-children-2.json``: two agents,
+two atoms, two grounded actions and four initial worlds, declaring
+``:common-knowledge``, ``:knowing-whether``, ``:modal-goals`` and
+``:modal-preconditions`` among its requirements.
 
 ``muddy-children-3.json`` is the asymmetric three-child variant, used in the
 tests for the determinism check.
@@ -88,8 +152,13 @@ state on the same task:
      model_file:=<domain.pddl> \
      params_file:=<share>/plansys2_bringup/params/plansys2_epistemic_params.yaml
 
-   ros2 run plansys2_epistemic_executor epistemic_state_node \
-     --ros-args -p task_file:=<share>/plansys2_epistemic_planner/test/tasks/muddy-children-2.json
+   ros2 run plansys2_epistemic_executor epistemic_state_node --ros-args \
+     -p epddl_domain:=<share>/plansys2_epddl_grounder/examples/muddy-children-domain.epddl \
+     -p epddl_problem:=<share>/plansys2_epddl_grounder/examples/muddy-children-problem.epddl
+
+Set the same two paths under the solver's ``epddl_domain`` and
+``epddl_problem`` parameters, so that the planner and the state are reading one
+description of the problem rather than two.
 
 The PDDL domain still has to declare an ``ask`` action, because that is what
 the executor looks up to find the behavior tree driving the hardware. The

@@ -18,5 +18,24 @@ The packages eplansys_* are original contributions developed as part
 of a terminal work at the Instituto Politécnico Nacional, Mexico, and
 are also distributed under the Apache License, Version 2.0.
 
+The package plansys2_epddl_grounder includes three files copied verbatim
+from other projects, both used at run time rather than compiled:
+
+  libraries/intermediate.epddl
+    The "intermediate" EPDDL action-type library, from the plank
+    toolkit by Alessandro Burigana and Francesco Fabiano.
+    Source:  https://github.com/HanielUlises/plank
+    License: MIT
+
+  examples/muddy-children-domain.epddl
+  examples/muddy-children-problem.epddl
+    EPDDL sources from the epddl-workspace of Epistemic-Robotics.
+    Source:  https://github.com/HanielUlises/Epistemic-Robotics
+    License: Apache License, Version 2.0
+
+plank itself is not vendored. It is fetched and built from source
+through dependency_repos.repos and invoked as a subprocess; its MIT
+license applies to that build.
+
 You may obtain a copy of the Apache License at:
   http://www.apache.org/licenses/LICENSE-2.0

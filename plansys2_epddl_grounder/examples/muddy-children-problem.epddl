@@ -1,0 +1,29 @@
+(define (problem muddy-children-2)
+
+  (:domain muddy-children)
+
+  (:requirements
+    :equality :list-comprehensions
+    :finitary-S5-theories :modal-goals
+  )
+
+  (:agents c1 c2)
+
+  (:init
+    (:and
+      (muddy c1)
+      (muddy c2)
+      (:forall (?i ?j - agent | (/= ?i ?j))
+        ([C. All] ([Kw. ?i] (muddy ?j)))
+      )
+    )
+  )
+
+  (:goal
+    (and
+      ([Kw. c1] (muddy c1))
+      ([Kw. c2] (muddy c2))
+    )
+  )
+
+)

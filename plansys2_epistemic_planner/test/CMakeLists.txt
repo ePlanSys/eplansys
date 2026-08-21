@@ -24,3 +24,12 @@ target_include_directories(epistemic_policy_plan_test PRIVATE ${CMAKE_CURRENT_SO
 target_compile_definitions(epistemic_policy_plan_test PRIVATE
   EPISTEMIC_TEST_TASK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tasks")
 target_link_libraries(epistemic_policy_plan_test ${PROJECT_NAME})
+
+# The plugin end to end: EPDDL in, a Plan out. Skips itself when plank is not
+# built, since the grounder is what makes that route work and it is a run-time
+# dependency rather than a build one.
+ament_add_gtest(epistemic_plan_solver_test plan_solver_test.cpp TIMEOUT 300)
+target_include_directories(epistemic_plan_solver_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(epistemic_plan_solver_test PRIVATE
+  EPISTEMIC_EXAMPLE_MAPPING_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../examples/mappings")
+target_link_libraries(epistemic_plan_solver_test ${PROJECT_NAME})

@@ -19,6 +19,7 @@
   <depend>behaviortree_cpp</depend>
   <depend>plansys2_msgs</depend>
   <depend>plansys2_epistemic_msgs</depend>
+  <depend>plansys2_epddl_grounder</depend>
   <depend>plansys2_epistemic_planner</depend>
   <depend>nlohmann-json-dev</depend>
 
