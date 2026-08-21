@@ -1,5 +1,8 @@
-% Report: the epistemic end-to-end test in plansys2_tests, and the first tests
-% for plansys2_epistemic_bt_builder.
+% Report: executing an epistemic policy end to end.
+%
+% Covers the new tests in plansys2_tests (test_5, test_6), the first test suite
+% for plansys2_epistemic_bt_builder, and the four defects that had to be fixed
+% before a policy could be executed over a real ROS graph at all.
 %
 % Build with: pdflatex epistemic_end_to_end_test.tex
 \documentclass[11pt,a4paper]{article}
@@ -12,7 +15,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{hyperref}
-\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=black}
 
 \lstset{
   basicstyle=\ttfamily\footnotesize,
@@ -22,11 +25,12 @@
   rulecolor=\color{gray!40},
   backgroundcolor=\color{gray!5},
   columns=fullflexible,
+  showstringspaces=false,
 }
 
 \newcommand{\code}[1]{\texttt{\small #1}}
 
-\title{Executing a Policy End to End\\
+\title{Executing a Policy End to End\\[2mm]
 \large An epistemic test in \code{plansys2\_tests}, and the first tests for
 \code{plansys2\_epistemic\_bt\_builder}}
 \author{ePlanSys}
@@ -36,9 +40,240 @@
 \maketitle
 
 \begin{abstract}
-PLACEHOLDER_ABSTRACT
+The epistemic stack could produce a branching policy and could render one as a
+behavior tree, but nothing had ever run one over a live ROS graph, and the
+package that turns a policy into a tree had no tests and was excluded from
+coverage. This report describes the two end-to-end tests now in
+\code{plansys2\_tests} --- one corridor and one depot mission, each run twice
+with the world in different states --- the twelve-test suite added to
+\code{plansys2\_epistemic\_bt\_builder}, and the four defects that had to be
+fixed before any of it could pass. All four were latent: each one is invisible
+to a unit test and fatal to a real execution.
 \end{abstract}
 
 \section{What was asked}
-PLACEHOLDER
+
+Write the epistemic end-to-end test in \code{plansys2\_tests}: drive a
+branching policy through \code{EpistemicBTBuilder} and the
+\code{EpistemicSwitch} node over a real ROS graph, using the multi-pointed
+\code{robot-fleet} fixtures. Alongside it, give
+\code{plansys2\_epistemic\_bt\_builder} the tests it never had, and take it out
+of the coverage ignore list it sits in.
+
+\section{What was already there}
+
+The pieces existed and were individually tested:
+
+\begin{itemize}
+  \item \code{plansys2\_epistemic\_planner} solves a grounded epistemic task
+    with AO* and, under \code{conditional\_plan: policy}, returns a
+    \code{plansys2\_msgs/Plan} whose items carry the branch structure
+    (\code{children}, \code{outcomes}, \code{sensing},
+    \code{knowledge\_requirements}, \code{epistemic\_action}).
+  \item \code{plansys2\_epistemic\_executor} holds the reading of those fields
+    (\code{Policy}), the rendering of a policy as a tree (\code{policy\_to\_bt}),
+    the four behavior tree nodes, and the \code{epistemic\_state} node that
+    answers knowledge questions and performs the DEL update.
+  \item \code{plansys2\_epistemic\_bt\_builder} is the \code{BTBuilder} plugin
+    that joins the two --- and had no tests at all.
+\end{itemize}
+
+What was missing was the join itself: nobody had ever asked a real
+\code{ExecutorNode} to load that builder, render a real policy, and run it
+against real action performers.
+
+\section{Four defects the end-to-end path exposed}
+
+Each of these is fixed in this change set. None of them could have been found
+by testing a component on its own.
+
+\subsection*{1. A builder loaded by name was never initialised}
+
+\code{ExecutorNode::get\_tree\_from\_plan} called \code{initialize()} only for
+\code{SimpleBTBuilder} and \code{STNBTBuilder}. Any other builder --- which is
+to say, any builder loaded through the \code{bt\_builder\_plugin} parameter that
+the plugin mechanism exists to support --- was constructed and used
+uninitialised. The configured action template and time precision were silently
+discarded. Fixed by initialising the unrecognised case as well.
+
+\subsection*{2. A template that cannot hold a policy was accepted}
+
+With (1) fixed, the executor now hands the epistemic builder whatever action
+template it is configured with, and its default is PlanSys2's own --- which has
+no \code{CONTINUATIONS} placeholder. Rendering a policy into it produces a tree
+holding only the root action, which runs, succeeds, and leaves the mission
+undone: the worst kind of failure, because it reports success.
+\code{EpistemicBTBuilder::initialize} now refuses such a template, warns, and
+falls back to the packaged one.
+
+\subsection*{3. An empty policy rendered an unparseable tree}
+
+A planner handed a goal that already holds returns an empty plan. The rendering
+of an empty policy with no epistemic goal was
+\code{<Sequence name="EpistemicPolicy"/>} with no children, which
+BehaviorTree.CPP rejects outright --- so ``there is nothing to do'' crashed tree
+creation. \code{policy\_to\_bt} now emits \code{<AlwaysSuccess/>} in that case.
+
+\subsection*{4. A missing exported dependency}
+
+\code{plansys2\_epistemic\_planner} and \code{plansys2\_epistemic\_executor}
+carry \code{nlohmann\_json} in their exported targets' link interfaces but did
+not name it in \code{ament\_export\_dependencies}. Nothing noticed while every
+consumer happened to \code{find\_package} it for its own reasons;
+\code{plansys2\_tests} is the first that does not, and it failed to configure.
+Both packages now export it.
+
+\section{The gap that had to be filled: where an observation comes from}
+
+\code{ApplyEpistemicUpdate} takes the observed outcome on an \code{observed}
+port, and the packaged template leaves it unbound --- deliberately, since what a
+robot saw is domain-specific and PlanSys2 carries nothing back from an action
+performer. The epistemic state can name the outcome itself only when its model
+already designates a single world, and both fleet fixtures designate several:
+that is what makes them worth testing with, and it means the observation must
+come from outside.
+
+The test therefore supplies what a deployment would have to supply:
+
+\begin{itemize}
+  \item \code{plansys2\_tests/behavior\_trees/observing\_action\_bt.xml} --- the
+    packaged epistemic template with one node added and \code{observed} bound.
+  \item \code{ObservedOutcome} (\code{plansys2\_tests\_observation\_bt\_nodes},
+    loaded by the executor through \code{bt\_node\_plugins}) --- a stand-in for
+    a performer that reports: it reads \code{action=outcome} entries from a
+    latched topic and reports the one matching its own action. Per action,
+    because the depot has two things to find out and they need not agree.
+\end{itemize}
+
+\section{What the tests do}
+
+\subsection*{\code{plansys2\_tests/test\_5} --- one corridor, one branch}
+
+The full graph is brought up in one process: domain expert, problem expert,
+planner (with the \code{plansys2/EpistemicPlanSolver} plugin pointed at
+\code{robot-fleet.json} and its action mapping), executor (with
+\code{bt\_builder\_plugin: EpistemicBTBuilder} and both node libraries),
+\code{epistemic\_state} loaded from the same task, four fake action performers,
+and the execution logger. The classical half of the mission is
+\code{test\_5/pddl/test\_5.pddl}, which records nothing about the corridor: a
+predicate for ``blocked'' would be recording knowledge as a fact.
+
+The planner returns a four-node policy. The same mission is then run twice,
+differing only in what the corridor turns out to be, and the two runs must
+execute different actions: \code{report\_clear} in one and
+\code{report\_blocked} in the other, with the branch not taken never running.
+
+\subsection*{\code{plansys2\_tests/test\_6} --- two corridors, a branch inside a branch}
+
+The depot mission: three robots, two corridors, an initial model designating
+all four combinations of blocked and clear, and a twelve-node policy with a
+switch inside a switch's continuation. The two runs report the corridors in
+opposite states and share no leaf.
+
+\subsection*{\code{plansys2\_epistemic\_bt\_builder/test} --- twelve tests}
+
+The plugin's contract with \code{plansys2\_executor}: that a branching policy
+renders one switch with its outcomes in order and both continuations present;
+that a plan with no branches renders as the flat sequence PlanSys2 would build;
+that a malformed policy is reported by returning no tree; that the action id
+written into the tree is exactly the one the executor keys its action map by
+(\code{policy\_action\_id} against \code{BTBuilder::to\_action\_id}); that the
+template refusal of defect~(2) works; that the dotgraph is drawn from the
+policy, with the observation labelling each edge, the knowledge guard drawn
+with the node it guards, and colours taken from the executor's action map; and
+that pluginlib can find the class under the name the executor asks for. Every
+rendered tree is handed to the real BehaviorTree.CPP parser.
+
+\section{Results}
+
+Verified in the \code{ros:rolling} container, the same environment
+\code{.github/workflows/rolling.yaml} builds in.
+
+\begin{center}
+\begin{tabular}{llr}
+\toprule
+Suite & Result & Time \\
+\midrule
+\code{epistemic\_bt\_builder\_test} (12 tests) & all passed & 0.16\,s \\
+\code{test\_5} (2 tests) & all passed & 32.3\,s \\
+\code{test\_6} (2 tests) & all passed & 56.6\,s \\
+\code{plansys2\_epistemic\_executor} (existing suites) & all passed & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The interesting part is the log, which shows the model being narrowed by what
+was executed. From the depot run with north blocked and south clear:
+
+\begin{lstlisting}
+[epistemic_state] applied goto-north_r1: 4 worlds, 4 designated
+[epistemic_state] applied inspect-north_r1 -> e-inspect-north-blocked: 4 worlds, 2 designated
+[epistemic_state] applied report-north-blocked_r1: 4 worlds, 2 designated
+[epistemic_state] applied goto-south_r2: 4 worlds, 2 designated
+[epistemic_state] applied inspect-south_r2 -> e-inspect-south-clear: 4 worlds, 1 designated
+[epistemic_state] applied report-south-clear_r2: 4 worlds, 1 designated
+[goal] (and (Kw r1 blocked-north) ... (Kw r3 blocked-south)) holds
+\end{lstlisting}
+
+Four candidate worlds at the start, two after the first sensing, one after the
+second, and the goal checked against the state that actually resulted rather
+than the one planning assumed.
+
+\section{Coverage}
+
+\code{plansys2\_epistemic\_bt\_builder} is removed from the
+\code{packages-ignore} list in the \code{lcov-result} configuration of
+\code{.github/workflows/rolling.yaml}. That list exists for packages producing
+no \code{.gcda} at all; with a gtest suite the builder now produces one, and
+leaving it there would discard the coverage it generates.
+
+\section{Fixtures}
+
+The mission fixtures --- \code{robot-fleet.json},
+\code{robot-fleet-depot.json} and their action mappings --- exist only on the
+unmerged branch \code{feature/epddl-front-end} (commit \code{58bb21b9}). They
+are restored into their canonical paths in the working tree so the tests can
+run, but they are not this change's to introduce: when that branch merges, these
+files should come from it rather than from here. Nothing else in the change set
+depends on that branch.
+
+\section{Limitations}
+
+\begin{itemize}
+  \item The two missions are the two fixtures. A third case worth having is the
+    negative one: an outcome the policy does not plan for, where
+    \code{EpistemicSwitch} must fail rather than guess. It needs a performer
+    that reports something the model cannot account for, and is not written.
+  \item \code{ObservedOutcome} is a test's stand-in for a sensor. A deployment
+    still has to bind \code{observed} to its own performers; nothing in the
+    stack does it automatically, and that remains the one piece of wiring a
+    domain must supply itself.
+  \item The tests build only against ROS~2 rolling. The Humble CI job stops
+    before \code{plansys2\_executor}, as it did before this change.
+\end{itemize}
+
+\section{Files}
+
+\subsection*{Added}
+\begin{itemize}
+  \item \code{plansys2\_epistemic\_bt\_builder/test/} --- the suite and its CMake.
+  \item \code{plansys2\_tests/test\_5/}, \code{plansys2\_tests/test\_6/} --- the
+    two missions, their PDDL and their READMEs.
+  \item \code{plansys2\_tests/behavior\_trees/observing\_action\_bt.xml},
+    \code{plansys2\_tests/src/plansys2\_tests/behavior\_tree/observation\_bt\_node.cpp}.
+  \item The four fixture files, restored (see above).
+\end{itemize}
+
+\subsection*{Changed}
+\begin{itemize}
+  \item \code{plansys2\_executor/src/plansys2\_executor/ExecutorNode.cpp} --- defect (1).
+  \item \code{plansys2\_epistemic\_bt\_builder/src/epistemic\_bt\_builder.cpp} --- defect (2).
+  \item \code{plansys2\_epistemic\_executor/src/policy\_bt.cpp} --- defect (3).
+  \item \code{plansys2\_epistemic\_planner/CMakeLists.txt},
+    \code{plansys2\_epistemic\_executor/CMakeLists.txt} --- defect (4).
+  \item \code{plansys2\_epistemic\_bt\_builder/\{CMakeLists.txt,package.xml\}},
+    \code{plansys2\_tests/\{CMakeLists.txt,package.xml\}} --- build wiring.
+  \item \code{.github/workflows/rolling.yaml} --- coverage.
+\end{itemize}
+
 \end{document}

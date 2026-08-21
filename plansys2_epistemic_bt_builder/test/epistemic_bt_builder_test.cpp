@@ -66,7 +66,7 @@ PlanItem action(
 Plan corridor_policy()
 {
   Plan plan;
-  plan.items.push_back(action("(goto_junction r1)", 0.0f, {1}));
+  plan.items.push_back(action("(goto_junction r1)", 0.0f, {1}, {"e-goto-junction"}));
   plan.items.push_back(action("(inspect_corridor r1)", 30.0f, {2, 3}, {"e-clear", "e-blocked"}));
   plan.items.push_back(action("(report_clear r1)", 35.0f));
   plan.items.push_back(action("(report_blocked r1)", 35.0f));
