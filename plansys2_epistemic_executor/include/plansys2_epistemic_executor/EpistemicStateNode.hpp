@@ -23,6 +23,8 @@
 #include "plansys2_epistemic_msgs/srv/check_formula.hpp"
 #include "plansys2_epistemic_msgs/srv/load_task.hpp"
 #include "plansys2_epistemic_planner/state.hpp"
+#include "plansys2_epddl_grounder/epddl_grounder.hpp"
+#include "plansys2_epddl_grounder/parameters.hpp"
 #include "plansys2_epistemic_planner/task.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
@@ -98,6 +100,12 @@ private:
   /// The loaded task and the model as it now stands. Absent until a task is
   /// loaded, which is why every callback checks before answering: a confident
   /// answer from an empty model would be worse than an error.
+  /// The EPDDL sources this node was given, and the grounder that turns them
+  /// into a task. Shared with the planner through the parameter names alone:
+  /// both are pointed at the same files, and neither grounds for the other.
+  EpddlParameterNames epddl_parameter_names_;
+  EpddlGrounder grounder_;
+
   std::optional<PlanningTask> task_;
   std::optional<EpistemicState> state_;
 };

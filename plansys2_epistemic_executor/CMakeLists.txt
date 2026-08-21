@@ -12,6 +12,7 @@ find_package(std_msgs REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(plansys2_msgs REQUIRED)
 find_package(plansys2_epistemic_msgs REQUIRED)
+find_package(plansys2_epddl_grounder REQUIRED)
 find_package(plansys2_epistemic_planner REQUIRED)
 # Pulled in transitively: the planner library exports it on its interface.
 find_package(nlohmann_json 3.10 REQUIRED)
@@ -43,6 +44,7 @@ target_link_libraries(${PROJECT_NAME}
   ${PROJECT_NAME}_policy
   ${plansys2_msgs_TARGETS}
   ${plansys2_epistemic_msgs_TARGETS}
+  plansys2_epddl_grounder::plansys2_epddl_grounder
   plansys2_epistemic_planner::plansys2_epistemic_planner
   behaviortree_cpp::behaviortree_cpp
   rclcpp::rclcpp
@@ -96,6 +98,7 @@ ament_export_dependencies(
   behaviortree_cpp
   plansys2_msgs
   plansys2_epistemic_msgs
+  plansys2_epddl_grounder
   plansys2_epistemic_planner
 )
 

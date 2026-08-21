@@ -23,6 +23,14 @@ We hope that this software helps to include formal epistemic reasoning in
 more Robotics projects, offering a practical bridge between DEL theory and
 ROS2 deployment.
 
+An epistemic problem is written in EPDDL — a domain and a problem file, the
+epistemic counterparts of a PDDL domain and problem — and handed to the system
+the way classical PlanSys2 is handed a `.pddl` domain. Grounding those sources
+into the Kripke model the planner searches over is done by
+[plank](https://github.com/HanielUlises/plank), the EPDDL toolkit by
+Alessandro Burigana and Francesco Fabiano, which `plansys2_epddl_grounder`
+builds and runs for you.
+
 We want to invite you to contribute to this Open Source project!
 
 **Documentation: [eplansys.github.io/eplansys](https://eplansys.github.io/eplansys)**

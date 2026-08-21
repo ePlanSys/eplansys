@@ -10,22 +10,27 @@ output.
 What the solver reads
 ---------------------
 
-``EpistemicPlanSolver`` reads a grounded epistemic planning task in the IePC
-JSON format. It does not parse EPDDL, and it does not attempt to translate the
-PDDL problem held by the domain expert: PDDL cannot express event models or
-per-agent observability, so no such translation exists. A request that supplies
-neither a task JSON nor a ``task_file`` fails with that explanation rather than
-with a parse error.
+``EpistemicPlanSolver`` searches over a *grounded* epistemic planning task in
+the IePC JSON format. EPDDL is what a user writes; the grounded task is what
+the search runs on, and ``plansys2_epddl_grounder`` is the step between them.
 
-The task arrives by whichever of two routes comes first:
+There is deliberately no translation from the PDDL problem the domain expert
+holds: PDDL cannot express event models or per-agent observability, so no such
+translation exists. A request that supplies no epistemic problem at all fails
+with that explanation rather than with a parse error.
+
+The task arrives by the first of three routes that is available:
 
 * the ``problem`` string of ``planner/get_plan``, when that string is itself a
-  grounded task JSON, recognised by its ``planning-task-info`` key, or
-* the ``task_file`` parameter, an absolute path to the same thing on disk.
+  grounded task JSON, recognised by its ``planning-task-info`` key;
+* the ``epddl_domain`` and ``epddl_problem`` parameters, ground on first use
+  and again whenever the files change;
+* the ``task_file`` parameter, an absolute path to a grounded task on disk.
 
 The ``model_file`` the launch file requires still feeds the domain expert, and
 is what the executor consults to find the behavior tree for an action. The
-epistemic solver ignores it.
+epistemic solver ignores it: the PDDL states what the robot can do, the EPDDL
+states what the agents know.
 
 Structure of a grounded task
 ----------------------------
@@ -72,18 +77,40 @@ repository include ``:common-knowledge``, ``:disjunctive-list-formulas``,
 Grounding
 ---------
 
-The grounded tasks in this repository were produced from EPDDL sources by an
-external grounder and are checked in verbatim. The EPDDL sources live in the
-``epddl-workspace`` of the `Epistemic-Robotics
-<https://github.com/HanielUlises/epistemic-robotics>`_ repository, and the
-grounder is invoked as ``plank ground``.
+Grounding is done by `plank <https://github.com/HanielUlises/plank>`_, the
+EPDDL toolkit, which ``plansys2_epddl_grounder`` runs as a subprocess:
 
-.. todo::
+.. code-block:: bash
 
-   The EPDDL grammar, and the installation and full command line of the
-   ``plank`` grounder, are not part of this repository and are not documented
-   here. Add a reference to the grounder's own documentation, or a summary of
-   the subset of EPDDL these tasks use, once that source is fixed.
+   plank export -d <domain.epddl> -p <problem.epddl> -l <library.epddl>... \
+                -o <output directory>
+
+plank is listed in ``dependency_repos.repos``, so building the workspace builds
+it and sourcing the workspace puts it on PATH; the ``plank_command`` parameter
+and the ``PLANK`` environment variable name it explicitly for an installation
+outside the workspace. Nothing else in the tree links against it — the epistemic
+packages build and their tests pass without it, and only the EPDDL front end is
+unavailable, which it reports rather than failing silently.
+
+A domain declares the action-type libraries it uses in its
+``:action-type-libraries`` clause, and plank resolves those names only against
+library files it is handed. ``plansys2_epddl_grounder`` therefore ships a copy
+of the ``intermediate`` library, which every domain in this repository declares,
+and supplies it when ``epddl_libraries`` is empty. A domain using a different
+library must name it.
+
+Two properties of plank's error reporting are worth knowing, because they shape
+what a grounding failure looks like in a ROS log: it prints the offending line
+of the specification, and it terminates on a signal rather than exiting with a
+status. The grounder therefore judges success by whether the task file was
+written, and passes plank's own output through as the error.
+
+The EPDDL sources for the checked-in tasks live in the ``epddl-workspace`` of
+the `Epistemic-Robotics <https://github.com/HanielUlises/epistemic-robotics>`_
+repository; the smallest of them, muddy children, is also packaged under
+``<share>/plansys2_epddl_grounder/examples``. The EPDDL grammar itself is
+specified in the `EPDDL Official Guideline <https://arxiv.org/abs/2601.20969>`_
+and is not restated here.
 
 Formula syntax
 --------------

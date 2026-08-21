@@ -9,6 +9,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(plansys2_core REQUIRED)
+find_package(plansys2_epddl_grounder REQUIRED)
 find_package(plansys2_msgs REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(nlohmann_json 3.10 REQUIRED)
@@ -37,6 +38,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
   plansys2_core::plansys2_core
+  plansys2_epddl_grounder::plansys2_epddl_grounder
   ${plansys2_msgs_TARGETS}
   pluginlib::pluginlib
   rclcpp::rclcpp
@@ -78,6 +80,7 @@ ament_export_dependencies(
   rclcpp
   rclcpp_lifecycle
   plansys2_core
+  plansys2_epddl_grounder
   plansys2_msgs
   pluginlib
 )

@@ -15,8 +15,10 @@ name: epistemic-planner (humble)
 #     use rclcpp::experimental::executors, which does not exist in Humble.
 #     Widening the package list here will fail until those are ported.
 #
-# This chain needs no source dependencies, so no vcs-repo-file-url: popf and
-# cascade_lifecycle are only required by packages further down the graph.
+# The one source dependency this chain has is plank, the EPDDL grounder that
+# plansys2_epddl_grounder runs; popf and cascade_lifecycle are only required by
+# packages further down the graph, and rosdep skips them because nothing named
+# here depends on them.
 
 on:
   push:
@@ -62,6 +64,11 @@ jobs:
                   /opt/ros/humble/lib/libbehaviortree_cpp.so
           fi
 
+      - name: Install plank's build dependencies
+        # plank is a plain CMake project with no package.xml, so rosdep has
+        # nothing to resolve for it and Boost has to be installed by hand.
+        run: apt-get update && apt-get install -y libboost-filesystem-dev
+
       - name: Build and test
         uses: ros-tooling/action-ros-ci@0.4.5
         with:
@@ -69,7 +76,8 @@ jobs:
           # plansys2_msgs and the planner, not on plansys2_executor. Only
           # plansys2_epistemic_bt_builder does, which is why it is a separate
           # package and why it is absent from this list — see rolling.yaml.
-          package-name: plansys2_epistemic_planner plansys2_epistemic_msgs plansys2_epistemic_executor plansys2_aletheia_plan_solver
+          package-name: plank plansys2_epddl_grounder plansys2_epistemic_planner plansys2_epistemic_msgs plansys2_epistemic_executor plansys2_aletheia_plan_solver
+          vcs-repo-file-url: ${GITHUB_WORKSPACE}/dependency_repos.repos
           target-ros2-distro: humble
           # action-ros-ci runs 'colcon lcov-result' and 'colcon
           # coveragepy-result' unless this is off, and the ros:humble image

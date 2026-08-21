@@ -12,6 +12,7 @@
   <depend>rclcpp</depend>
   <depend>rclcpp_lifecycle</depend>
   <depend>plansys2_core</depend>
+  <depend>plansys2_epddl_grounder</depend>
   <depend>plansys2_msgs</depend>
   <depend>pluginlib</depend>
   <depend>nlohmann-json-dev</depend>

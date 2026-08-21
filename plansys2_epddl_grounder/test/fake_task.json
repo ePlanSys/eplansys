@@ -1,0 +1,9 @@
+{
+    "planning-task-info": {
+        "problem": "fake",
+        "domain": "fake",
+        "agents-number": 1,
+        "atoms-number": 1,
+        "actions-number": 0
+    }
+}

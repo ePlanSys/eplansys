@@ -186,6 +186,7 @@ void EpistemicPlanSolver::configure(
   policy_file_parameter_name_ = plugin_name + ".policy_file";
   conditional_parameter_name_ = plugin_name + ".conditional_plan";
   action_mapping_parameter_name_ = plugin_name + ".action_mapping";
+  epddl_parameter_names_ = EpddlParameterNames(plugin_name);
 
   const auto declare = [&](const std::string & name, const std::string & def) {
       if (!lc_node_->has_parameter(name)) {
@@ -199,6 +200,13 @@ void EpistemicPlanSolver::configure(
   declare(policy_file_parameter_name_, "");
   declare(conditional_parameter_name_, "flatten");
   declare(action_mapping_parameter_name_, "");   // empty: naming convention
+
+  declare_epddl_parameters(lc_node_, epddl_parameter_names_);
+
+  // Built once, so that its cache survives between calls: the planner is
+  // asked for a task on every get_plan, and unchanged sources must not mean
+  // another fork of plank.
+  grounder_ = EpddlGrounder(read_plank_command(lc_node_, epddl_parameter_names_));
 }
 
 std::string EpistemicPlanSolver::parameter(const std::string & name) const
@@ -210,15 +218,38 @@ std::string EpistemicPlanSolver::parameter(const std::string & name) const
 }
 
 std::optional<PlanningTask> EpistemicPlanSolver::resolve_task(
-  const std::string & problem, std::string & error) const
+  const std::string & problem, std::string & error)
 {
+  const auto spec = read_epddl_spec(lc_node_, epddl_parameter_names_);
+  const std::string task_file = parameter(task_file_parameter_name_);
+
   try {
+    // A task arriving in the request describes this one call and outranks
+    // anything configured, which is what makes a one-off task possible
+    // without reconfiguring the planner node.
     if (is_epistemic_task_json(problem)) {
       TempTask tmp(problem);
       return load_task(tmp.path());
     }
 
-    const std::string task_file = parameter(task_file_parameter_name_);
+    if (!spec.empty()) {
+      if (!task_file.empty()) {
+        RCLCPP_WARN(
+          lc_node_->get_logger(),
+          "[epistemic] both EPDDL sources and a task_file are set; grounding "
+          "the sources and ignoring %s. Two descriptions of one problem drift "
+          "apart, so name only one.", task_file.c_str());
+      }
+
+      const auto ground = grounder_.ground(spec);
+      if (!ground.ok) {
+        error = ground.error;
+        return std::nullopt;
+      }
+      TempTask tmp(ground.task_json);
+      return load_task(tmp.path());
+    }
+
     if (!task_file.empty()) {
       if (!std::filesystem::exists(task_file)) {
         error = "task_file does not exist: " + task_file;
@@ -232,10 +263,11 @@ std::optional<PlanningTask> EpistemicPlanSolver::resolve_task(
   }
 
   error =
-    "the problem string is not a grounded epistemic task and no task_file "
-    "parameter is set. This planner reads the IePC epistemic JSON format; "
-    "PDDL cannot express event models or per-agent observability, so no "
-    "translation from the PDDL problem is attempted.";
+    "no epistemic task: the problem string is not a grounded task, and "
+    "neither the epddl_domain/epddl_problem pair nor task_file is set. This "
+    "planner reads EPDDL, ground through plank, or the grounded IePC JSON "
+    "directly; PDDL cannot express event models or per-agent observability, "
+    "so no translation from the PDDL problem is attempted.";
   return std::nullopt;
 }
 

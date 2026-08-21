@@ -60,8 +60,8 @@ interface and is exported to ``plansys2_core`` by the plugin description in
        EPISTEMIC:
          plugin: "plansys2/EpistemicPlanSolver"
 
-All of its parameters are strings, declared under the plugin's own name at
-configure time:
+Its parameters are declared under the plugin's own name at configure time, and
+are strings except where noted:
 
 .. list-table::
    :header-rows: 1
@@ -70,10 +70,26 @@ configure time:
    * - Parameter
      - Default
      - Meaning
+   * - ``epddl_domain``
+     - empty
+     - Path to the EPDDL domain. With ``epddl_problem``, the ordinary way to
+       state the problem, and the epistemic counterpart of ``model_file``.
+   * - ``epddl_problem``
+     - empty
+     - Path to the EPDDL problem.
+   * - ``epddl_libraries``
+     - empty
+     - Action-type libraries the domain declares. Empty supplies the
+       ``intermediate`` library packaged with ``plansys2_epddl_grounder``.
+       This one is a string array; the rest are strings.
+   * - ``plank_command``
+     - empty
+     - Path to the plank binary. Empty takes ``$PLANK``, then PATH.
    * - ``task_file``
      - empty
-     - Absolute path to a grounded task JSON. Empty requires the task to
-       arrive in the planning request instead.
+     - Absolute path to an already grounded task JSON. Ignored when the EPDDL
+       sources are set; with neither, the task must arrive in the planning
+       request instead.
    * - ``heuristic``
      - empty
      - Pins a heuristic: ``ug``, ``ed``, ``ks``, ``wc``, ``rpg`` or ``radd``.
@@ -250,10 +266,11 @@ model at a time, for one grounded task, and answers three services.
    * - Service
      - Question
    * - ``epistemic_state/load_task``
-     - Be the model of this grounded task. The task is supplied inline as
-       ``task_json`` or by path as ``task_file``, and loading resets the model
-       to that task's initial state. The response reports the number of
-       worlds, agents and actions loaded.
+     - Be the model of this task. The task is supplied inline as ``task_json``,
+       by path as ``task_file``, or as the EPDDL sources to ground
+       (``epddl_domain``, ``epddl_problem``, ``epddl_libraries``); loading
+       resets the model to that task's initial state. The response reports the
+       number of worlds, agents and actions loaded.
    * - ``epistemic_state/check_formula``
      - Does this formula hold now? The response distinguishes a failure, no
        task loaded or a formula that does not parse, from the answer itself.
@@ -263,10 +280,13 @@ model at a time, for one grounded task, and answers three services.
        may carry the observed outcome; the response reports the outcome that
        occurred and the size of the resulting state.
 
-It also declares one parameter, ``task_file``, and publishes on
-``epistemic_state/state`` with transient-local durability. A task named at
-configure time is the common case: one mission, one task, loaded before
-anything asks a question about it.
+It declares the same four EPDDL parameters as the solver, plus ``task_file``,
+and publishes on ``epistemic_state/state`` with transient-local durability. A
+task named at configure time is the common case: one mission, one task, loaded
+before anything asks a question about it. Pointing this node and the planner at
+the same pair of ``.epddl`` files is what keeps the policy and the model it is
+checked against expressed in one vocabulary — the failure the arrangement is
+there to prevent is a policy naming an action the state has never heard of.
 
 The state advances by executed actions rather than by watching the world, which
 is what makes it a belief state rather than a log. When it disagrees with what
@@ -307,6 +327,9 @@ Package boundaries
    * - Package
      - Contents
      - Depends on ``plansys2_executor``
+   * - ``plansys2_epddl_grounder``
+     - The EPDDL front end: runs plank, caches the result
+     - No
    * - ``plansys2_epistemic_msgs``
      - The three service definitions
      - No

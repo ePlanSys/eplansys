@@ -20,6 +20,8 @@
 #include <string>
 
 #include "plansys2_core/PlanSolverBase.hpp"
+#include "plansys2_epddl_grounder/epddl_grounder.hpp"
+#include "plansys2_epddl_grounder/parameters.hpp"
 #include "plansys2_epistemic_planner/search.hpp"
 #include "plansys2_epistemic_planner/task.hpp"
 #include "plansys2_msgs/msg/plan.hpp"
@@ -40,10 +42,10 @@ namespace plansys2
  *    over pointed Kripke models and reads a grounded epistemic task in the
  *    IePC JSON format; there is no PDDL surface for event models or per-agent
  *    observability, so there is no translation to perform. The plugin
- *    therefore takes the epistemic task from the `problem` string when that
- *    string is epistemic JSON, or from a task file named by parameter. A
- *    genuine PDDL problem is rejected with an explanatory error rather than
- *    silently mis-planned.
+ *    therefore takes the epistemic task from EPDDL sources named by
+ *    parameter, from a grounded task file, or from the `problem` string when
+ *    that string is itself epistemic JSON. A genuine PDDL problem is rejected
+ *    with an explanatory error rather than silently mis-planned.
  *
  * 2. Aletheia's action names and PlanSys2's are different vocabularies. plank
  *    grounds an action into a single token ("pickup-A-hold_r2"), while the
@@ -60,8 +62,18 @@ namespace plansys2
  *
  * Parameters, all prefixed with the plugin name:
  *
- *   task_file        Path to a grounded epistemic task JSON. Used when the
- *                    `problem` string is not itself epistemic JSON.
+ *   epddl_domain     Path to an EPDDL domain. With epddl_problem, this is
+ *   epddl_problem    the ordinary way to state the planning problem, and the
+ *                    counterpart of classical PlanSys2's model_file: the
+ *                    sources are ground through plank on first use and again
+ *                    whenever they change.
+ *   epddl_libraries  Action-type libraries the domain declares. Empty
+ *                    (default) supplies the packaged `intermediate` library.
+ *   plank_command    Path to the plank binary. Empty (default) takes the
+ *                    PLANK environment variable, then PATH.
+ *   task_file        Path to an already grounded epistemic task JSON, for a
+ *                    task ground elsewhere. Ignored when EPDDL sources are
+ *                    set.
  *   heuristic        ug | ed | ks | wc | rpg | radd. Empty (default) leaves
  *                    the choice to the selection policy.
  *   strategy         gbfs | ehc | aostar. Empty (default) as above.
@@ -101,9 +113,13 @@ public:
 
 private:
   /// Resolve the grounded epistemic task: `problem` if it is epistemic JSON,
-  /// otherwise the configured task file. Nullopt with `error` set on failure.
+  /// otherwise the configured EPDDL sources, otherwise the configured task
+  /// file. Nullopt with `error` set on failure.
+  ///
+  /// Not const because grounding caches: the sources are re-read only when
+  /// they change, and every get_plan would otherwise fork plank again.
   std::optional<PlanningTask> resolve_task(
-    const std::string & problem, std::string & error) const;
+    const std::string & problem, std::string & error);
 
   std::string parameter(const std::string & name) const;
 
@@ -113,6 +129,9 @@ private:
   std::string policy_file_parameter_name_;
   std::string conditional_parameter_name_;
   std::string action_mapping_parameter_name_;
+
+  EpddlParameterNames epddl_parameter_names_;
+  EpddlGrounder grounder_;
 };
 
 }  // namespace plansys2

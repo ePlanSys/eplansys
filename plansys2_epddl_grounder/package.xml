@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>plansys2_epddl_grounder</name>
+  <version>0.1.0</version>
+  <description>
+    The EPDDL front end: turns an EPDDL domain, problem and action-type
+    libraries into the grounded task JSON that plansys2_epistemic_planner and
+    the epistemic state read, by running the `plank export` toolchain as a
+    subprocess. This is what lets a launch file be given .epddl sources, the
+    way classical PlanSys2 is given a .pddl domain, rather than a grounded task
+    produced by hand outside the workspace.
+  </description>
+  <maintainer email="thesis@eplansys.dev">Thesis Dev</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>ament_index_cpp</depend>
+  <depend>plansys2_pddl_parser</depend>
+
+  <!-- plank is not a ROS package and has no rosdep key. It is fetched and
+       built from source through dependency_repos.repos, which puts the
+       binary on PATH once the workspace is sourced; the grounder also
+       accepts an explicit path for an installation outside the workspace. -->
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

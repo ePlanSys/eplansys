@@ -70,6 +70,7 @@ EpistemicStateNode::EpistemicStateNode()
 : rclcpp_lifecycle::LifecycleNode("epistemic_state")
 {
   declare_parameter<std::string>("task_file", "");
+  declare_epddl_parameters(this, epddl_parameter_names_);
 }
 
 EpistemicStateNode::CallbackReturnT
@@ -98,10 +99,42 @@ EpistemicStateNode::on_configure(const rclcpp_lifecycle::State & state)
   state_pub_ = create_publisher<std_msgs::msg::String>(
     "epistemic_state/state", rclcpp::QoS(10).transient_local());
 
+  grounder_ = EpddlGrounder(read_plank_command(this, epddl_parameter_names_));
+
   // A task named at configure time is the common case: one mission, one task,
-  // loaded before anything asks a question about it.
+  // loaded before anything asks a question about it. EPDDL sources are the
+  // ordinary way to name it — the same pair of paths the planner is given, so
+  // that the policy and the state it is checked against come from one source
+  // — and a pre-ground task_file is the alternative.
+  const auto spec = read_epddl_spec(this, epddl_parameter_names_);
   const auto task_file = get_parameter("task_file").as_string();
-  if (!task_file.empty()) {
+
+  if (!spec.empty() && !task_file.empty()) {
+    RCLCPP_WARN(
+      get_logger(),
+      "[epistemic_state] both EPDDL sources and a task_file are set; "
+      "grounding the sources and ignoring %s.", task_file.c_str());
+  }
+
+  if (!spec.empty()) {
+    const auto ground = grounder_.ground(spec);
+    if (!ground.ok) {
+      RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", ground.error.c_str());
+      return CallbackReturnT::FAILURE;
+    }
+    try {
+      TempTask temporary(ground.task_json);
+      task_ = load_task(temporary.path());
+      state_ = task_->init;
+      RCLCPP_INFO(
+        get_logger(), "[epistemic_state] ground %s: %zu worlds, %zu agents",
+        spec.problem.c_str(), static_cast<std::size_t>(state_->num_worlds),
+        task_->num_agents());
+    } catch (const std::exception & e) {
+      RCLCPP_ERROR(get_logger(), "[epistemic_state] could not load task: %s", e.what());
+      return CallbackReturnT::FAILURE;
+    }
+  } else if (!task_file.empty()) {
     try {
       task_ = load_task(task_file);
       state_ = task_->init;
@@ -168,9 +201,24 @@ void EpistemicStateNode::load_task_callback(
       task_ = load_task(temporary.path());
     } else if (!request->task_file.empty()) {
       task_ = load_task(request->task_file);
+    } else if (!request->epddl_domain.empty() || !request->epddl_problem.empty()) {
+      EpddlSpec spec;
+      spec.domain = request->epddl_domain;
+      spec.problem = request->epddl_problem;
+      spec.libraries = request->epddl_libraries;
+
+      const auto ground = grounder_.ground(spec);
+      if (!ground.ok) {
+        response->success = false;
+        response->error = ground.error;
+        RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", response->error.c_str());
+        return;
+      }
+      TempTask temporary(ground.task_json);
+      task_ = load_task(temporary.path());
     } else {
       response->success = false;
-      response->error = "neither task_json nor task_file was given";
+      response->error = "no task given: set task_json, task_file, or the EPDDL sources";
       return;
     }
 
