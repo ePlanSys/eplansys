@@ -143,22 +143,42 @@ PDDL domain declares, and the next domain will not be so forgiving.
 Running it
 ----------
 
-Start the system with the epistemic parameters file, and start the epistemic
-state on the same task:
+Copy the epistemic parameters file, and fill the same two paths into both the
+solver's parameters and the epistemic state's:
+
+.. code-block:: yaml
+
+   planner:
+     ros__parameters:
+       EPISTEMIC:
+         epddl_domain: "<share>/plansys2_epddl_grounder/examples/muddy-children-domain.epddl"
+         epddl_problem: "<share>/plansys2_epddl_grounder/examples/muddy-children-problem.epddl"
+         action_mapping: "<share>/plansys2_epistemic_planner/examples/mappings/muddy-children-2.json"
+
+   epistemic_state:
+     ros__parameters:
+       epddl_domain: "<share>/plansys2_epddl_grounder/examples/muddy-children-domain.epddl"
+       epddl_problem: "<share>/plansys2_epddl_grounder/examples/muddy-children-problem.epddl"
+
+Then one command starts the whole system, epistemic state included:
 
 .. code-block:: bash
 
    ros2 launch plansys2_bringup plansys2_bringup_launch_monolithic.py \
      model_file:=<domain.pddl> \
-     params_file:=<share>/plansys2_bringup/params/plansys2_epistemic_params.yaml
+     params_file:=<your copy of plansys2_epistemic_params.yaml> \
+     epistemic_state:=True
 
-   ros2 run plansys2_epistemic_executor epistemic_state_node --ros-args \
-     -p epddl_domain:=<share>/plansys2_epddl_grounder/examples/muddy-children-domain.epddl \
-     -p epddl_problem:=<share>/plansys2_epddl_grounder/examples/muddy-children-problem.epddl
+The model it comes up holding is the four-world one the ``:init`` theory
+describes, and it can be questioned directly:
 
-Set the same two paths under the solver's ``epddl_domain`` and
-``epddl_problem`` parameters, so that the planner and the state are reading one
-description of the problem rather than two.
+.. code-block:: bash
+
+   ros2 service call /epistemic_state/check_formula \
+     plansys2_epistemic_msgs/srv/CheckFormula "{formula: '(Kw c1 muddy_c1)'}"
+
+Before any asking, that answers ``holds: false`` — which is the puzzle: both
+children are muddy, and neither yet knows it of itself.
 
 The PDDL domain still has to declare an ``ask`` action, because that is what
 the executor looks up to find the behavior tree driving the hardware. The

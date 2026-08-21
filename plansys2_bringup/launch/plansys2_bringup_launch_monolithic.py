@@ -18,8 +18,10 @@ from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -34,6 +36,7 @@ def generate_launch_description():
     start_action_bt_file = LaunchConfiguration('start_action_bt_file')
     end_action_bt_file = LaunchConfiguration('end_action_bt_file')
     bt_builder_plugin = LaunchConfiguration('bt_builder_plugin')
+    epistemic_state = LaunchConfiguration('epistemic_state')
 
     declare_model_file_cmd = DeclareLaunchArgument(
         'model_file',
@@ -76,6 +79,14 @@ def generate_launch_description():
         description='Behavior tree builder plugin.',
     )
 
+    declare_epistemic_state_cmd = DeclareLaunchArgument(
+        'epistemic_state',
+        default_value='False',
+        description='Start the epistemic state as a fifth managed node. '
+                    'Executing an epistemic policy needs it; a classical '
+                    'system has no use for it.',
+    )
+
     plansys2_node_cmd = Node(
         package='plansys2_bringup',
         executable='plansys2_node',
@@ -89,8 +100,29 @@ def generate_launch_description():
             'default_end_action_bt_xml_filename': end_action_bt_file,
             'bt_builder_plugin': bt_builder_plugin,
           },
-          params_file
+          params_file,
+          # After the parameters file, not before it: this is the same
+          # argument that decides whether the node is started at all, so a
+          # parameters file must not be able to contradict it and leave the
+          # system waiting for a node nobody launched. ParameterValue states
+          # the type, since a substitution resolves to a string and
+          # plansys2_node declares this one as a bool.
+          {
+            'use_epistemic_state': ParameterValue(epistemic_state, value_type=bool),
+          },
         ])
+
+    # A process of its own rather than a fifth node inside plansys2_node,
+    # which is what keeps plansys2_bringup from linking against the epistemic
+    # packages. plansys2_node manages its lifecycle over services, by name.
+    epistemic_state_cmd = Node(
+        package='plansys2_epistemic_executor',
+        executable='epistemic_state_node',
+        name='epistemic_state',
+        namespace=namespace,
+        output='screen',
+        condition=IfCondition(epistemic_state),
+        parameters=[params_file])
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -100,10 +132,12 @@ def generate_launch_description():
     ld.add_action(declare_start_action_bt_file_cmd)
     ld.add_action(declare_end_action_bt_file_cmd)
     ld.add_action(declare_bt_builder_plugin_cmd)
+    ld.add_action(declare_epistemic_state_cmd)
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_params_file_cmd)
 
     # Declare the launch options
     ld.add_action(plansys2_node_cmd)
+    ld.add_action(epistemic_state_cmd)
 
     return ld

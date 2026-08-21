@@ -67,7 +67,7 @@ target_link_libraries(epistemic_state_node PRIVATE ${PROJECT_NAME} rclcpp::rclcp
 install(DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
 )
-install(DIRECTORY behavior_trees
+install(DIRECTORY behavior_trees launch
   DESTINATION share/${PROJECT_NAME}
 )
 install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_policy plansys2_epistemic_bt_nodes

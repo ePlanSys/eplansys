@@ -288,6 +288,30 @@ the same pair of ``.epddl`` files is what keeps the policy and the model it is
 checked against expressed in one vocabulary — the failure the arrangement is
 there to prevent is a policy naming an action the state has never heard of.
 
+It is a managed node of the system rather than something started alongside it.
+Both launch files start it on ``epistemic_state:=True``, and the lifecycle
+manager configures and activates it with the other four and takes it down with
+them. It is off by default, since a classical system has no use for it.
+
+It runs as its own process even under the monolithic launch, where the other
+four share one. That is not an oversight: ``plansys2_node`` manages it through
+``LifecycleServiceClient``, which needs the node's name and not its class, so
+``plansys2_bringup`` links against nothing epistemic and the package every
+other distribution's workflow builds is unchanged. The same reasoning as
+``bt_node_plugins`` on the executor, one level up.
+
+The switch is a single launch argument rather than a parameter because it
+decides two things that must agree — whether the process is started, and
+whether the manager waits for it. A parameters file can set the second but not
+the first, so the argument overrides the parameters file rather than the other
+way round.
+
+``startup_function`` in ``plansys2_lifecycle_manager`` brings up whatever map
+it is given, skipping a name it does not find, which is what lets one function
+serve a four-node classical bringup and a five-node epistemic one. The
+standalone ``lifecycle_manager_node`` the distributed launch runs takes the set
+as its ``managed_nodes`` parameter for the same reason.
+
 The state advances by executed actions rather than by watching the world, which
 is what makes it a belief state rather than a log. When it disagrees with what
 the robot observed, the disagreement surfaces at ``apply_action`` as an outcome

@@ -85,7 +85,7 @@ holds a pointed Kripke model and answers three things:
 
 | service | question |
 | --- | --- |
-| `epistemic_state/load_task` | be the model of *this* grounded task |
+| `epistemic_state/load_task` | be the model of *this* task — a grounded task inline or by path, or EPDDL sources to ground |
 | `epistemic_state/check_formula` | does `(K r1 (clear corridor))` hold now? |
 | `epistemic_state/apply_action` | this action ran: update, and say what was observed |
 
@@ -111,6 +111,27 @@ executor:
     bt_builder_plugin: "EpistemicBTBuilder"
     bt_node_plugins: ["libplansys2_epistemic_bt_nodes.so"]
 ```
+
+The state node is not started by hand either. Both bringup launch files start
+it on `epistemic_state:=True` and hand it to the lifecycle manager with the
+other four, so it comes up and goes down with the system. Its problem goes in
+the same parameters file:
+
+```yaml
+epistemic_state:
+  ros__parameters:
+    epddl_domain: "/abs/path/to/domain.epddl"
+    epddl_problem: "/abs/path/to/problem.epddl"
+```
+
+Those are the same two EPDDL files the solver is given. The state grounds them
+itself rather than being handed the planner's task, because a service call at
+configure time would make the two nodes depend on each other's start-up order.
+
+It stays a separate process even under the monolithic launch, and
+`plansys2_node` manages it through `LifecycleServiceClient`, which needs its
+name and not its class. That is the same boundary as `bt_node_plugins`: nothing
+in `plansys2_bringup` links against this package.
 
 `bt_node_plugins` is a generic hook: the executor loads BehaviorTree.CPP node
 libraries before building a tree. That is what keeps `plansys2_executor` free

@@ -23,6 +23,8 @@
   <depend>plansys2_epistemic_planner</depend>
   <depend>nlohmann-json-dev</depend>
 
+  <exec_depend>launch_ros</exec_depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_cmake_gtest</test_depend>
 

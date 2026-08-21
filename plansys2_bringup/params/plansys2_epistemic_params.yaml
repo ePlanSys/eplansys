@@ -16,15 +16,18 @@
 # that drives the hardware for an action. It is the PDDL side of the same
 # mission; the epistemic side is the EPDDL pair.
 #
-# Executing a policy also needs the epistemic state running and holding the
-# same task, which is a separate node. Point it at the same two files:
-#
-#   ros2 run plansys2_epistemic_executor epistemic_state_node --ros-args \
-#     -p epddl_domain:=<the same domain.epddl> \
-#     -p epddl_problem:=<the same problem.epddl>
+# Executing a policy also needs the epistemic state holding the same task. Add
+# epistemic_state:=True to either launch file and it is started and brought up
+# with the other four nodes; the epistemic_state section below names the same
+# two EPDDL files the solver is given.
 plansys2:
   ros__parameters:
     use_real_time: false
+
+    # There is deliberately no use_epistemic_state here. It is set by the
+    # launch argument epistemic_state:=True, which is the same switch that
+    # starts the node; setting it in a parameters file alone would have the
+    # system wait to manage a node nobody launched.
 planner_client:
   ros__parameters:
     plan_solver_timeout: 15.0
@@ -41,10 +44,16 @@ planner:
       epddl_problem: ""
 
       # Action-type libraries the domain declares in its
-      # `:action-type-libraries` clause. Empty supplies the `intermediate`
-      # library packaged with plansys2_epddl_grounder, which is the one the
-      # example domains use.
-      epddl_libraries: []
+      # `:action-type-libraries` clause. Leaving the key out supplies the
+      # `intermediate` library packaged with plansys2_epddl_grounder, which is
+      # the one the example domains use. Uncomment to name others:
+      #
+      #   epddl_libraries: ["/abs/path/to/library.epddl"]
+      #
+      # Write it out or leave it out — never as an empty list. A `[]` in a ROS
+      # parameters file has no element type, so the override reaches the node
+      # with no value at all and node construction throws before any of this
+      # package's code runs.
 
       # Path to the plank binary. Empty takes the PLANK environment variable,
       # then PATH — and building the workspace puts plank on PATH, so this is
@@ -107,6 +116,25 @@ planner:
       # In-process is the better default: no fork, no serialisation, and no
       # binary to install. Use the subprocess plugin when the planner is built
       # and versioned separately from this workspace.
+epistemic_state:
+  ros__parameters:
+    # The same problem the solver above is given. Both halves have to hold one
+    # task: a policy names its actions in the grounded vocabulary, and a state
+    # loaded from a different task would be asked about symbols it does not
+    # have. Naming the same two files twice is what keeps them one task; the
+    # node grounds them itself rather than being handed the planner's result,
+    # because a service call at configure time would make the two nodes depend
+    # on each other's start-up order.
+    epddl_domain: ""
+    epddl_problem: ""
+    plank_command: ""
+
+    # As above: name libraries explicitly or omit the key. Never `[]`.
+    #   epddl_libraries: ["/abs/path/to/library.epddl"]
+
+    # An already grounded task, as the alternative. Ignored when the EPDDL
+    # sources are set.
+    task_file: ""
 executor:
   ros__parameters:
     # Renders the policy as a tree: the PlanSys2 action subtree with a

@@ -64,7 +64,6 @@ Parameters
          plugin: "plansys2/EpistemicPlanSolver"
          epddl_domain: ""
          epddl_problem: ""
-         epddl_libraries: []
          plank_command: ""
          task_file: ""
          heuristic: ""
@@ -90,8 +89,41 @@ epistemic solver ignores it, but the executor does not: it is where the
 behavior tree that drives the hardware for each action is found. The PDDL and
 the EPDDL describe the same mission from two sides.
 
-Executing a policy also needs the epistemic state, which is a separate node and
-must hold the same task. Point it at the same two files rather than at a copy:
+Executing a policy needs a fifth node: the behavior tree the epistemic builder
+produces guards each action on a knowledge formula and updates the model
+afterwards, and both are questions asked of the epistemic state. Add
+``epistemic_state:=True`` and it is started and brought up with the other four,
+by either launch file:
+
+.. code-block:: bash
+
+   ros2 launch plansys2_bringup plansys2_bringup_launch_monolithic.py \
+     model_file:=<domain.pddl> \
+     params_file:=<share>/plansys2_bringup/params/plansys2_epistemic_params.yaml \
+     epistemic_state:=True
+
+Give it the same problem the solver has, under ``epistemic_state:`` in the
+parameters file:
+
+.. code-block:: yaml
+
+   epistemic_state:
+     ros__parameters:
+       epddl_domain: "/abs/path/to/domain.epddl"
+       epddl_problem: "/abs/path/to/problem.epddl"
+
+Naming the same two files twice is deliberate. The state grounds them itself
+rather than being handed the planner's task, which would make the two nodes
+depend on each other's start-up order; what has to agree is the problem, and
+that is what the parameters file states.
+
+The node runs as its own process even under the monolithic launch, and
+``plansys2_node`` manages its lifecycle by name over services. That is what
+keeps ``plansys2_bringup`` from linking against the epistemic packages, so the
+package a classical PlanSys2 user builds is unchanged.
+
+Running the node alone still works, and is the quickest way to inspect a model
+without a planner:
 
 .. code-block:: bash
 

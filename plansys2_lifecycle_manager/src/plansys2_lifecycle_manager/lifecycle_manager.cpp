@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
 #include <chrono>
+#include <iostream>
+#include <map>
 #include <memory>
 #include <string>
-#include <map>
+#include <vector>
 
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/msg/transition.hpp"
@@ -122,117 +125,106 @@ LifecycleServiceClient::change_state(std::uint8_t transition, std::chrono::secon
   }
 }
 
+namespace
+{
+
+/// The order the nodes are brought up in, and the order they are activated in.
+/// They differ, and both are deliberate: the planner configures first because
+/// loading a plan solver plugin is what fails when a plugin is missing, and
+/// finding that out before the experts have read any PDDL keeps the failure
+/// legible; the domain expert activates first because everything downstream
+/// asks it questions.
+///
+/// A name listed here that is not in the map is skipped rather than waited
+/// for. That is what makes the epistemic state optional: a classical bringup
+/// hands over four nodes, an epistemic one hands over five, and this function
+/// does not need to know which of the two it is being used for.
+const std::vector<std::string> & configure_order()
+{
+  static const std::vector<std::string> order{
+    "planner", "domain_expert", "problem_expert", "executor", "epistemic_state"};
+  return order;
+}
+
+const std::vector<std::string> & activate_order()
+{
+  static const std::vector<std::string> order{
+    "domain_expert", "problem_expert", "planner", "executor", "epistemic_state"};
+  return order;
+}
+
+/// The listed names that are present, followed by any name the caller supplied
+/// that the lists do not mention. An unknown node is still managed — being
+/// unrecognised is no reason to leave it unconfigured — it simply goes last.
+std::vector<std::string> ordered_nodes(
+  const std::map<std::string, std::shared_ptr<LifecycleServiceClient>> & manager_nodes,
+  const std::vector<std::string> & order)
+{
+  std::vector<std::string> result;
+  result.reserve(manager_nodes.size());
+
+  for (const auto & name : order) {
+    if (manager_nodes.find(name) != manager_nodes.end()) {
+      result.push_back(name);
+    }
+  }
+  for (const auto & [name, client] : manager_nodes) {
+    (void)client;
+    if (std::find(order.begin(), order.end(), name) == order.end()) {
+      result.push_back(name);
+    }
+  }
+  return result;
+}
+
+}  // namespace
+
 bool
 startup_function(
   std::map<std::string, std::shared_ptr<LifecycleServiceClient>> & manager_nodes,
   std::chrono::seconds timeout)
 {
-  // configure planner
-  {
-    if (!manager_nodes["planner"]->change_state(
+  for (const auto & name : ordered_nodes(manager_nodes, configure_order())) {
+    if (!manager_nodes[name]->change_state(
         lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE,
         timeout))
     {
       return false;
     }
 
-    while (manager_nodes["planner"]->get_state() !=
+    // Ctrl-C during this wait used to hang: the loop had no way out but the
+    // node reaching INACTIVE, so a node that never configures held the whole
+    // bringup. Checking rclcpp::ok() lets shutdown end it.
+    while (rclcpp::ok() &&
+      manager_nodes[name]->get_state() !=
       lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
     {
-      std::cerr << "Waiting for inactive state for planner" << std::endl;
+      std::cerr << "Waiting for inactive state for " << name << std::endl;
     }
-  }
-
-  // configure domain_expert
-  {
-    if (!manager_nodes["domain_expert"]->change_state(
-        lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE,
-        timeout))
-    {
-      return false;
-    }
-
-    while (manager_nodes["domain_expert"]->get_state() !=
-      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
-    {
-      std::cerr << "Waiting for inactive state for domain_expert" << std::endl;
-    }
-  }
-
-  // configure problem_expert
-  {
-    if (!manager_nodes["problem_expert"]->change_state(
-        lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE,
-        timeout))
-    {
-      return false;
-    }
-
-    while (manager_nodes["problem_expert"]->get_state() !=
-      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
-    {
-      std::cerr << "Waiting for inactive state for problem_expert" << std::endl;
-    }
-  }
-
-  // configure executor
-  {
-    if (!manager_nodes["executor"]->change_state(
-        lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE,
-        timeout))
-    {
-      return false;
-    }
-
-    while (manager_nodes["executor"]->get_state() !=
-      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
-    {
-      std::cerr << "Waiting for inactive state for planner" << std::endl;
-    }
-  }
-
-  // activate
-  {
     if (!rclcpp::ok()) {
       return false;
     }
-    if (!manager_nodes["domain_expert"]->change_state(
+  }
+
+  for (const auto & name : ordered_nodes(manager_nodes, activate_order())) {
+    if (!rclcpp::ok()) {
+      return false;
+    }
+    if (!manager_nodes[name]->change_state(
         lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE,
         timeout))
     {
-      return false;
-    }
-    if (!manager_nodes["problem_expert"]->change_state(
-        lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE,
-        timeout))
-    {
-      return false;
-    }
-    if (!manager_nodes["planner"]->change_state(
-        lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE,
-        timeout))
-    {
-      return false;
-    }
-    if (!manager_nodes["executor"]->change_state(
-        lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE,
-        timeout))
-    {
-      return false;
-    }
-    if (!manager_nodes["domain_expert"]->get_state()) {
-      return false;
-    }
-    if (!manager_nodes["problem_expert"]->get_state()) {
-      return false;
-    }
-    if (!manager_nodes["planner"]->get_state()) {
-      return false;
-    }
-    if (!manager_nodes["executor"]->get_state()) {
       return false;
     }
   }
+
+  for (const auto & [name, client] : manager_nodes) {
+    (void)name;
+    if (!client->get_state()) {
+      return false;
+    }
+  }
+
   return true;
 }
 

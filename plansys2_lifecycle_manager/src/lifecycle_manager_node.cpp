@@ -13,9 +13,10 @@
 // limitations under the License.
 
 #include <chrono>
+#include <map>
 #include <memory>
 #include <string>
-#include <map>
+#include <vector>
 
 #include "rclcpp/rclcpp.hpp"
 
@@ -27,17 +28,26 @@ int main(int argc, char ** argv)
 
   rclcpp::init(argc, argv);
 
+  // Which nodes to manage is a parameter rather than a constant because the
+  // epistemic state is optional: a classical system has the four below, and an
+  // epistemic one adds "epistemic_state". Naming a node that is not running
+  // makes startup fail, which is the right outcome — it is the same failure as
+  // that node crashing — so the launch file decides, not this program.
+  auto node = rclcpp::Node::make_shared("lifecycle_manager_node");
+  const std::vector<std::string> default_nodes{
+    "domain_expert", "problem_expert", "planner", "executor"};
+  node->declare_parameter("managed_nodes", default_nodes);
+
+  const auto managed = node->get_parameter("managed_nodes").as_string_array();
+
   std::map<std::string, std::shared_ptr<plansys2::LifecycleServiceClient>> manager_nodes;
-  manager_nodes["domain_expert"] = std::make_shared<plansys2::LifecycleServiceClient>(
-    "domain_expert_lc_mngr", "domain_expert");
-  manager_nodes["problem_expert"] = std::make_shared<plansys2::LifecycleServiceClient>(
-    "problem_expert_lc_mngr", "problem_expert");
-  manager_nodes["planner"] = std::make_shared<plansys2::LifecycleServiceClient>(
-    "planner_lc_mngr", "planner");
-  manager_nodes["executor"] = std::make_shared<plansys2::LifecycleServiceClient>(
-    "executor_lc_mngr", "executor");
+  for (const auto & name : managed) {
+    manager_nodes[name] =
+      std::make_shared<plansys2::LifecycleServiceClient>(name + "_lc_mngr", name);
+  }
 
   rclcpp::experimental::executors::EventsExecutor exe;
+  exe.add_node(node);
   for (auto & manager_node : manager_nodes) {
     manager_node.second->init();
     exe.add_node(manager_node.second);
