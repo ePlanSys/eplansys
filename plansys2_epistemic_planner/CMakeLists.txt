@@ -17,6 +17,7 @@ find_package(nlohmann_json 3.10 REQUIRED)
 set(EPISTEMIC_SOURCES
   src/action_mapping.cpp
   src/formula.cpp
+  src/formula_text.cpp
   src/state.cpp
   src/action.cpp
   src/bisimulation.cpp

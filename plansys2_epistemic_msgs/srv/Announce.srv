@@ -1,0 +1,21 @@
+# Announce that a formula is true, publicly.
+#
+# This is the counterpart of the problem expert's `set predicate`, and it is
+# not the same operation. Setting a predicate changes what is true. Announcing
+# changes what is *known*: the model is restricted to the worlds where the
+# formula holds, so every agent that could not previously tell those worlds
+# apart from the others now can, and knows that the others know it too.
+#
+# It is how an operator, or a sensor outside the plan, tells the system
+# something all the agents witnessed. Knowledge that reaches only one agent is
+# not a public announcement and cannot be expressed this way; that needs an
+# event model, which is what an action is.
+string formula
+---
+bool success
+string error
+
+# The state after the announcement. A public announcement can only remove
+# worlds, so num_worlds never grows.
+uint32 num_worlds
+uint32 num_designated

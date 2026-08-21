@@ -66,6 +66,17 @@ planner:
       # instead.
       task_file: ""
 
+      # Take the goal from the epistemic state when it publishes one, rather
+      # than from the task. This is what makes
+      #
+      #   ros2 plansys2 epistemic goal "(Kw c1 muddy_c1)"
+      #
+      # change what the next plan is built for, without re-grounding the
+      # problem. The task's own goal is used whenever the state is not running
+      # or is reporting that same goal back. Set false to plan for the problem
+      # exactly as written, whatever anyone asks for at run time.
+      goal_from_state: true
+
       # Empty means the built-in selection policy decides from the task's own
       # structure, which is the intended default. Set explicitly to pin one:
       #   heuristic: ug | ed | ks | wc | rpg | radd
@@ -135,6 +146,14 @@ epistemic_state:
     # An already grounded task, as the alternative. Ignored when the EPDDL
     # sources are set.
     task_file: ""
+
+    # This node also holds the goal, which is what makes it the epistemic
+    # counterpart of the problem expert rather than only a service the
+    # executor calls. It starts as the loaded task's own goal; changing it is
+    #
+    #   ros2 plansys2 epistemic goal "(Kw c1 muddy_c1)"
+    #
+    # and the solver above picks the change up through goal_from_state.
 executor:
   ros__parameters:
     # Renders the policy as a tree: the PlanSys2 action subtree with a

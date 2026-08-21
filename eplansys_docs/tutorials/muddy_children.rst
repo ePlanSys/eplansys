@@ -180,6 +180,28 @@ describes, and it can be questioned directly:
 Before any asking, that answers ``holds: false`` — which is the puzzle: both
 children are muddy, and neither yet knows it of itself.
 
+The same conversation is easier through the CLI, which talks to the epistemic
+state the way the terminal talks to the problem expert:
+
+.. code-block:: bash
+
+   ros2 plansys2 epistemic show
+   ros2 plansys2 epistemic check "(K c1 muddy_c1)"      # does not hold
+   ros2 plansys2 epistemic announce "muddy_c1"          # 4 worlds -> 2
+   ros2 plansys2 epistemic check "(K c1 muddy_c1)"      # holds
+
+That is the puzzle's own mechanism in three commands. Announcing does not make
+``c1`` muddy — it already was, in the designated world — it rules out the two
+worlds where it was not, and ``c1`` could not previously tell those apart from
+the others. The father's announcement in the story does exactly this.
+
+The goal can be changed the same way, and the next plan is built for it:
+
+.. code-block:: bash
+
+   ros2 plansys2 epistemic goal                          # the task's own
+   ros2 plansys2 epistemic goal "(Kw c1 muddy_c1)"       # only c1 need find out
+
 The PDDL domain still has to declare an ``ask`` action, because that is what
 the executor looks up to find the behavior tree driving the hardware. The
 epistemic solver never reads it.

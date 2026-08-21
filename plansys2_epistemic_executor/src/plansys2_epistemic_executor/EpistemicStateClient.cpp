@@ -30,6 +30,12 @@ EpistemicStateClient::EpistemicStateClient(const std::string & node_name)
     "epistemic_state/check_formula");
   apply_action_client_ = node_->create_client<plansys2_epistemic_msgs::srv::ApplyAction>(
     "epistemic_state/apply_action");
+  get_goal_client_ = node_->create_client<plansys2_epistemic_msgs::srv::GetGoal>(
+    "epistemic_state/get_goal");
+  set_goal_client_ = node_->create_client<plansys2_epistemic_msgs::srv::SetGoal>(
+    "epistemic_state/set_goal");
+  announce_client_ = node_->create_client<plansys2_epistemic_msgs::srv::Announce>(
+    "epistemic_state/announce");
 }
 
 template<typename ServiceT, typename RequestT>
@@ -112,6 +118,66 @@ EpistemicStateClient::Answer EpistemicStateClient::apply_action(
   answer.answered = true;
   answer.success = response->success;
   answer.outcome = response->outcome;
+  answer.error = response->error;
+  return answer;
+}
+
+EpistemicStateClient::Answer EpistemicStateClient::get_goal(
+  const std::chrono::nanoseconds & timeout)
+{
+  Answer answer;
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::GetGoal::Request>();
+
+  const auto response = call<plansys2_epistemic_msgs::srv::GetGoal>(
+    get_goal_client_, request, timeout, answer.error);
+  if (!response) {
+    return answer;
+  }
+
+  answer.answered = true;
+  answer.success = response->success;
+  answer.goal = response->goal;
+  answer.holds = response->holds;
+  answer.from_task = response->from_task;
+  answer.error = response->error;
+  return answer;
+}
+
+EpistemicStateClient::Answer EpistemicStateClient::set_goal(
+  const std::string & goal, const std::chrono::nanoseconds & timeout)
+{
+  Answer answer;
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::SetGoal::Request>();
+  request->goal = goal;
+
+  const auto response = call<plansys2_epistemic_msgs::srv::SetGoal>(
+    set_goal_client_, request, timeout, answer.error);
+  if (!response) {
+    return answer;
+  }
+
+  answer.answered = true;
+  answer.success = response->success;
+  answer.holds = response->holds;
+  answer.error = response->error;
+  return answer;
+}
+
+EpistemicStateClient::Answer EpistemicStateClient::announce(
+  const std::string & formula, const std::chrono::nanoseconds & timeout)
+{
+  Answer answer;
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::Announce::Request>();
+  request->formula = formula;
+
+  const auto response = call<plansys2_epistemic_msgs::srv::Announce>(
+    announce_client_, request, timeout, answer.error);
+  if (!response) {
+    return answer;
+  }
+
+  answer.answered = true;
+  answer.success = response->success;
   answer.error = response->error;
   return answer;
 }

@@ -88,6 +88,30 @@ holds a pointed Kripke model and answers three things:
 | `epistemic_state/load_task` | be the model of *this* task — a grounded task inline or by path, or EPDDL sources to ground |
 | `epistemic_state/check_formula` | does `(K r1 (clear corridor))` hold now? |
 | `epistemic_state/apply_action` | this action ran: update, and say what was observed |
+| `epistemic_state/get_goal` | what are we aiming at, and does it hold yet? |
+| `epistemic_state/set_goal` | aim at this instead, without re-grounding the problem |
+| `epistemic_state/announce` | everyone just learned this is true |
+
+The last three are what make it the problem expert's counterpart rather than
+only a service the executor calls. Announcing is `set predicate` one level up,
+and not the same operation: setting a predicate changes what is true,
+announcing changes what is *known*. Announcing `muddy_c1` in the muddy-children
+model makes `(K c1 muddy_c1)` hold when it did not, because it rules out the
+worlds `c1` could not previously tell the real one from.
+
+From a shell, all of it is one verb:
+
+```bash
+ros2 plansys2 epistemic show
+ros2 plansys2 epistemic check "(Kw c1 muddy_c1)"
+ros2 plansys2 epistemic goal "(K A tails)"
+ros2 plansys2 epistemic announce "tails"
+ros2 plansys2 epistemic apply ask_c1
+```
+
+It lives in `plansys2_tui_cli` rather than in `plansys2_terminal`: that package
+is built by every distribution's workflow, and reaching these services from C++
+would make it depend on the epistemic messages to do so.
 
 It advances by executed actions rather than by watching the world, which is
 what makes it a belief state rather than a log. When it disagrees with what the
