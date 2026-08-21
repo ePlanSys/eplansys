@@ -27,6 +27,27 @@ using namespace std::chrono_literals;
 namespace plansys2
 {
 
+namespace
+{
+
+/// A handle to the node that does not own it.
+///
+/// A solver keeps the node it was configured with, and the node keeps its
+/// solvers. Handing a solver an owning pointer makes the two hold each other
+/// up: neither reference count ever reaches zero, ~PlannerNode never runs, and
+/// the solvers are still on the heap when the process exits and class_loader
+/// unloads the plugin library underneath them.
+///
+/// Non-owning is safe here because a solver cannot outlive the node: solvers_
+/// owns every one of them, and it is cleared in the destructor.
+rclcpp_lifecycle::LifecycleNode::SharedPtr non_owning(
+  const rclcpp_lifecycle::LifecycleNode::SharedPtr & node)
+{
+  return {node.get(), [](rclcpp_lifecycle::LifecycleNode *) {}};
+}
+
+}  // namespace
+
 PlannerNode::PlannerNode(const rclcpp::NodeOptions & options)
 : rclcpp_lifecycle::LifecycleNode("planner", options),
   lp_loader_("plansys2_core", "plansys2::PlanSolverBase"),
@@ -41,6 +62,15 @@ PlannerNode::PlannerNode(const rclcpp::NodeOptions & options)
 
 PlannerNode::~PlannerNode()
 {
+  // Destroy the plugin instances before unloading the libraries that define
+  // them. A destructor body runs before its members are destroyed, so without
+  // this the loop below unloads the code out from under every solver still in
+  // solvers_, and destroying them afterwards jumps into a library that is no
+  // longer mapped. class_loader says so first ("SEVERE WARNING ... objects
+  // created by this loader exist in the heap"), and the process segfaults on
+  // the way out.
+  solvers_.clear();
+
   std::vector<std::string> loaded_libraries = lp_loader_.getRegisteredLibraries();
 
   for (const auto & library : loaded_libraries) {
@@ -87,7 +117,7 @@ PlannerNode::on_configure(const rclcpp_lifecycle::State & state)
         plansys2::PlanSolverBase::Ptr solver =
           lp_loader_.createUniqueInstance(solver_types_[i]);
 
-        solver->configure(node, solver_ids_[i]);
+        solver->configure(non_owning(node), solver_ids_[i]);
 
         RCLCPP_INFO(
           get_logger(), "Created solver : %s of type %s",
@@ -100,7 +130,7 @@ PlannerNode::on_configure(const rclcpp_lifecycle::State & state)
     }
   } else {
     auto default_solver = std::make_shared<plansys2::POPFPlanSolver>();
-    default_solver->configure(node, "POPF");
+    default_solver->configure(non_owning(node), "POPF");
     solvers_.insert({"POPF", default_solver});
     RCLCPP_INFO(
       get_logger(), "Created default solver : %s of type %s",
