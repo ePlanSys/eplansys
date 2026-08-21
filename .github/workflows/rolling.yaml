@@ -97,7 +97,7 @@ jobs:
               "lcov-result": {
                 "lcov-config-file": "/tmp/lcovrc",
                 "lcov-args": ["--ignore-errors", "inconsistent,corrupt,mismatch,unused,empty,negative,source,graph,gcov,deprecated"],
-                "packages-ignore": ["plansys2_bringup", "plansys2_tools", "plansys2_epistemic_bt_builder", "plank"]
+                "packages-ignore": ["plansys2_bringup", "plansys2_tools", "plank"]
               }
             }
           vcs-repo-file-url: ${GITHUB_WORKSPACE}/dependency_repos.repos

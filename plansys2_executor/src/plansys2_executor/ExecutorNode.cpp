@@ -449,6 +449,13 @@ ExecutorNode::get_tree_from_plan(PlanRuntineInfo & runtime_info)
     RCLCPP_WARN(get_logger(), "STN disabled until fixed. Using SimpleBTBuilder instead");
     // auto precision = this->get_parameter("action_time_precision").as_int();
     // bt_builder->initialize(start_action_bt_xml_, end_action_bt_xml_, precision);
+  } else {
+    // A builder loaded by name is still a builder, and one that is never
+    // initialized runs on whatever its defaults are: the action template
+    // configured on this node would be silently ignored, which is how a tree
+    // ends up without the nodes a deployment added to it.
+    auto precision = this->get_parameter("action_time_precision").as_int();
+    bt_builder->initialize(action_bt_xml_, end_action_bt_xml_, precision);
   }
 
   auto bt_xml_tree = bt_builder->get_tree(runtime_info.complete_plan);

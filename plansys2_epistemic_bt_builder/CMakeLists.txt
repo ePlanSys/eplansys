@@ -41,6 +41,11 @@ install(TARGETS ${PROJECT_NAME}
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(behaviortree_cpp REQUIRED)
+
+  add_subdirectory(test)
 endif()
 
 ament_export_include_directories("include/${PROJECT_NAME}")

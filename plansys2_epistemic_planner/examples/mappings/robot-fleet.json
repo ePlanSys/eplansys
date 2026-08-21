@@ -1,0 +1,13 @@
+{
+  "goto-junction_r1":   {"action": "(goto_junction r1)", "duration": 30.0},
+  "goto-junction_r2":   {"action": "(goto_junction r2)", "duration": 30.0},
+
+  "inspect_r1":         {"action": "(inspect_corridor r1)", "duration": 5.0},
+  "inspect_r2":         {"action": "(inspect_corridor r2)", "duration": 5.0},
+
+  "report-blocked_r1":  {"action": "(report_blocked r1)", "duration": 1.0},
+  "report-blocked_r2":  {"action": "(report_blocked r2)", "duration": 1.0},
+
+  "report-clear_r1":    {"action": "(report_clear r1)", "duration": 1.0},
+  "report-clear_r2":    {"action": "(report_clear r2)", "duration": 1.0}
+}

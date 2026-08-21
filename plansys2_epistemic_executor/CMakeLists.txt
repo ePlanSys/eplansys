@@ -100,6 +100,7 @@ ament_export_dependencies(
   plansys2_epistemic_msgs
   plansys2_epddl_grounder
   plansys2_epistemic_planner
+  nlohmann_json
 )
 
 ament_package()
