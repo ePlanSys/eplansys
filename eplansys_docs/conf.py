@@ -30,7 +30,9 @@ html_theme_options = {
     'navigation_depth': 3,
     'titles_only': False,
 }
-html_static_path = []
+# The reports directory carries a LaTeX source and its built PDF; the PDF is
+# served from here so a page can link to it.
+html_static_path = ['_static']
 html_logo = 'eplansys.png'
 html_favicon = 'favicon.svg'
 html_show_sphinx = False
