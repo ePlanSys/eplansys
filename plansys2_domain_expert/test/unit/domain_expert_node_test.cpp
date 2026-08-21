@@ -150,7 +150,6 @@ TEST(domain_expert, lifecycle)
       std::istreambuf_iterator<char>());
 
     ASSERT_EQ(domain_str, domain_str_p);
-
   }
   plansys2::drain_ros(200ms);
 }
@@ -193,7 +192,6 @@ TEST(domain_expert, lifecycle_error)
     ASSERT_EQ(
     domain_node->get_current_state().id(),
     lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
-
   }
   plansys2::drain_ros(200ms);
 }
