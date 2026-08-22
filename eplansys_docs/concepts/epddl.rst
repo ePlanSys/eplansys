@@ -105,10 +105,12 @@ of the specification, and it terminates on a signal rather than exiting with a
 status. The grounder therefore judges success by whether the task file was
 written, and passes plank's own output through as the error.
 
-The EPDDL sources for the checked-in tasks live in the ``epddl-workspace`` of
-the `Epistemic-Robotics <https://github.com/HanielUlises/epistemic-robotics>`_
-repository; the smallest of them, muddy children, is also packaged under
-``<share>/plansys2_epddl_grounder/examples``. The EPDDL grammar itself is
+The EPDDL sources for the robotics scenarios are packaged under
+``<share>/plansys2_epddl_grounder/examples`` --- the three fleet domains and
+their problems, described in :doc:`../tutorials/index`. The sources for the
+older puzzle fixtures live in the ``epddl-workspace`` of the
+`Epistemic-Robotics <https://github.com/HanielUlises/epistemic-robotics>`_
+repository. The EPDDL grammar itself is
 specified in the `EPDDL Official Guideline <https://arxiv.org/abs/2601.20969>`_
 and is not restated here.
 
@@ -148,30 +150,38 @@ Checked-in tasks
 
    * - File
      - Why it exists
-   * - ``muddy-children-2.json``
-     - Smallest solvable task; the default for the search tests.
-   * - ``muddy-children-3.json``
-     - Asymmetric variant, used for the determinism check.
+   * - ``robot-fleet.json``
+     - The corridor scenario: two designated worlds, and the smallest task
+       whose solution branches. Executed end to end by ``plansys2_tests``.
+   * - ``robot-fleet-depot.json``
+     - The two-route depot: four designated worlds, and a policy with a branch
+       inside a branch.
    * - ``coin-in-the-box.json``
      - Sensing domain with a knowledge goal rather than a
        :math:`\mathit{Kw}` goal.
-   * - ``active-muddy-child.json``
-     - Thirty-two initial worlds; the canonical partial-observability case.
    * - ``coin-in-the-box-multipointed.json``
-     - The only fixture whose solution is a branching policy.
+     - The hand-derived multi-pointed coin, kept for the parser tests.
+   * - ``muddy-children-2.json``, ``muddy-children-3.json``,
+       ``active-muddy-child.json``
+     - Puzzle fixtures that predate the fleet scenarios; they pin the parser
+       and the search against tasks with up to thirty-two initial worlds.
 
-Every task the grounder produces from the available EPDDL instances is
-single-pointed, with one designated world, so sensing has exactly one possible
-outcome and AO* returns a chain. Nothing in the workspace exercises contingent
-branching, which is precisely the path the solver flattens away when
-``conditional_plan`` is not ``policy``. ``coin-in-the-box-multipointed.json``
-is therefore derived by hand from ``coin-in-the-box.json`` with two edits: the
-initial state designates two worlds rather than one, so it is genuinely open
-whether the coin lies tails; and the goal is :math:`\mathit{Kw}_A(\mathit{tails})`
-rather than :math:`K_A(\mathit{tails})`, since knowing that the coin is tails is
-unachievable in the world where it is not. Its solution branches. If the EPDDL
-instance is ever written and grounded, the file should be replaced with the
-grounder's output.
+The puzzle instances all ground to single-pointed tasks --- one designated
+world --- so sensing has exactly one possible outcome in them and AO* returns a
+chain. Nothing among them exercises contingent branching, which is precisely
+the path the solver flattens away when ``conditional_plan`` is not ``policy``.
+``coin-in-the-box-multipointed.json`` was derived by hand to cover that gap,
+from ``coin-in-the-box.json`` with two edits: the initial state designates two
+worlds rather than one, so it is genuinely open whether the coin lies tails;
+and the goal is :math:`\mathit{Kw}_A(\mathit{tails})` rather than
+:math:`K_A(\mathit{tails})`, since knowing that the coin is tails is
+unachievable in the world where it is not.
+
+The fleet problems close that gap properly. They declare
+``:multi-pointed-models`` and state an initial theory that says nothing about
+whether a corridor is blocked, so the grounder produces a task designating one
+world per combination --- two for the corridor, four for the depot, eight for
+the survey --- and every solution to them branches.
 
 Action names
 ------------

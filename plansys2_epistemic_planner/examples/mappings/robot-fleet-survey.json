@@ -1,0 +1,61 @@
+{
+  "goto-north_r1": {"action": "(goto_junction r1 north)", "duration": 30.0},
+  "goto-north_r2": {"action": "(goto_junction r2 north)", "duration": 30.0},
+  "goto-north_r3": {"action": "(goto_junction r3 north)", "duration": 30.0},
+  "goto-north_r4": {"action": "(goto_junction r4 north)", "duration": 30.0},
+
+  "goto-south_r1": {"action": "(goto_junction r1 south)", "duration": 30.0},
+  "goto-south_r2": {"action": "(goto_junction r2 south)", "duration": 30.0},
+  "goto-south_r3": {"action": "(goto_junction r3 south)", "duration": 30.0},
+  "goto-south_r4": {"action": "(goto_junction r4 south)", "duration": 30.0},
+
+  "goto-east_r1": {"action": "(goto_junction r1 east)", "duration": 30.0},
+  "goto-east_r2": {"action": "(goto_junction r2 east)", "duration": 30.0},
+  "goto-east_r3": {"action": "(goto_junction r3 east)", "duration": 30.0},
+  "goto-east_r4": {"action": "(goto_junction r4 east)", "duration": 30.0},
+
+  "inspect-north_r1": {"action": "(inspect_corridor r1 north)", "duration": 5.0},
+  "inspect-north_r2": {"action": "(inspect_corridor r2 north)", "duration": 5.0},
+  "inspect-north_r3": {"action": "(inspect_corridor r3 north)", "duration": 5.0},
+  "inspect-north_r4": {"action": "(inspect_corridor r4 north)", "duration": 5.0},
+
+  "inspect-south_r1": {"action": "(inspect_corridor r1 south)", "duration": 5.0},
+  "inspect-south_r2": {"action": "(inspect_corridor r2 south)", "duration": 5.0},
+  "inspect-south_r3": {"action": "(inspect_corridor r3 south)", "duration": 5.0},
+  "inspect-south_r4": {"action": "(inspect_corridor r4 south)", "duration": 5.0},
+
+  "inspect-east_r1": {"action": "(inspect_corridor r1 east)", "duration": 5.0},
+  "inspect-east_r2": {"action": "(inspect_corridor r2 east)", "duration": 5.0},
+  "inspect-east_r3": {"action": "(inspect_corridor r3 east)", "duration": 5.0},
+  "inspect-east_r4": {"action": "(inspect_corridor r4 east)", "duration": 5.0},
+
+  "report-north-blocked_r1": {"action": "(report_blocked r1 north)", "duration": 1.0},
+  "report-north-blocked_r2": {"action": "(report_blocked r2 north)", "duration": 1.0},
+  "report-north-blocked_r3": {"action": "(report_blocked r3 north)", "duration": 1.0},
+  "report-north-blocked_r4": {"action": "(report_blocked r4 north)", "duration": 1.0},
+
+  "report-south-blocked_r1": {"action": "(report_blocked r1 south)", "duration": 1.0},
+  "report-south-blocked_r2": {"action": "(report_blocked r2 south)", "duration": 1.0},
+  "report-south-blocked_r3": {"action": "(report_blocked r3 south)", "duration": 1.0},
+  "report-south-blocked_r4": {"action": "(report_blocked r4 south)", "duration": 1.0},
+
+  "report-east-blocked_r1": {"action": "(report_blocked r1 east)", "duration": 1.0},
+  "report-east-blocked_r2": {"action": "(report_blocked r2 east)", "duration": 1.0},
+  "report-east-blocked_r3": {"action": "(report_blocked r3 east)", "duration": 1.0},
+  "report-east-blocked_r4": {"action": "(report_blocked r4 east)", "duration": 1.0},
+
+  "report-north-clear_r1": {"action": "(report_clear r1 north)", "duration": 1.0},
+  "report-north-clear_r2": {"action": "(report_clear r2 north)", "duration": 1.0},
+  "report-north-clear_r3": {"action": "(report_clear r3 north)", "duration": 1.0},
+  "report-north-clear_r4": {"action": "(report_clear r4 north)", "duration": 1.0},
+
+  "report-south-clear_r1": {"action": "(report_clear r1 south)", "duration": 1.0},
+  "report-south-clear_r2": {"action": "(report_clear r2 south)", "duration": 1.0},
+  "report-south-clear_r3": {"action": "(report_clear r3 south)", "duration": 1.0},
+  "report-south-clear_r4": {"action": "(report_clear r4 south)", "duration": 1.0},
+
+  "report-east-clear_r1": {"action": "(report_clear r1 east)", "duration": 1.0},
+  "report-east-clear_r2": {"action": "(report_clear r2 east)", "duration": 1.0},
+  "report-east-clear_r3": {"action": "(report_clear r3 east)", "duration": 1.0},
+  "report-east-clear_r4": {"action": "(report_clear r4 east)", "duration": 1.0}
+}

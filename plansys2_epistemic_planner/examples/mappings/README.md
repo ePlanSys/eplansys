@@ -17,6 +17,15 @@ planner:
       action_mapping: "/abs/path/to/mapping.json"
 ```
 
+## What is here
+
+| file | scenario |
+| --- | --- |
+| `robot-fleet.json` | the corridor scenario: two robots, one route |
+| `robot-fleet-depot.json` | the depot: three robots, two routes |
+| `robot-fleet-survey.json` | the survey: four robots, three routes |
+| `muddy-children-2.json` | the two-child puzzle instance |
+
 ## Format
 
 A JSON object keyed by grounded action name. A value is either the action

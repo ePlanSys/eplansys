@@ -1,0 +1,42 @@
+(define (problem fleet-survey)
+
+  ;; Four robots at the depot, three unlooked-at routes. Eight designated
+  ;; worlds: one per combination of the three corridors being blocked or clear.
+  ;; The goal is twelve conjuncts — every robot knowing whether each route is
+  ;; passable — and no robot can satisfy more than one of its three by itself,
+  ;; because a robot dispatched down a route stays on it.
+  ;;
+  ;; The solution is three survey trips and three broadcasts, in whatever order
+  ;; the search settles on, with a branch at each look: eight leaves, one per
+  ;; way the world can turn out.
+
+  (:domain robot-fleet-survey)
+
+  (:requirements
+    :equality :list-comprehensions
+    :finitary-S5-theories :modal-goals :knowing-whether
+    :multi-pointed-models
+  )
+
+  (:agents r1 r2 r3 r4)
+
+  (:init
+    (:and
+      (:forall (?i - agent) ([C. All] (not (at-north ?i))))
+      (:forall (?i - agent) ([C. All] (not (at-south ?i))))
+      (:forall (?i - agent) ([C. All] (not (at-east ?i))))
+      (:forall (?i - agent) ([C. All] (<Kw. ?i> (blocked-north))))
+      (:forall (?i - agent) ([C. All] (<Kw. ?i> (blocked-south))))
+      (:forall (?i - agent) ([C. All] (<Kw. ?i> (blocked-east))))
+    )
+  )
+
+  (:goal
+    (and
+      ([Kw. r1] (blocked-north)) ([Kw. r1] (blocked-south)) ([Kw. r1] (blocked-east))
+      ([Kw. r2] (blocked-north)) ([Kw. r2] (blocked-south)) ([Kw. r2] (blocked-east))
+      ([Kw. r3] (blocked-north)) ([Kw. r3] (blocked-south)) ([Kw. r3] (blocked-east))
+      ([Kw. r4] (blocked-north)) ([Kw. r4] (blocked-south)) ([Kw. r4] (blocked-east))
+    )
+  )
+)

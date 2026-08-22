@@ -1,0 +1,175 @@
+(define (domain robot-fleet-depot)
+
+  ;; The corridor scenario one size up: a three-robot fleet in a depot with two
+  ;; routes out, north and south, either of which may be blocked.
+  ;;
+  ;; What grows is not just the numbers. With one corridor there was a single
+  ;; thing to find out and a single robot that had to go and find it; with two
+  ;; there is a division of labour, and the planner has to decide whether one
+  ;; robot walks both routes or two robots split them. Both cost the same in
+  ;; actions here, which is the point: the search has to consider both.
+
+  (:requirements
+    :equality :partial-observability :list-comprehensions :lists
+    :ontic-actions :group-modalities
+    :negative-preconditions :modal-preconditions :knowing-whether
+  )
+
+  (:action-type-libraries intermediate)
+
+  (:predicates
+    (blocked-north)
+    (blocked-south)
+    (at-north ?i - agent)      ; ?i is at the north junction
+    (at-south ?i - agent)      ; ?i is at the south junction
+  )
+
+  (:event nil)
+
+  ;--------------------DRIVING------------------
+  ;
+  ; A robot dispatched down a route stays on it: the preconditions require the
+  ; robot to be at neither junction, so nothing drives from north to south.
+  ; That is a depot rule rather than a modelling shortcut, and it is what makes
+  ; this a fleet problem — no single robot can survey both routes, so two have
+  ; to go and the third has to be told.
+  ;
+  ; Driving is public, because the fleet tracks its own members' positions.
+
+  (:event e-goto-north
+    :parameters (?i - agent)
+    :precondition (and (not (at-north ?i)) (not (at-south ?i)))
+    :effects (at-north ?i)
+  )
+
+  (:action goto-north
+    :parameters (?i - agent)
+    :action-type (public-ontic (e-goto-north ?i))
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-goto-south
+    :parameters (?i - agent)
+    :precondition (and (not (at-south ?i)) (not (at-north ?i)))
+    :effects (at-south ?i)
+  )
+
+  (:action goto-south
+    :parameters (?i - agent)
+    :action-type (public-ontic (e-goto-south ?i))
+    :observability-conditions (default Fully)
+  )
+
+  ;--------------------LOOKING------------------
+  ;
+  ; Semi-private, as before: the fleet sees a robot look and does not see what
+  ; it saw. Twice over, once per route.
+
+  (:event e-inspect-north-blocked
+    :parameters (?i - agent)
+    :precondition
+      (and (at-north ?i) (blocked-north) (<Kw. ?i> (blocked-north)))
+  )
+
+  (:event e-inspect-north-clear
+    :parameters (?i - agent)
+    :precondition
+      (and (at-north ?i) (not (blocked-north)) (<Kw. ?i> (blocked-north)))
+  )
+
+  (:action inspect-north
+    :parameters (?i - agent)
+    :action-type (semi-private-sensing
+      (e-inspect-north-blocked ?i)
+      (e-inspect-north-clear ?i) )
+    :observability-conditions
+      (:and (?i Fully) (default Partially))
+  )
+
+  (:event e-inspect-south-blocked
+    :parameters (?i - agent)
+    :precondition
+      (and (at-south ?i) (blocked-south) (<Kw. ?i> (blocked-south)))
+  )
+
+  (:event e-inspect-south-clear
+    :parameters (?i - agent)
+    :precondition
+      (and (at-south ?i) (not (blocked-south)) (<Kw. ?i> (blocked-south)))
+  )
+
+  (:action inspect-south
+    :parameters (?i - agent)
+    :action-type (semi-private-sensing
+      (e-inspect-south-blocked ?i)
+      (e-inspect-south-clear ?i) )
+    :observability-conditions
+      (:and (?i Fully) (default Partially))
+  )
+
+  ;--------------------REPORTING------------------
+  ;
+  ; Four announcements: one per route per answer. A robot can only say what it
+  ; knows, and knowledge is factive, so hearing it settles the matter for the
+  ; whole fleet.
+
+  (:event e-knows-north-blocked
+    :parameters (?i - agent)
+    :precondition ([?i] (blocked-north))
+  )
+  (:event e-not-knows-north-blocked
+    :parameters (?i - agent)
+    :precondition (not ([?i] (blocked-north)))
+  )
+  (:action report-north-blocked
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-knows-north-blocked ?i) (e-not-knows-north-blocked ?i) )
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-knows-north-clear
+    :parameters (?i - agent)
+    :precondition ([?i] (not (blocked-north)))
+  )
+  (:event e-not-knows-north-clear
+    :parameters (?i - agent)
+    :precondition (not ([?i] (not (blocked-north))))
+  )
+  (:action report-north-clear
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-knows-north-clear ?i) (e-not-knows-north-clear ?i) )
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-knows-south-blocked
+    :parameters (?i - agent)
+    :precondition ([?i] (blocked-south))
+  )
+  (:event e-not-knows-south-blocked
+    :parameters (?i - agent)
+    :precondition (not ([?i] (blocked-south)))
+  )
+  (:action report-south-blocked
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-knows-south-blocked ?i) (e-not-knows-south-blocked ?i) )
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-knows-south-clear
+    :parameters (?i - agent)
+    :precondition ([?i] (not (blocked-south)))
+  )
+  (:event e-not-knows-south-clear
+    :parameters (?i - agent)
+    :precondition (not ([?i] (not (blocked-south))))
+  )
+  (:action report-south-clear
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-knows-south-clear ?i) (e-not-knows-south-clear ?i) )
+    :observability-conditions (default Fully)
+  )
+)

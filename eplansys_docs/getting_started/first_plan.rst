@@ -9,13 +9,14 @@ The problem
 -----------
 
 The problem is stated in EPDDL: a domain and a problem file, the epistemic
-counterparts of a PDDL domain and problem. The smallest example ships with
-``plansys2_epddl_grounder``:
+counterparts of a PDDL domain and problem. The smallest robotics example ships
+with ``plansys2_epddl_grounder`` --- two survey robots and a corridor that may
+be blocked, described in full in :doc:`../tutorials/fleet_corridor`:
 
 .. code-block:: text
 
-   <share>/plansys2_epddl_grounder/examples/muddy-children-domain.epddl
-   <share>/plansys2_epddl_grounder/examples/muddy-children-problem.epddl
+   <share>/plansys2_epddl_grounder/examples/robot-fleet-domain.epddl
+   <share>/plansys2_epddl_grounder/examples/robot-fleet-problem.epddl
 
 The solver does not search over EPDDL directly. It grounds the sources first —
 building the initial Kripke model from the problem's finitary S5 theory and
@@ -31,22 +32,24 @@ is the way to inspect the task or to check it into a test:
 .. code-block:: bash
 
    ros2 run plansys2_epddl_grounder ground_epddl \
-     -d <share>/plansys2_epddl_grounder/examples/muddy-children-domain.epddl \
-     -p <share>/plansys2_epddl_grounder/examples/muddy-children-problem.epddl \
-     -o /tmp/muddy-children.json
+     -d <share>/plansys2_epddl_grounder/examples/robot-fleet-domain.epddl \
+     -p <share>/plansys2_epddl_grounder/examples/robot-fleet-problem.epddl \
+     -o /tmp/robot-fleet.json
 
 Several already grounded tasks are checked into the planner package for its
 tests, and can be used directly through ``task_file``:
 
 .. code-block:: text
 
-   plansys2_epistemic_planner/test/tasks/muddy-children-2.json
-   plansys2_epistemic_planner/test/tasks/muddy-children-3.json
+   plansys2_epistemic_planner/test/tasks/robot-fleet.json
+   plansys2_epistemic_planner/test/tasks/robot-fleet-depot.json
    plansys2_epistemic_planner/test/tasks/coin-in-the-box.json
    plansys2_epistemic_planner/test/tasks/coin-in-the-box-multipointed.json
-   plansys2_epistemic_planner/test/tasks/active-muddy-child.json
 
-``muddy-children-2.json`` is what grounding the example above produces.
+``robot-fleet.json`` is what grounding the example above produces. The depot
+scenario is the same domain with a second route and a third robot; both are
+covered in :doc:`../tutorials/index`, along with a third that is shipped as
+EPDDL only because its search takes a minute.
 
 Parameters
 ----------
@@ -154,17 +157,17 @@ Action names
 ------------
 
 The names the planner searches over are not PlanSys2 action expressions. A
-grounded epistemic action is a single token such as ``ask_c1`` or
-``pickup-A-hold_r2``, while the executor expects ``(ask c1)``: a name and its
-parameters, looked up in the PDDL domain to find the behavior tree that drives
-the hardware. The ``action_mapping`` parameter names a JSON file stating the
-correspondence:
+grounded epistemic action is a single token such as ``inspect_r1`` or
+``report-blocked_r1``, while the executor expects ``(inspect_corridor r1)``: a
+name and its parameters, looked up in the PDDL domain to find the behavior tree
+that drives the hardware. The ``action_mapping`` parameter names a JSON file
+stating the correspondence:
 
 .. code-block:: json
 
    {
-     "ask_c1":          "(ask c1)",
-     "move-kitchen_r1": {"action": "(move r1 corridor kitchen)", "duration": 12.5}
+     "inspect_r1":        "(inspect_corridor r1)",
+     "goto-junction_r1":  {"action": "(goto_junction r1)", "duration": 30.0}
    }
 
 Duration is in seconds, defaults to 1.0, and must be positive. It is a property
@@ -174,8 +177,10 @@ out against.
 
 With ``action_mapping`` unset, the solver falls back to a naming convention
 that splits the grounded name at its first underscore and reads the rest as
-parameters, keeping hyphens in the name: ``ask_c1`` becomes ``(ask c1)`` and
-``pickup-A-hold_r2`` becomes ``(pickup-A-hold r2)``. That convention cannot
+parameters, keeping hyphens in the name: ``inspect_r1`` becomes
+``(inspect r1)`` and ``report-blocked_r1`` becomes ``(report-blocked r1)``,
+neither of which is the PDDL action the fleet's executor drives. The convention
+cannot
 recover the parameter order the PDDL domain declares, so a mapping file should
 be written before dispatching to real actions. An action the map does not cover
 fails the planning request rather than reaching the executor as a name it

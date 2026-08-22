@@ -1,0 +1,202 @@
+(define (domain robot-fleet-survey)
+
+  ;; The fleet scenario at its third size: four robots, three routes out of the
+  ;; depot, any of which may be blocked. Written to be big rather than clever —
+  ;; it is the same three mechanisms as the two smaller scenarios (drive, look,
+  ;; say what you saw) with nothing added, so that what grows is the search and
+  ;; not the modelling.
+  ;;
+  ;; The numbers are what make it worth having. Fifteen atoms, forty-eight
+  ;; grounded actions, and eight worlds the fleet cannot tell apart to begin
+  ;; with. Aletheia solves it at depth nine, expanding five million nodes in
+  ;; about a minute while never exceeding five megabytes of resident memory —
+  ;; the search space explodes and the state representation does not, which is
+  ;; the property the planner was built around.
+  ;;
+  ;; That cost is also why this one is an example and not a test: a minute is
+  ;; too long for a suite that runs on every push. The two smaller scenarios
+  ;; carry the regression testing; this one is here to be run deliberately.
+  ;;
+  ;; Generated from the same template as the depot scenario, which is why it
+  ;; reads mechanically. The comments in robot-fleet-depot-domain.epddl explain
+  ;; what each construct is doing.
+
+  (:requirements
+    :equality :partial-observability :list-comprehensions :lists
+    :ontic-actions :group-modalities
+    :negative-preconditions :modal-preconditions :knowing-whether
+  )
+
+  (:action-type-libraries intermediate)
+
+  (:predicates
+    (blocked-north)
+    (blocked-south)
+    (blocked-east)
+    (at-north ?i - agent)
+    (at-south ?i - agent)
+    (at-east ?i - agent)
+  )
+
+  (:event nil)
+
+  (:event e-goto-north
+    :parameters (?i - agent)
+    :precondition (and (not (at-north ?i)) (not (at-south ?i)) (not (at-east ?i)))
+    :effects (at-north ?i)
+  )
+  (:action goto-north
+    :parameters (?i - agent)
+    :action-type (public-ontic (e-goto-north ?i))
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-goto-south
+    :parameters (?i - agent)
+    :precondition (and (not (at-north ?i)) (not (at-south ?i)) (not (at-east ?i)))
+    :effects (at-south ?i)
+  )
+  (:action goto-south
+    :parameters (?i - agent)
+    :action-type (public-ontic (e-goto-south ?i))
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-goto-east
+    :parameters (?i - agent)
+    :precondition (and (not (at-north ?i)) (not (at-south ?i)) (not (at-east ?i)))
+    :effects (at-east ?i)
+  )
+  (:action goto-east
+    :parameters (?i - agent)
+    :action-type (public-ontic (e-goto-east ?i))
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-inspect-north-blocked
+    :parameters (?i - agent)
+    :precondition (and (at-north ?i) (blocked-north) (<Kw. ?i> (blocked-north)))
+  )
+  (:event e-inspect-north-clear
+    :parameters (?i - agent)
+    :precondition (and (at-north ?i) (not (blocked-north)) (<Kw. ?i> (blocked-north)))
+  )
+  (:action inspect-north
+    :parameters (?i - agent)
+    :action-type (semi-private-sensing (e-inspect-north-blocked ?i) (e-inspect-north-clear ?i))
+    :observability-conditions (:and (?i Fully) (default Partially))
+  )
+
+  (:event e-inspect-south-blocked
+    :parameters (?i - agent)
+    :precondition (and (at-south ?i) (blocked-south) (<Kw. ?i> (blocked-south)))
+  )
+  (:event e-inspect-south-clear
+    :parameters (?i - agent)
+    :precondition (and (at-south ?i) (not (blocked-south)) (<Kw. ?i> (blocked-south)))
+  )
+  (:action inspect-south
+    :parameters (?i - agent)
+    :action-type (semi-private-sensing (e-inspect-south-blocked ?i) (e-inspect-south-clear ?i))
+    :observability-conditions (:and (?i Fully) (default Partially))
+  )
+
+  (:event e-inspect-east-blocked
+    :parameters (?i - agent)
+    :precondition (and (at-east ?i) (blocked-east) (<Kw. ?i> (blocked-east)))
+  )
+  (:event e-inspect-east-clear
+    :parameters (?i - agent)
+    :precondition (and (at-east ?i) (not (blocked-east)) (<Kw. ?i> (blocked-east)))
+  )
+  (:action inspect-east
+    :parameters (?i - agent)
+    :action-type (semi-private-sensing (e-inspect-east-blocked ?i) (e-inspect-east-clear ?i))
+    :observability-conditions (:and (?i Fully) (default Partially))
+  )
+
+  (:event e-knows-north-blocked
+    :parameters (?i - agent)
+    :precondition ([?i] (blocked-north))
+  )
+  (:event e-not-knows-north-blocked
+    :parameters (?i - agent)
+    :precondition (not ([?i] (blocked-north)))
+  )
+  (:action report-north-blocked
+    :parameters (?i - agent)
+    :action-type (public-announcement (e-knows-north-blocked ?i) (e-not-knows-north-blocked ?i))
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-knows-north-clear
+    :parameters (?i - agent)
+    :precondition ([?i] (not (blocked-north)))
+  )
+  (:event e-not-knows-north-clear
+    :parameters (?i - agent)
+    :precondition (not ([?i] (not (blocked-north))))
+  )
+  (:action report-north-clear
+    :parameters (?i - agent)
+    :action-type (public-announcement (e-knows-north-clear ?i) (e-not-knows-north-clear ?i))
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-knows-south-blocked
+    :parameters (?i - agent)
+    :precondition ([?i] (blocked-south))
+  )
+  (:event e-not-knows-south-blocked
+    :parameters (?i - agent)
+    :precondition (not ([?i] (blocked-south)))
+  )
+  (:action report-south-blocked
+    :parameters (?i - agent)
+    :action-type (public-announcement (e-knows-south-blocked ?i) (e-not-knows-south-blocked ?i))
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-knows-south-clear
+    :parameters (?i - agent)
+    :precondition ([?i] (not (blocked-south)))
+  )
+  (:event e-not-knows-south-clear
+    :parameters (?i - agent)
+    :precondition (not ([?i] (not (blocked-south))))
+  )
+  (:action report-south-clear
+    :parameters (?i - agent)
+    :action-type (public-announcement (e-knows-south-clear ?i) (e-not-knows-south-clear ?i))
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-knows-east-blocked
+    :parameters (?i - agent)
+    :precondition ([?i] (blocked-east))
+  )
+  (:event e-not-knows-east-blocked
+    :parameters (?i - agent)
+    :precondition (not ([?i] (blocked-east)))
+  )
+  (:action report-east-blocked
+    :parameters (?i - agent)
+    :action-type (public-announcement (e-knows-east-blocked ?i) (e-not-knows-east-blocked ?i))
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-knows-east-clear
+    :parameters (?i - agent)
+    :precondition ([?i] (not (blocked-east)))
+  )
+  (:event e-not-knows-east-clear
+    :parameters (?i - agent)
+    :precondition (not ([?i] (not (blocked-east))))
+  )
+  (:action report-east-clear
+    :parameters (?i - agent)
+    :action-type (public-announcement (e-knows-east-clear ?i) (e-not-knows-east-clear ?i))
+    :observability-conditions (default Fully)
+  )
+
+)
