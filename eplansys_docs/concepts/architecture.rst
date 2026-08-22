@@ -1,11 +1,12 @@
 Architecture
 ============
 
-ePlanSys adds four packages to PlanSys2 and changes none of its own. The
+ePlanSys adds five packages to PlanSys2 and changes none of its own. The
 planner is a plan solver plugin, the tree builder is a behavior tree builder
 plugin, the epistemic behavior tree nodes are loaded as a BehaviorTree.CPP
-plugin library, and the model of what the agents know is a separate lifecycle
-node. Nothing in ``plansys2_executor`` links against any of it.
+plugin library, the model of what the agents know is a separate lifecycle
+node, and perception is a second one that watches a map and reports to the
+first. Nothing in ``plansys2_executor`` links against any of it.
 
 .. graphviz::
    :caption: Where the epistemic packages attach to PlanSys2
@@ -33,7 +34,10 @@ node. Nothing in ``plansys2_executor`` links against any of it.
        builder   [label="EpistemicBTBuilder\n(BT builder plugin)"];
        nodes     [label="epistemic BT nodes\n(BT.CPP plugin library)"];
        state     [label="epistemic_state\n(lifecycle node)"];
+       perceive  [label="epistemic_perception\n(lifecycle node)"];
      }
+
+     map [label="occupancy grid\n(SLAM)", shape=ellipse];
 
      planner  -> solver   [label="loads"];
      executor -> builder  [label="loads"];
@@ -41,6 +45,8 @@ node. Nothing in ``plansys2_executor`` links against any of it.
      executor -> problem  [label="facts"];
      executor -> domain   [label="action trees"];
      nodes    -> state    [label="services"];
+     map      -> perceive [label="grid"];
+     perceive -> state    [label="outcomes,\nannouncements"];
      solver   -> executor [label="Plan with\nepistemic fields", style=dashed];
    }
 
@@ -351,6 +357,77 @@ the state designates a single world it already answers it, and the response
 reports it. When it designates several it genuinely does not know, and the
 observation has to come from whoever did the sensing.
 
+Perception
+----------
+
+The state advances by executed actions, and something still has to tell it what
+a sensing action saw. ``plansys2_epistemic_perception`` is that something: a
+lifecycle node that watches an ``nav_msgs/OccupancyGrid``, classifies named
+regions of it, and reports what it found in the vocabulary of the loaded task.
+
+Two things stand between a grid and a formula, and the package exists because
+neither is mechanical.
+
+The first is a quantifier. A cell is free or occupied; a proposition is about a
+region, and which quantifier joins them is a modelling decision:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 80
+
+   * - The region is
+     - when
+   * - ``Clear``
+     - every cell in it has been observed and settled as free
+   * - ``Blocked``
+     - any one cell in it is occupied
+   * - ``Unknown``
+     - anything else
+
+Occupied beats unobserved, since no further looking removes an obstacle;
+unobserved beats free, since a region is clear only when all of it is. A cell
+that has been seen without being settled — the band between the two thresholds
+— counts as unobserved, because calling it free would hand an agent knowledge
+it does not have.
+
+The second is the vocabulary. A region is a place on a map; an atom is a name
+in a grounded task, and those names are flat: ``blocked``, ``at-junction_r1``.
+Each region therefore names the atom its occupancy decides and says which way
+that atom points, which is what lets the corridor of the fleet tutorial be
+``blocked`` rather than ``clear_corridor``:
+
+.. code-block:: yaml
+
+   epistemic_perception:
+     ros__parameters:
+       regions: ["corridor"]
+       corridor:
+         boxes: [2.0, -0.5, 8.0, 0.5, 7.5, 0.5, 8.5, 4.0]
+         atom: "blocked"
+         atom_true_when_clear: false
+         sensing_action: "inspect_r1"
+         outcome_when_clear: "e-inspect-clear"
+         outcome_when_blocked: "e-inspect-blocked"
+
+Regions are given in metres in the map frame rather than in cells because a map
+is re-gridded as it grows: the origin moves and the width changes, and a region
+written in cell indices would come to mean somewhere else without saying so.
+
+How the finding is reported follows from why it is being reported, which is the
+same distinction announcing draws above. A region bound to a sensing action
+reports through ``apply_action``: the observation belongs to an action the
+planner branched on, the state has its event model, and the update is the one
+the plan accounted for. A region without a binding is announced instead —
+information that arrived outside the plan, an operator or two robots
+reconciling their maps, which is exactly what a public announcement is for.
+
+It reports on change rather than on every grid. A map arrives several times a
+second and says the same thing each time; a repeated announcement is harmless
+in the model, since restricting to worlds where a formula already holds changes
+nothing, but a sensing action applied twice is not, and both routes follow the
+one rule. A region that goes back to undecided produces no call at all: the
+state has no operation for taking knowledge back.
+
 Executor configuration
 ----------------------
 
@@ -391,6 +468,9 @@ Package boundaries
      - No
    * - ``plansys2_epistemic_executor``
      - Policy, tree rendering, the four nodes, the state node
+     - No
+   * - ``plansys2_epistemic_perception``
+     - Regions of a map, and their translation into calls on the state
      - No
    * - ``plansys2_epistemic_bt_builder``
      - The ``BTBuilder`` plugin
