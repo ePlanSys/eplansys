@@ -1,0 +1,47 @@
+# The corridor of the fleet tutorial, watched on a map.
+#
+# The domain is eplansys_docs/tutorials/fleet_corridor: one atom, `blocked`,
+# which nobody knows the value of until a robot at the junction looks down the
+# corridor. That look is the `inspect` action, whose two events the planner
+# branches on, and this file is what makes the map answer it.
+#
+# Run it with the state node and a source of maps:
+#
+#   ros2 launch plansys2_epistemic_executor epistemic_state_launch.py \
+#     params_file:=<the task>
+#   ros2 launch plansys2_epistemic_perception epistemic_perception_launch.py \
+#     params_file:=$(ros2 pkg prefix plansys2_epistemic_perception)/share/\
+# plansys2_epistemic_perception/params/fleet_corridor_regions.yaml
+
+epistemic_perception:
+  ros__parameters:
+    map_topic: "/map"
+
+    regions: ["corridor"]
+
+    corridor:
+      # Two boxes, because the corridor bends: the leg leaving the junction and
+      # the leg reaching the depot. Metres in the map frame, as
+      # [min_x, min_y, max_x, max_y] per box.
+      boxes: [2.0, -0.5, 8.0, 0.5, 7.5, 0.5, 8.5, 4.0]
+
+      # The task's own atom, and which way it points. `blocked` is true when
+      # the corridor is *not* clear, which is the case this flag exists for.
+      atom: "blocked"
+      atom_true_when_clear: false
+
+      # The sensing action this observation answers, and the event the planner
+      # gave each outcome. Drop these three and the same observation goes out
+      # as a public announcement instead, which is what a map exchanged between
+      # two robots wants.
+      sensing_action: "inspect_r1"
+      outcome_when_clear: "e-inspect-clear"
+      outcome_when_blocked: "e-inspect-blocked"
+
+    # A cell below 25 is free enough to drive, above 65 is an obstacle, and the
+    # band between is seen but unsettled -- which counts as unobserved, because
+    # calling it free would hand an agent knowledge it does not have.
+    free_below: 25
+    occupied_above: 65
+
+    call_timeout: 5.0
