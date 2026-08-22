@@ -176,9 +176,16 @@ TEST(executiotest_noden_tree, bt_builder_factory)
     domain_client->getDomain(true), problem_client->getProblem(true));
     ASSERT_TRUE(plan);
 
-    std::shared_ptr<plansys2::BTBuilder> bt_builder;
+    // The loader is declared first so that it is destroyed last. Locals are
+    // destroyed in reverse order, and createSharedInstance hands back a
+    // shared_ptr whose deleter calls back into the loader: destroy the loader
+    // while the instance is alive and that deleter is left pointing at freed
+    // memory. class_loader warns about it ("objects created by this loader
+    // exist in the heap") and the process then dies, or does not, depending on
+    // what happens to sit in that memory. That is the flake.
     pluginlib::ClassLoader<plansys2::BTBuilder> bt_builder_loader("plansys2_executor",
       "plansys2::BTBuilder");
+    std::shared_ptr<plansys2::BTBuilder> bt_builder;
     try {
       bt_builder = bt_builder_loader.createSharedInstance("plansys2::SimpleBTBuilder");
     } catch (pluginlib::PluginlibException & ex) {
@@ -322,9 +329,11 @@ TEST(executiotest_noden_tree, bt_builder_factory_2)
     domain_client->getDomain(true), problem_client->getProblem(true));
     ASSERT_TRUE(plan);
 
-    std::shared_ptr<plansys2::BTBuilder> bt_builder;
+    // Loader first, so it outlives the instance it creates. See the note in
+    // the first of these tests.
     pluginlib::ClassLoader<plansys2::BTBuilder> bt_builder_loader("plansys2_executor",
       "plansys2::BTBuilder");
+    std::shared_ptr<plansys2::BTBuilder> bt_builder;
     try {
       bt_builder = bt_builder_loader.createSharedInstance("plansys2::SimpleBTBuilder");
     } catch (pluginlib::PluginlibException & ex) {
@@ -457,9 +466,11 @@ TEST(executiotest_noden_tree, bt_builder_factory_3)
     domain_client->getDomain(true), problem_client->getProblem(true));
     ASSERT_TRUE(plan);
 
-    std::shared_ptr<plansys2::BTBuilder> bt_builder;
+    // Loader first, so it outlives the instance it creates. See the note in
+    // the first of these tests.
     pluginlib::ClassLoader<plansys2::BTBuilder> bt_builder_loader("plansys2_executor",
       "plansys2::BTBuilder");
+    std::shared_ptr<plansys2::BTBuilder> bt_builder;
     try {
       bt_builder = bt_builder_loader.createSharedInstance("plansys2::SimpleBTBuilder");
     } catch (pluginlib::PluginlibException & ex) {

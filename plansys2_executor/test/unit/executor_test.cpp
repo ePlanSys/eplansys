@@ -594,9 +594,11 @@ TEST(executor, action_executor)
     ASSERT_TRUE(plan);
 
 
-    std::shared_ptr<plansys2::BTBuilder> bt_builder;
+    // Loader first, so it outlives the instance it creates. See the note in
+    // the first of these tests.
     pluginlib::ClassLoader<plansys2::BTBuilder> bt_builder_loader("plansys2_executor",
       "plansys2::BTBuilder");
+    std::shared_ptr<plansys2::BTBuilder> bt_builder;
     try {
       bt_builder = bt_builder_loader.createSharedInstance("plansys2::SimpleBTBuilder");
     } catch (pluginlib::PluginlibException & ex) {

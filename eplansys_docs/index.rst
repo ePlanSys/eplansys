@@ -74,6 +74,12 @@ Contents
 
 .. toctree::
    :maxdepth: 2
+   :caption: Reports
+
+   reports/epistemic_end_to_end
+
+.. toctree::
+   :maxdepth: 2
    :caption: About
 
    about/contributing
