@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <unistd.h>
+
 #include <memory>
 #include <string>
 
@@ -281,10 +283,27 @@ TEST(test_3, test_3)
   t.join();
 }
 
+// Leave through _exit, so the DDS threads never outlive the process.
+//
+// rclcpp::shutdown() does not finalise the global context; that happens in
+// static destruction, inside _dl_fini, while Fast DDS listener threads are
+// still running in libraries the loader is unmapping. Under --coverage, which
+// is how the rolling job builds, that same exit path writes a .gcda for every
+// object file, stretching the window until about one run in ten segfaults with
+// every test already passed. Dumping the counters and leaving through _exit
+// keeps the coverage data and skips static destruction. __gcov_dump is weak:
+// it is null in an uninstrumented build.
+extern "C" void __gcov_dump(void) __attribute__((weak));
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   rclcpp::init(argc, argv);
 
-  return RUN_ALL_TESTS();
+  const int result = RUN_ALL_TESTS();
+
+  if (__gcov_dump) {
+    __gcov_dump();
+  }
+  _exit(result);
 }
