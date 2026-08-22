@@ -39,6 +39,16 @@ int main(int argc, char ** argv)
   main_node->declare_parameter("use_real_time", real_time);
   main_node->get_parameter("use_real_time", real_time);
 
+  // The epistemic state is the fifth node of an epistemic system and has no
+  // place in a classical one, so it is off unless asked for. It runs in its
+  // own process, started by the launch file: this program only manages its
+  // lifecycle, which needs the node's name and not its class. That is what
+  // keeps plansys2_bringup free of any link against the epistemic packages,
+  // and keeps every other distribution's workflow building it unchanged.
+  bool use_epistemic_state = false;
+  main_node->declare_parameter("use_epistemic_state", use_epistemic_state);
+  main_node->get_parameter("use_epistemic_state", use_epistemic_state);
+
   auto domain_node = std::make_shared<plansys2::DomainExpertNode>();
   auto problem_node = std::make_shared<plansys2::ProblemExpertNode>();
   auto planner_node = std::make_shared<plansys2::PlannerNode>();
@@ -58,6 +68,10 @@ int main(int argc, char ** argv)
     "planner_lc_mngr", "planner");
   manager_nodes["executor"] = std::make_shared<plansys2::LifecycleServiceClient>(
     "executor_lc_mngr", "executor");
+  if (use_epistemic_state) {
+    manager_nodes["epistemic_state"] = std::make_shared<plansys2::LifecycleServiceClient>(
+      "epistemic_state_lc_mngr", "epistemic_state");
+  }
 
   for (auto & manager_node : manager_nodes) {
     manager_node.second->init();

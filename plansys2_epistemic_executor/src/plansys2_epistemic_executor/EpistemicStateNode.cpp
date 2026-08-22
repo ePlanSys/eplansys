@@ -24,11 +24,14 @@
 #include <utility>
 #include <vector>
 
-#include "plansys2_epistemic_executor/formula_text.hpp"
 #include "plansys2_epistemic_planner/action.hpp"
+#include "plansys2_epistemic_planner/bitset.hpp"
+#include "plansys2_epistemic_planner/formula_text.hpp"
 #include "plansys2_epistemic_planner/formula.hpp"
 #include "plansys2_epistemic_planner/parser.hpp"
+#include "plansys2_epistemic_planner/policy_plan.hpp"
 #include "plansys2_epistemic_planner/product_update.hpp"
+#include "plansys2_epistemic_planner/state.hpp"
 
 namespace plansys2
 {
@@ -94,6 +97,24 @@ EpistemicStateNode::on_configure(const rclcpp_lifecycle::State & state)
     "epistemic_state/apply_action",
     std::bind(
       &EpistemicStateNode::apply_action_callback, this,
+      std::placeholders::_1, std::placeholders::_2));
+
+  get_goal_service_ = create_service<plansys2_epistemic_msgs::srv::GetGoal>(
+    "epistemic_state/get_goal",
+    std::bind(
+      &EpistemicStateNode::get_goal_callback, this,
+      std::placeholders::_1, std::placeholders::_2));
+
+  set_goal_service_ = create_service<plansys2_epistemic_msgs::srv::SetGoal>(
+    "epistemic_state/set_goal",
+    std::bind(
+      &EpistemicStateNode::set_goal_callback, this,
+      std::placeholders::_1, std::placeholders::_2));
+
+  announce_service_ = create_service<plansys2_epistemic_msgs::srv::Announce>(
+    "epistemic_state/announce",
+    std::bind(
+      &EpistemicStateNode::announce_callback, this,
       std::placeholders::_1, std::placeholders::_2));
 
   state_pub_ = create_publisher<std_msgs::msg::String>(
@@ -176,11 +197,40 @@ void EpistemicStateNode::publish_state()
   if (!state_ || !state_pub_ || !state_pub_->is_activated()) {
     return;
   }
-  std_msgs::msg::String msg;
-  msg.data =
+  // Enough for a monitor to say what is going on without asking: the shape of
+  // the model, what is being aimed at, and whether it is there yet. The goal
+  // travels here rather than only through get_goal so that a subscriber —
+  // the plan solver among them — can follow it without a service call from
+  // inside a service callback.
+  const auto goal = goal_text();
+
+  std::string data =
     "{\"worlds\": " + std::to_string(state_->num_worlds) +
-    ", \"designated\": " + std::to_string(state_->num_designated()) + "}";
+    ", \"designated\": " + std::to_string(state_->num_designated()) +
+    ", \"agents\": " + std::to_string(task_ ? task_->num_agents() : 0) +
+    ", \"atoms\": " + std::to_string(task_ ? task_->num_atoms() : 0) +
+    ", \"goal\": \"" + goal + "\"" +
+    ", \"goal_from_task\": " + (goal_override_ ? "false" : "true");
+
+  if (!goal.empty()) {
+    const auto & formula = goal_override_ ? goal_override_ : task_->goal;
+    data += ", \"goal_holds\": ";
+    data += state_->satisfies(*formula) ? "true" : "false";
+  }
+  data += "}";
+
+  std_msgs::msg::String msg;
+  msg.data = std::move(data);
   state_pub_->publish(msg);
+}
+
+std::string EpistemicStateNode::goal_text() const
+{
+  if (!task_) {
+    return "";
+  }
+  const auto & formula = goal_override_ ? goal_override_ : task_->goal;
+  return formula ? render_formula(*task_, *formula) : std::string();
 }
 
 void EpistemicStateNode::load_task_callback(
@@ -194,6 +244,9 @@ void EpistemicStateNode::load_task_callback(
     // state are dropped first, and nothing else holds formulas from them.
     task_.reset();
     state_.reset();
+    // The override was a formula in the previous task's vocabulary; keeping it
+    // across a load would aim at symbols the new task may not have.
+    goal_override_.reset();
     formula_registry_reset();
 
     if (!request->task_json.empty()) {
@@ -366,6 +419,127 @@ void EpistemicStateNode::apply_action_callback(
     response->outcome.empty() ? "" : " -> ",
     response->outcome.c_str(),
     response->num_worlds, response->num_designated);
+
+  publish_state();
+}
+
+void EpistemicStateNode::get_goal_callback(
+  const std::shared_ptr<plansys2_epistemic_msgs::srv::GetGoal::Request> request,
+  std::shared_ptr<plansys2_epistemic_msgs::srv::GetGoal::Response> response)
+{
+  (void)request;
+
+  if (!task_ || !state_) {
+    response->success = false;
+    response->error = "no task is loaded, so there is no goal to report";
+    return;
+  }
+
+  const auto & formula = goal_override_ ? goal_override_ : task_->goal;
+
+  response->success = true;
+  response->from_task = !goal_override_;
+  response->goal = goal_text();
+  // A task with no goal at all is not an error — it is a model to ask
+  // questions of rather than a problem to solve — but nothing holds of it.
+  response->holds = formula ? state_->satisfies(*formula) : false;
+}
+
+void EpistemicStateNode::set_goal_callback(
+  const std::shared_ptr<plansys2_epistemic_msgs::srv::SetGoal::Request> request,
+  std::shared_ptr<plansys2_epistemic_msgs::srv::SetGoal::Response> response)
+{
+  if (!task_ || !state_) {
+    response->success = false;
+    response->error = "no task is loaded, so a goal has no vocabulary to be written in";
+    return;
+  }
+
+  if (request->goal.empty()) {
+    goal_override_.reset();
+    response->success = true;
+    response->holds = task_->goal ? state_->satisfies(*task_->goal) : false;
+    RCLCPP_INFO(get_logger(), "[epistemic_state] goal restored to the task's own");
+    publish_state();
+    return;
+  }
+
+  std::string error;
+  const auto formula = parse_formula(*task_, request->goal, error);
+  if (!formula) {
+    // Refusing a goal that names symbols the task does not have is the point
+    // of the goal living here: the alternative is a planning request that
+    // fails much later with nothing to point at.
+    response->success = false;
+    response->error = error;
+    RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", error.c_str());
+    return;
+  }
+
+  goal_override_ = formula;
+
+  response->success = true;
+  response->holds = state_->satisfies(*formula);
+
+  RCLCPP_INFO(
+    get_logger(), "[epistemic_state] goal set to %s (%s)",
+    goal_text().c_str(), response->holds ? "already holds" : "does not hold yet");
+
+  publish_state();
+}
+
+void EpistemicStateNode::announce_callback(
+  const std::shared_ptr<plansys2_epistemic_msgs::srv::Announce::Request> request,
+  std::shared_ptr<plansys2_epistemic_msgs::srv::Announce::Response> response)
+{
+  if (!task_ || !state_) {
+    response->success = false;
+    response->error = "no task is loaded, so there is no model to announce into";
+    return;
+  }
+
+  std::string error;
+  const auto formula = parse_formula(*task_, request->formula, error);
+  if (!formula) {
+    response->success = false;
+    response->error = error;
+    RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", error.c_str());
+    return;
+  }
+
+  // A public announcement of phi keeps exactly the worlds where phi holds. The
+  // extension has to be copied out: the cache arena it lives in is invalidated
+  // by the next model-checking call, and restrict_state does several.
+  std::vector<bits::Word> keep;
+  state_->sat_copy(*formula, keep);
+
+  std::vector<WorldIdx> remap;
+  auto restricted = restrict_state(
+    *state_, bits::ConstWordSpan{keep.data(), keep.size()}, remap);
+
+  if (restricted.num_designated() == 0) {
+    // Announcing something false at every world the agents consider possible
+    // is not a smaller model, it is no model: nothing would be consistent with
+    // what was just said. Refusing says the announcement and the state
+    // disagree, which is a reason to reload, not to keep going.
+    response->success = false;
+    response->error =
+      "announcing '" + request->formula + "' would leave no possible world: "
+      "it is false everywhere the state considers possible";
+    RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", response->error.c_str());
+    return;
+  }
+
+  const auto worlds_before = state_->num_worlds;
+  state_ = std::move(restricted);
+
+  response->success = true;
+  response->num_worlds = state_->num_worlds;
+  response->num_designated = static_cast<std::uint32_t>(state_->num_designated());
+
+  RCLCPP_INFO(
+    get_logger(), "[epistemic_state] announced %s: %u worlds -> %u",
+    request->formula.c_str(), worlds_before, state_->num_worlds);
 
   publish_state();
 }

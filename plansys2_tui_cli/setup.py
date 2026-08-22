@@ -47,6 +47,7 @@ setup(
         ],
         'plansys2.verb': [
             'knowledge = plansys2_tui_cli.cli.knowledge:KnowledgeVerb',
+            'epistemic = plansys2_tui_cli.cli.epistemic:EpistemicVerb',
             'plan_monitor = plansys2_tui_cli.cli.plan_monitor:PlanMonitorVerb',
             'performers = plansys2_tui_cli.cli.performers:PerformersVerb',
             'execution_monitor = plansys2_tui_cli.cli.execution_monitor:ExecutionMonitorVerb',

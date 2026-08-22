@@ -26,6 +26,7 @@
 #include "plansys2_epistemic_planner/task.hpp"
 #include "plansys2_msgs/msg/plan.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/string.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
 namespace plansys2
@@ -84,6 +85,14 @@ namespace plansys2
  *                    convention that guesses parameter order and is not
  *                    suitable for dispatching to real actions. An action the
  *                    map does not cover fails the request.
+ *   goal_from_state  Take the goal from the epistemic state when it publishes
+ *                    one, rather than from the task. True by default, which is
+ *                    what makes `set_goal` on the state change what is planned
+ *                    for; the task's own goal is used whenever the state is
+ *                    absent or reports the task's goal unchanged. It is read
+ *                    from the state's latched topic rather than asked for,
+ *                    because planning happens inside a service callback and a
+ *                    service call from there can deadlock.
  *   conditional_plan How to return a branching policy through a flat Plan:
  *                      "flatten" (default) — follow the lowest event index at
  *                          each branch and warn. The result is valid only if
@@ -123,6 +132,12 @@ private:
 
   std::string parameter(const std::string & name) const;
 
+  /// Replace the task's goal with the one the epistemic state published, when
+  /// there is one and it differs. Returns false with `error` set when the
+  /// published goal does not parse against this task, which means the state
+  /// and the planner are holding different problems.
+  bool apply_state_goal(PlanningTask & task, std::string & error) const;
+
   std::string task_file_parameter_name_;
   std::string heuristic_parameter_name_;
   std::string strategy_parameter_name_;
@@ -132,6 +147,14 @@ private:
 
   EpddlParameterNames epddl_parameter_names_;
   EpddlGrounder grounder_;
+
+  std::string goal_from_state_parameter_name_;
+
+  /// The last goal the epistemic state published, as text. Latched by the
+  /// subscription rather than fetched, so reading it costs nothing and cannot
+  /// block the planning request that reads it.
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr state_sub_;
+  std::string state_goal_;
 };
 
 }  // namespace plansys2

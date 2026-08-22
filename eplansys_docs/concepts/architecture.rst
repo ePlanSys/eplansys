@@ -279,6 +279,18 @@ model at a time, for one grounded task, and answers three services.
        observed. The request names the action in the task's own vocabulary and
        may carry the observed outcome; the response reports the outcome that
        occurred and the size of the resulting state.
+   * - ``epistemic_state/get_goal``
+     - What is being aimed at, and whether it holds yet. The response says
+       whether the goal is the loaded task's own or one set since.
+   * - ``epistemic_state/set_goal``
+     - Aim at something else, without re-grounding the problem. The formula is
+       parsed against the loaded task, so a goal naming an agent or atom the
+       task does not have is refused here rather than failing later inside a
+       planning request. An empty goal restores the task's own.
+   * - ``epistemic_state/announce``
+     - Everyone just learned that this is true. The model is restricted to the
+       worlds where the formula holds. An announcement that holds nowhere the
+       state considers possible is refused rather than emptying the model.
 
 It declares the same four EPDDL parameters as the solver, plus ``task_file``,
 and publishes on ``epistemic_state/state`` with transient-local durability. A
@@ -287,6 +299,46 @@ before anything asks a question about it. Pointing this node and the planner at
 the same pair of ``.epddl`` files is what keeps the policy and the model it is
 checked against expressed in one vocabulary — the failure the arrangement is
 there to prevent is a policy naming an action the state has never heard of.
+
+It is a managed node of the system rather than something started alongside it.
+Both launch files start it on ``epistemic_state:=True``, and the lifecycle
+manager configures and activates it with the other four and takes it down with
+them. It is off by default, since a classical system has no use for it.
+
+It runs as its own process even under the monolithic launch, where the other
+four share one. That is not an oversight: ``plansys2_node`` manages it through
+``LifecycleServiceClient``, which needs the node's name and not its class, so
+``plansys2_bringup`` links against nothing epistemic and the package every
+other distribution's workflow builds is unchanged. The same reasoning as
+``bt_node_plugins`` on the executor, one level up.
+
+The switch is a single launch argument rather than a parameter because it
+decides two things that must agree — whether the process is started, and
+whether the manager waits for it. A parameters file can set the second but not
+the first, so the argument overrides the parameters file rather than the other
+way round.
+
+``startup_function`` in ``plansys2_lifecycle_manager`` brings up whatever map
+it is given, skipping a name it does not find, which is what lets one function
+serve a four-node classical bringup and a five-node epistemic one. The
+standalone ``lifecycle_manager_node`` the distributed launch runs takes the set
+as its ``managed_nodes`` parameter for the same reason.
+
+Announcing is the counterpart of the problem expert's ``set predicate``, and it
+is deliberately not the same operation. Setting a predicate changes what is
+true; announcing changes what is *known*. Every agent that could not previously
+tell the surviving worlds apart from the ruled-out ones now can, and knows that
+the others can too — which is why announcing ``muddy_c1`` in the muddy-children
+model makes ``(K c1 muddy_c1)`` hold when it did not before. Knowledge that
+reaches only one agent is not a public announcement and cannot be expressed this
+way; that needs an event model, which is what an action is.
+
+The goal it holds is what the plan solver plans for. The solver subscribes to
+``epistemic_state/state``, where the goal travels latched, and replaces the
+task's goal with it when the two differ. It listens rather than asks because
+planning runs inside the planner's own service callback, and a service call
+from there can deadlock a single-threaded executor. Setting
+``goal_from_state`` to false plans for the problem exactly as written.
 
 The state advances by executed actions rather than by watching the world, which
 is what makes it a belief state rather than a log. When it disagrees with what

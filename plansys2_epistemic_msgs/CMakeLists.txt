@@ -8,6 +8,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/LoadTask.srv"
   "srv/CheckFormula.srv"
   "srv/ApplyAction.srv"
+  "srv/SetGoal.srv"
+  "srv/GetGoal.srv"
+  "srv/Announce.srv"
 )
 
 if(BUILD_TESTING)

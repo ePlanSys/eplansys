@@ -16,7 +16,7 @@
 
 #include <string>
 
-#include "plansys2_epistemic_executor/formula_text.hpp"
+#include "plansys2_epistemic_planner/formula_text.hpp"
 #include "plansys2_epistemic_planner/formula.hpp"
 #include "plansys2_epistemic_planner/parser.hpp"
 #include "plansys2_epistemic_planner/policy_plan.hpp"

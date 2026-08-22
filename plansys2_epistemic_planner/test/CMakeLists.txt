@@ -33,3 +33,13 @@ target_include_directories(epistemic_plan_solver_test PRIVATE ${CMAKE_CURRENT_SO
 target_compile_definitions(epistemic_plan_solver_test PRIVATE
   EPISTEMIC_EXAMPLE_MAPPING_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../examples/mappings")
 target_link_libraries(epistemic_plan_solver_test ${PROJECT_NAME})
+
+# Reading a formula back from the text a policy carries. It lives here rather
+# than with the executor because its counterpart, render_formula, does: the two
+# are one grammar written twice, and they drift apart if they are not tested
+# together.
+ament_add_gtest(epistemic_formula_text_test formula_text_test.cpp TIMEOUT 120)
+target_include_directories(epistemic_formula_text_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(epistemic_formula_text_test PRIVATE
+  EPISTEMIC_TASK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tasks")
+target_link_libraries(epistemic_formula_text_test ${PROJECT_NAME})

@@ -1,0 +1,20 @@
+# Ask what the epistemic state is aiming at, and whether it is there yet.
+#
+# Reaching every leaf of a policy is not the same as achieving the goal, so
+# "does the goal hold" is a question worth asking of the state directly rather
+# than inferring from execution having finished.
+---
+bool success
+string error
+
+# The goal as text, in the loaded task's vocabulary. Empty when no task is
+# loaded, or when the loaded task carries no goal.
+string goal
+
+# Whether it holds in the current state.
+bool holds
+
+# True when this is the goal the loaded task came with, false when it was set
+# through set_goal. It distinguishes "planning for the problem as written" from
+# "planning for what someone asked for since".
+bool from_task

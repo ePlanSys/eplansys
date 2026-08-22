@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef PLANSYS2_EPISTEMIC_EXECUTOR__FORMULA_TEXT_HPP_
-#define PLANSYS2_EPISTEMIC_EXECUTOR__FORMULA_TEXT_HPP_
+#ifndef PLANSYS2_EPISTEMIC_PLANNER__FORMULA_TEXT_HPP_
+#define PLANSYS2_EPISTEMIC_PLANNER__FORMULA_TEXT_HPP_
 
 #include <string>
 
@@ -60,4 +60,4 @@ FormulaPtr parse_formula(
 
 }  // namespace plansys2
 
-#endif  // PLANSYS2_EPISTEMIC_EXECUTOR__FORMULA_TEXT_HPP_
+#endif  // PLANSYS2_EPISTEMIC_PLANNER__FORMULA_TEXT_HPP_

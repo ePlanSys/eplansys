@@ -19,9 +19,12 @@
 #include <optional>
 #include <string>
 
+#include "plansys2_epistemic_msgs/srv/announce.hpp"
 #include "plansys2_epistemic_msgs/srv/apply_action.hpp"
 #include "plansys2_epistemic_msgs/srv/check_formula.hpp"
+#include "plansys2_epistemic_msgs/srv/get_goal.hpp"
 #include "plansys2_epistemic_msgs/srv/load_task.hpp"
+#include "plansys2_epistemic_msgs/srv/set_goal.hpp"
 #include "plansys2_epistemic_planner/state.hpp"
 #include "plansys2_epddl_grounder/epddl_grounder.hpp"
 #include "plansys2_epddl_grounder/parameters.hpp"
@@ -46,7 +49,7 @@ namespace plansys2
  * not a fact about the corridor at all; no set of predicates records it, and a
  * plan that must sense before committing needs exactly that distinction.
  *
- * Three things are asked of it, matching what executing a policy requires:
+ * Six things are asked of it. Three are what executing a policy requires:
  *
  *   load_task     Set the model, from the same grounded task the planner
  *                 solved. Executing a policy against a model built from a
@@ -56,6 +59,18 @@ namespace plansys2
  *                 knowledge precondition and an epistemic goal both reduce to.
  *   apply_action  An action has been executed: advance the model by its DEL
  *                 product update, and report which outcome occurred.
+ *
+ * Three more are what makes it a counterpart of the problem expert rather than
+ * only a service the executor calls:
+ *
+ *   get_goal      What is being aimed at, and does it hold yet.
+ *   set_goal      Aim at something else. The goal starts as the loaded task's
+ *                 own and can be replaced without re-grounding the problem,
+ *                 which is the epistemic reading of `set goal` in the terminal.
+ *   announce      Everyone just learned that this is true. The model is
+ *                 restricted to the worlds where it holds — the counterpart of
+ *                 `set predicate`, except that it changes what is known rather
+ *                 than what is the case.
  *
  * The model is advanced by executed actions rather than by observing the
  * world, which is what makes it a belief state rather than a log. When it
@@ -88,6 +103,23 @@ private:
     const std::shared_ptr<plansys2_epistemic_msgs::srv::ApplyAction::Request> request,
     std::shared_ptr<plansys2_epistemic_msgs::srv::ApplyAction::Response> response);
 
+  void get_goal_callback(
+    const std::shared_ptr<plansys2_epistemic_msgs::srv::GetGoal::Request> request,
+    std::shared_ptr<plansys2_epistemic_msgs::srv::GetGoal::Response> response);
+
+  void set_goal_callback(
+    const std::shared_ptr<plansys2_epistemic_msgs::srv::SetGoal::Request> request,
+    std::shared_ptr<plansys2_epistemic_msgs::srv::SetGoal::Response> response);
+
+  void announce_callback(
+    const std::shared_ptr<plansys2_epistemic_msgs::srv::Announce::Request> request,
+    std::shared_ptr<plansys2_epistemic_msgs::srv::Announce::Response> response);
+
+  /// The goal as text, or empty when there is none. Rendered rather than
+  /// stored as text so that a goal that came from the task and one that was
+  /// set through the service read identically.
+  std::string goal_text() const;
+
   /// Announce the shape of the current model, so that a monitor can follow the
   /// state without polling a service on every change.
   void publish_state();
@@ -95,6 +127,9 @@ private:
   rclcpp::Service<plansys2_epistemic_msgs::srv::LoadTask>::SharedPtr load_task_service_;
   rclcpp::Service<plansys2_epistemic_msgs::srv::CheckFormula>::SharedPtr check_formula_service_;
   rclcpp::Service<plansys2_epistemic_msgs::srv::ApplyAction>::SharedPtr apply_action_service_;
+  rclcpp::Service<plansys2_epistemic_msgs::srv::GetGoal>::SharedPtr get_goal_service_;
+  rclcpp::Service<plansys2_epistemic_msgs::srv::SetGoal>::SharedPtr set_goal_service_;
+  rclcpp::Service<plansys2_epistemic_msgs::srv::Announce>::SharedPtr announce_service_;
   rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::String>::SharedPtr state_pub_;
 
   /// The loaded task and the model as it now stands. Absent until a task is
@@ -108,6 +143,13 @@ private:
 
   std::optional<PlanningTask> task_;
   std::optional<EpistemicState> state_;
+
+  /// The goal being aimed at. Null means the loaded task's own goal, which is
+  /// what the state starts with; a set_goal call replaces it, and setting it
+  /// empty puts it back. Keeping "the task's goal" as a distinct state rather
+  /// than copying the pointer is what lets get_goal say which of the two it is
+  /// reporting.
+  FormulaPtr goal_override_;
 };
 
 }  // namespace plansys2

@@ -1,0 +1,23 @@
+# Set the goal the epistemic state holds.
+#
+# The counterpart of the problem expert's goal, one level up. A PDDL goal says
+# what must be true; this one says what must be known — "(Kw c1 muddy_c1)",
+# every child knows whether it is muddy — which no set of predicates records.
+#
+# It is the state's goal rather than the planner's because the state is where
+# the vocabulary lives: a goal is checked against a model, and a formula naming
+# an agent or atom the loaded task does not have is a mistake worth catching
+# when it is set rather than when a plan is asked for.
+
+# The goal, in the grammar the policy carries and check_formula accepts.
+# Empty restores the goal of the loaded task, which is what the state starts
+# with.
+string goal
+---
+bool success
+string error
+
+# Whether the new goal already holds in the current state. A goal that is
+# satisfied the moment it is set is worth knowing about: it means there is
+# nothing to plan for.
+bool holds

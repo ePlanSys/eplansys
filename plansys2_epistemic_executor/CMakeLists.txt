@@ -31,7 +31,6 @@ target_link_libraries(${PROJECT_NAME}_policy PUBLIC ${plansys2_msgs_TARGETS})
 
 # The state, its client, and the behavior tree nodes that consult it.
 add_library(${PROJECT_NAME} SHARED
-  src/formula_text.cpp
   src/plansys2_epistemic_executor/EpistemicStateNode.cpp
   src/plansys2_epistemic_executor/EpistemicStateClient.cpp
   src/plansys2_epistemic_executor/behavior_tree/epistemic_nodes.cpp
@@ -67,7 +66,7 @@ target_link_libraries(epistemic_state_node PRIVATE ${PROJECT_NAME} rclcpp::rclcp
 install(DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
 )
-install(DIRECTORY behavior_trees
+install(DIRECTORY behavior_trees launch
   DESTINATION share/${PROJECT_NAME}
 )
 install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_policy plansys2_epistemic_bt_nodes

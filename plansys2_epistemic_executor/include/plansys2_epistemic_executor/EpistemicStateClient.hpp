@@ -19,9 +19,12 @@
 #include <memory>
 #include <string>
 
+#include "plansys2_epistemic_msgs/srv/announce.hpp"
 #include "plansys2_epistemic_msgs/srv/apply_action.hpp"
 #include "plansys2_epistemic_msgs/srv/check_formula.hpp"
+#include "plansys2_epistemic_msgs/srv/get_goal.hpp"
 #include "plansys2_epistemic_msgs/srv/load_task.hpp"
+#include "plansys2_epistemic_msgs/srv/set_goal.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace plansys2
@@ -51,7 +54,9 @@ public:
     bool success{false};    ///< the reply was not itself an error
     std::string error;
     std::string outcome;    ///< apply_action: the observation that occurred
-    bool holds{false};      ///< check_formula: whether the formula holds
+    bool holds{false};      ///< check_formula, get_goal, set_goal: does it hold
+    std::string goal;       ///< get_goal: the goal as text
+    bool from_task{false};  ///< get_goal: the goal is the loaded task's own
   };
 
   explicit EpistemicStateClient(const std::string & node_name = "epistemic_state_client");
@@ -74,6 +79,20 @@ public:
     const std::string & observed_outcome = "",
     const std::chrono::nanoseconds & timeout = std::chrono::seconds(5));
 
+  /// What is being aimed at, and whether it holds yet.
+  Answer get_goal(const std::chrono::nanoseconds & timeout = std::chrono::seconds(2));
+
+  /// Aim at something else. An empty formula restores the loaded task's goal.
+  Answer set_goal(
+    const std::string & goal,
+    const std::chrono::nanoseconds & timeout = std::chrono::seconds(2));
+
+  /// Announce a formula publicly, restricting the model to the worlds where it
+  /// holds. Fails rather than emptying the model when it holds nowhere.
+  Answer announce(
+    const std::string & formula,
+    const std::chrono::nanoseconds & timeout = std::chrono::seconds(5));
+
   /// True when the state node is up. Worth asking once before a plan starts,
   /// rather than discovering it mid-execution.
   bool available(const std::chrono::nanoseconds & timeout = std::chrono::seconds(1));
@@ -90,6 +109,9 @@ private:
   rclcpp::Client<plansys2_epistemic_msgs::srv::LoadTask>::SharedPtr load_task_client_;
   rclcpp::Client<plansys2_epistemic_msgs::srv::CheckFormula>::SharedPtr check_formula_client_;
   rclcpp::Client<plansys2_epistemic_msgs::srv::ApplyAction>::SharedPtr apply_action_client_;
+  rclcpp::Client<plansys2_epistemic_msgs::srv::GetGoal>::SharedPtr get_goal_client_;
+  rclcpp::Client<plansys2_epistemic_msgs::srv::SetGoal>::SharedPtr set_goal_client_;
+  rclcpp::Client<plansys2_epistemic_msgs::srv::Announce>::SharedPtr announce_client_;
 };
 
 }  // namespace plansys2

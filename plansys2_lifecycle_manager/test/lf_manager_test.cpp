@@ -145,6 +145,68 @@ TEST(lifecycle_manager, lf_startup)
   t.join();
 }
 
+// An epistemic bringup manages a fifth node. What is checked here is that the
+// same startup_function brings up a map it was not written around: the classical
+// four still reach ACTIVE, and so does the extra one.
+TEST(lifecycle_manager, lf_startup_with_epistemic_state)
+{
+  auto de_node = rclcpp_lifecycle::LifecycleNode::make_shared("domain_expert");
+  auto pe_node = rclcpp_lifecycle::LifecycleNode::make_shared("problem_expert");
+  auto pl_node = rclcpp_lifecycle::LifecycleNode::make_shared("planner");
+  auto ex_node = rclcpp_lifecycle::LifecycleNode::make_shared("executor");
+  auto es_node = rclcpp_lifecycle::LifecycleNode::make_shared("epistemic_state");
+
+  std::map<std::string, std::shared_ptr<plansys2::LifecycleServiceClient>> manager_nodes;
+  for (const auto & name :
+    {"domain_expert", "problem_expert", "planner", "executor", "epistemic_state"})
+  {
+    manager_nodes[name] = std::make_shared<plansys2::LifecycleServiceClient>(
+      std::string(name) + "_epistemic_lc_mngr", name);
+  }
+
+  rclcpp::experimental::executors::EventsExecutor exe;
+  for (auto & manager_node : manager_nodes) {
+    manager_node.second->init();
+    exe.add_node(manager_node.second);
+  }
+
+  exe.add_node(de_node->get_node_base_interface());
+  exe.add_node(pe_node->get_node_base_interface());
+  exe.add_node(pl_node->get_node_base_interface());
+  exe.add_node(ex_node->get_node_base_interface());
+  exe.add_node(es_node->get_node_base_interface());
+
+  auto start = de_node->now();
+  while ((de_node->now() - start).seconds() < 1.0) {}
+
+  bool finish = false;
+  std::thread t([&]() {
+      while (!finish) {exe.spin_some();}
+    });
+
+  std::shared_future<bool> startup_future = std::async(
+    std::launch::async,
+    std::bind(plansys2::startup_function, manager_nodes, std::chrono::seconds(3)));
+
+  startup_future.wait();
+
+  ASSERT_TRUE(startup_future.get());
+
+  for (const auto & node :
+    {de_node, pe_node, pl_node, ex_node, es_node})
+  {
+    ASSERT_EQ(
+      node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) << node->get_name();
+  }
+
+  start = de_node->now();
+  while ((de_node->now() - start).seconds() < 1.0) {}
+
+  finish = true;
+  t.join();
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);

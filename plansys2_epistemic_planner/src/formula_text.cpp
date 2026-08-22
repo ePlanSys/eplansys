@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "plansys2_epistemic_executor/formula_text.hpp"
+#include "plansys2_epistemic_planner/formula_text.hpp"
 
 #include <string>
 #include <vector>

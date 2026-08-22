@@ -18,6 +18,7 @@ from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
@@ -35,6 +36,7 @@ def generate_launch_description():
     start_action_bt_file = LaunchConfiguration('start_action_bt_file')
     end_action_bt_file = LaunchConfiguration('end_action_bt_file')
     bt_builder_plugin = LaunchConfiguration('bt_builder_plugin')
+    epistemic_state = LaunchConfiguration('epistemic_state')
 
     declare_model_file_cmd = DeclareLaunchArgument(
         'model_file',
@@ -80,6 +82,14 @@ def generate_launch_description():
         'bt_builder_plugin',
         default_value='SimpleBTBuilder',
         description='Behavior tree builder plugin.',
+    )
+
+    declare_epistemic_state_cmd = DeclareLaunchArgument(
+        'epistemic_state',
+        default_value='False',
+        description='Start the epistemic state as a fifth managed node. '
+                    'Executing an epistemic policy needs it; a classical '
+                    'system has no use for it.',
     )
 
     domain_expert_cmd = IncludeLaunchDescription(
@@ -129,13 +139,43 @@ def generate_launch_description():
             'bt_builder_plugin': bt_builder_plugin,
         }.items())
 
+    epistemic_state_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(
+            get_package_share_directory('plansys2_epistemic_executor'),
+            'launch',
+            'epistemic_state_launch.py')),
+        condition=IfCondition(epistemic_state),
+        launch_arguments={
+            'namespace': namespace,
+            'params_file': params_file
+        }.items())
+
+    # Two managers rather than one with a computed list: naming a node that is
+    # not running makes startup block and then fail, so the set of managed
+    # nodes has to match the set that was started, and stating both cases is
+    # clearer than assembling the list out of substitutions.
     lifecycle_manager_cmd = Node(
         package='plansys2_lifecycle_manager',
         executable='lifecycle_manager_node',
         name='lifecycle_manager_node',
         namespace=namespace,
         output='screen',
+        condition=UnlessCondition(epistemic_state),
         parameters=[])
+
+    lifecycle_manager_epistemic_cmd = Node(
+        package='plansys2_lifecycle_manager',
+        executable='lifecycle_manager_node',
+        name='lifecycle_manager_node',
+        namespace=namespace,
+        output='screen',
+        condition=IfCondition(epistemic_state),
+        parameters=[{
+            'managed_nodes': [
+                'domain_expert', 'problem_expert', 'planner', 'executor',
+                'epistemic_state',
+            ],
+        }])
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -146,6 +186,7 @@ def generate_launch_description():
     ld.add_action(declare_start_action_bt_file_cmd)
     ld.add_action(declare_end_action_bt_file_cmd)
     ld.add_action(declare_bt_builder_plugin_cmd)
+    ld.add_action(declare_epistemic_state_cmd)
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_params_file_cmd)
 
@@ -154,6 +195,8 @@ def generate_launch_description():
     ld.add_action(problem_expert_cmd)
     ld.add_action(planner_cmd)
     ld.add_action(executor_cmd)
+    ld.add_action(epistemic_state_cmd)
     ld.add_action(lifecycle_manager_cmd)
+    ld.add_action(lifecycle_manager_epistemic_cmd)
 
     return ld

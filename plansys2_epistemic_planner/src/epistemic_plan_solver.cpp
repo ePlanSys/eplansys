@@ -29,9 +29,11 @@
 
 #include "plansys2_epistemic_planner/action_mapping.hpp"
 #include "plansys2_epistemic_planner/formula.hpp"
+#include "plansys2_epistemic_planner/formula_text.hpp"
 #include "plansys2_epistemic_planner/heuristic.hpp"
 #include "plansys2_epistemic_planner/parser.hpp"
 #include "plansys2_epistemic_planner/policy_plan.hpp"
+#include "plansys2_epistemic_planner/heuristic.hpp"
 #include "plansys2_epistemic_planner/selection_policy.hpp"
 #include "plansys2_epistemic_planner/validator.hpp"
 #include "pluginlib/class_list_macros.hpp"
@@ -187,6 +189,7 @@ void EpistemicPlanSolver::configure(
   conditional_parameter_name_ = plugin_name + ".conditional_plan";
   action_mapping_parameter_name_ = plugin_name + ".action_mapping";
   epddl_parameter_names_ = EpddlParameterNames(plugin_name);
+  goal_from_state_parameter_name_ = plugin_name + ".goal_from_state";
 
   const auto declare = [&](const std::string & name, const std::string & def) {
       if (!lc_node_->has_parameter(name)) {
@@ -201,12 +204,34 @@ void EpistemicPlanSolver::configure(
   declare(conditional_parameter_name_, "flatten");
   declare(action_mapping_parameter_name_, "");   // empty: naming convention
 
+  if (!lc_node_->has_parameter(goal_from_state_parameter_name_)) {
+    lc_node_->declare_parameter<bool>(goal_from_state_parameter_name_, true);
+  }
+
   declare_epddl_parameters(lc_node_, epddl_parameter_names_);
 
   // Built once, so that its cache survives between calls: the planner is
   // asked for a task on every get_plan, and unchanged sources must not mean
   // another fork of plank.
   grounder_ = EpddlGrounder(read_plank_command(lc_node_, epddl_parameter_names_));
+
+  // The epistemic state latches its state, so subscribing here is enough to
+  // have the current goal before the first planning request arrives. A goal
+  // set later arrives the same way. Nothing is asked of the state: getPlan
+  // runs inside the planner's own service callback, and a service call from
+  // there can deadlock on a single-threaded executor.
+  if (lc_node_->get_parameter(goal_from_state_parameter_name_).as_bool()) {
+    state_sub_ = lc_node_->create_subscription<std_msgs::msg::String>(
+      "epistemic_state/state", rclcpp::QoS(1).transient_local(),
+      [this](const std_msgs::msg::String::SharedPtr msg) {
+        try {
+          const auto j = nlohmann::json::parse(msg->data);
+          state_goal_ = j.value("goal", "");
+        } catch (const nlohmann::json::exception &) {
+          state_goal_.clear();   // an unreadable state is no goal, not a stale one
+        }
+      });
+  }
 }
 
 std::string EpistemicPlanSolver::parameter(const std::string & name) const
@@ -271,6 +296,38 @@ std::optional<PlanningTask> EpistemicPlanSolver::resolve_task(
   return std::nullopt;
 }
 
+bool EpistemicPlanSolver::apply_state_goal(PlanningTask & task, std::string & error) const
+{
+  if (state_goal_.empty()) {
+    return true;      // no state, or a state with no goal: plan for the task's
+  }
+
+  const auto rendered = task.goal ? render_formula(task, *task.goal) : std::string();
+  if (rendered == state_goal_) {
+    return true;      // the state is reporting the task's own goal back
+  }
+
+  const auto goal = parse_formula(task, state_goal_, error);
+  if (!goal) {
+    error =
+      "the epistemic state's goal '" + state_goal_ + "' does not parse against "
+      "this task: " + error + ". The state and the planner are holding "
+      "different problems.";
+    return false;
+  }
+
+  task.goal = goal;
+  // Derived from the goal by the parser, and now stale: it decides whether the
+  // knowledge-spread heuristic is preferred, so a goal swap that left it
+  // behind would keep selecting for the goal that was replaced.
+  task.goal_kw_only = !has_atom_conjunct(*task.goal);
+
+  RCLCPP_INFO(
+    lc_node_->get_logger(), "[epistemic] planning for the goal set on the state: %s",
+    state_goal_.c_str());
+  return true;
+}
+
 std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
   const std::string & domain, const std::string & problem,
   const std::string & node_namespace, const rclcpp::Duration solver_timeout)
@@ -289,6 +346,10 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
   std::string error;
   auto task_opt = resolve_task(problem, error);
   if (!task_opt) {
+    RCLCPP_ERROR(lc_node_->get_logger(), "[epistemic] %s", error.c_str());
+    return std::nullopt;
+  }
+  if (!apply_state_goal(*task_opt, error)) {
     RCLCPP_ERROR(lc_node_->get_logger(), "[epistemic] %s", error.c_str());
     return std::nullopt;
   }

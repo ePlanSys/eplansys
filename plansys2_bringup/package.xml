@@ -23,6 +23,10 @@
   <!-- Needed only by params/plansys2_epistemic_params.yaml, which loads the
        solver as a pluginlib class; nothing here links against it. -->
   <exec_depend>plansys2_epistemic_planner</exec_depend>
+  <!-- The epistemic state node, which the launch files start as a separate
+       process on epistemic_state:=True and plansys2_node then manages by
+       name. Nothing here links against it either. -->
+  <exec_depend>plansys2_epistemic_executor</exec_depend>
 
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_lint_auto</test_depend>
