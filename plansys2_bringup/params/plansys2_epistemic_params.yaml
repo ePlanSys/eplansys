@@ -20,6 +20,12 @@
 # epistemic_state:=True to either launch file and it is started and brought up
 # with the other four nodes; the epistemic_state section below names the same
 # two EPDDL files the solver is given.
+#
+# epistemic_perception:=True adds a sixth node, which reads named regions of an
+# occupancy grid and reports them to that state. It is what a policy needs when
+# the thing that does the sensing is a map rather than an operator. It needs
+# epistemic_state:=True, and it starts with no regions until the section at the
+# end of this file names some.
 plansys2:
   ros__parameters:
     use_real_time: false
@@ -165,3 +171,54 @@ executor:
     # Loading them rather than linking them is what keeps plansys2_executor
     # independent of the epistemic packages.
     bt_node_plugins: ["libplansys2_epistemic_bt_nodes.so"]
+
+# Only read when epistemic_perception:=True, and only useful once `regions`
+# names something. The atoms a region decides have to be atoms of the task the
+# two nodes above are holding: a region whose atom is not in that task resolves
+# to a formula the state cannot parse, and says so on the first observation.
+#
+# A worked example, the corridor of the fleet tutorial, is in
+# <share>/plansys2_epistemic_perception/params/fleet_corridor_regions.yaml.
+epistemic_perception:
+  ros__parameters:
+    # The grid to watch. Subscribed transient-local, so a map published before
+    # this node came up still counts.
+    map_topic: "/map"
+
+    # The regions to watch, each one's settings declared under its own name.
+    # Empty means a node that runs and reports nothing.
+    #
+    #   regions: ["corridor"]
+    #   corridor:
+    #     # [min_x, min_y, max_x, max_y] per box, in metres in the map frame;
+    #     # their union is the region. Metres rather than cell indices because
+    #     # a map is re-gridded as it grows, and indices would quietly come to
+    #     # mean somewhere else.
+    #     boxes: [2.0, -0.5, 8.0, 0.5, 7.5, 0.5, 8.5, 4.0]
+    #
+    #     # The atom this region's occupancy decides, and which way it points.
+    #     # `blocked` with atom_true_when_clear: false is the corridor of the
+    #     # fleet tutorial; `clear_corridor` with it true says the same thing
+    #     # the other way, and both occur in real domains.
+    #     atom: "blocked"
+    #     atom_true_when_clear: false
+    #
+    #     # The grounded sensing action this observation answers, with the
+    #     # event that fired in each case. Omit all three and the observation
+    #     # goes out as a public announcement instead, which is what the state
+    #     # offers for something that arrived from outside the plan.
+    #     sensing_action: "inspect_r1"
+    #     outcome_when_clear: "e-inspect-clear"
+    #     outcome_when_blocked: "e-inspect-blocked"
+    regions: []
+
+    # Where the line falls between free, occupied and undecided, on the nav2
+    # and slam_toolbox convention. Both are occupancy values, within 0..100. A
+    # cell between the two has been seen without being settled and counts as
+    # unobserved: calling it free would hand an agent knowledge it does not
+    # have.
+    free_below: 25
+    occupied_above: 65
+
+    # Seconds to wait for the state to answer one call.
+    call_timeout: 5.0

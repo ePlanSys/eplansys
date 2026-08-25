@@ -27,6 +27,9 @@
        process on epistemic_state:=True and plansys2_node then manages by
        name. Nothing here links against it either. -->
   <exec_depend>plansys2_epistemic_executor</exec_depend>
+  <!-- The perception node, started the same way on epistemic_perception:=True
+       and managed the same way. Nothing here links against it. -->
+  <exec_depend>plansys2_epistemic_perception</exec_depend>
 
   <test_depend>ament_lint_common</test_depend>
   <test_depend>ament_lint_auto</test_depend>

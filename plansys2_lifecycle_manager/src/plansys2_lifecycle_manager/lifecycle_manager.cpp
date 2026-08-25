@@ -135,21 +135,29 @@ namespace
 /// legible; the domain expert activates first because everything downstream
 /// asks it questions.
 ///
+/// Perception goes last in both, and the activate order is the reason. Once it
+/// is active it starts reporting what the map says, and every route it has for
+/// reporting is a call on the epistemic state; bringing it up before the state
+/// it talks to would spend its first observations on a node that cannot answer
+/// yet.
+///
 /// A name listed here that is not in the map is skipped rather than waited
-/// for. That is what makes the epistemic state optional: a classical bringup
-/// hands over four nodes, an epistemic one hands over five, and this function
-/// does not need to know which of the two it is being used for.
+/// for. That is what makes the epistemic nodes optional: a classical bringup
+/// hands over four nodes, an epistemic one five or six, and this function does
+/// not need to know which of them it is being used for.
 const std::vector<std::string> & configure_order()
 {
   static const std::vector<std::string> order{
-    "planner", "domain_expert", "problem_expert", "executor", "epistemic_state"};
+    "planner", "domain_expert", "problem_expert", "executor", "epistemic_state",
+    "epistemic_perception"};
   return order;
 }
 
 const std::vector<std::string> & activate_order()
 {
   static const std::vector<std::string> order{
-    "domain_expert", "problem_expert", "planner", "executor", "epistemic_state"};
+    "domain_expert", "problem_expert", "planner", "executor", "epistemic_state",
+    "epistemic_perception"};
   return order;
 }
 
