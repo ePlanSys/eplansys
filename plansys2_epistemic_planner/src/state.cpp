@@ -1,20 +1,38 @@
+// Copyright 2026 Haniel Ulises Vasquez Morales
+//
+// Derived from the Aletheia epistemic planner, incorporated here as the
+// in-process planning core of plansys2_epistemic_planner.
+//
+//     Source: https://github.com/HanielUlises/Aletheia
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "plansys2_epistemic_planner/state.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <iostream>
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Satisfaction-set model checking
 //
-// The previous evaluator was a per-world recursive descent: holds_at(φ, w)
-// walked φ once for every world it was asked about. Evaluating [i]φ across |W|
-// worlds therefore re-descended into φ once per (source, successor) pair, and
-// C_G φ ran an independent breadth-first search from every world while
-// re-checking φ at every node it visited. Nested modalities multiplied those
-// factors together.
+// Model checking proceeds by extension rather than by per-world descent. A
+// per-world evaluator holds_at(φ, w) walks φ once for every world it is asked
+// about, so [i]φ over |W| worlds re-descends into φ once per (source,
+// successor) pair and C_G φ requires an independent breadth-first search from
+// every world, with φ re-checked at every node visited; nested modalities
+// multiply those factors.
 //
-// This evaluator computes, for each subformula, its *extension*
+// This evaluator instead computes, for each subformula, its extension
 //
 //     sat(φ) = { w ∈ W : M, w ⊨ φ }
 //
@@ -31,7 +49,6 @@
 // hash-consed the memo is shared across every occurrence of a subformula
 // anywhere in the task: a precondition that also appears as an observability
 // guard is computed once.
-// ─────────────────────────────────────────────────────────────────────────────
 
 class SatCache {
 public:
@@ -198,9 +215,7 @@ private:
     }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // EpistemicState
-// ─────────────────────────────────────────────────────────────────────────────
 
 EpistemicState::EpistemicState() = default;
 
@@ -286,7 +301,7 @@ bool EpistemicState::satisfies(const Formula& f) const {
     return bits::subset_of(designated_bits(), sat(f));
 }
 
-// ── Identity ────────────────────────────────────────────────────────────────
+// Identity.
 
 Fingerprint EpistemicState::fingerprint() const {
     if (fp_) return *fp_;
@@ -324,7 +339,7 @@ bool EpistemicState::operator==(const EpistemicState& o) const noexcept {
            designated == o.designated;
 }
 
-// ── Restriction ─────────────────────────────────────────────────────────────
+// Restriction.
 
 EpistemicState restrict_state(const EpistemicState& s,
                               bits::ConstWordSpan keep,
@@ -363,7 +378,7 @@ EpistemicState restrict_state(const EpistemicState& s,
     return out;
 }
 
-// ── Debug output ────────────────────────────────────────────────────────────
+// Debug output.
 
 void EpistemicState::print(const std::vector<std::string>& atom_names,
                            const std::vector<std::string>& agent_names) const {

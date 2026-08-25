@@ -1,3 +1,22 @@
+// Copyright 2026 Haniel Ulises Vasquez Morales
+//
+// Derived from the Aletheia epistemic planner, incorporated here as the
+// in-process planning core of plansys2_epistemic_planner.
+//
+//     Source: https://github.com/HanielUlises/Aletheia
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #pragma once
 #include "plansys2_epistemic_planner/bitset.hpp"
 #include "plansys2_epistemic_planner/formula.hpp"
@@ -70,7 +89,7 @@ struct EpistemicState {
 
     void allocate(std::uint32_t worlds, std::uint32_t atoms, std::uint32_t agents);
 
-    // ── Element access ────────────────────────────────────────────────────
+    // Element access.
     [[nodiscard]] bits::WordSpan val(WorldIdx w) noexcept
         { return {valuation.data() + std::size_t(w) * val_words, val_words}; }
     [[nodiscard]] bits::ConstWordSpan val(WorldIdx w) const noexcept
@@ -100,7 +119,7 @@ struct EpistemicState {
     void add_edge(AgentIdx ag, WorldIdx from, WorldIdx to)
                                           { bits::set(succ(ag, from), to);   invalidate(); }
 
-    // ── Model checking ────────────────────────────────────────────────────
+    // Model checking.
     //
     // sat(φ) is the extension of φ: the set of worlds at which φ holds,
     // computed bottom-up over the whole model and memoised by formula id.
@@ -119,7 +138,7 @@ struct EpistemicState {
 
     void invalidate() const noexcept;
 
-    // ── Identity ──────────────────────────────────────────────────────────
+    // Identity.
     //
     // These compare the *labelled* structure. They are exact up to isomorphism
     // only for states produced by bisim_contract, which assigns a canonical

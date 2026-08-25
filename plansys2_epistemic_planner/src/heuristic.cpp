@@ -1,29 +1,44 @@
+// Copyright 2026 Haniel Ulises Vasquez Morales
+//
+// Derived from the Aletheia epistemic planner, incorporated here as the
+// in-process planning core of plansys2_epistemic_planner.
+//
+//     Source: https://github.com/HanielUlises/Aletheia
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "plansys2_epistemic_planner/heuristic.hpp"
 
 #include <algorithm>
 #include <vector>
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Heuristics over satisfaction sets.
 //
 // Every heuristic here is a goal-decomposition estimate: it measures how far
 // each unsatisfied goal conjunct is from holding, either as a 0/1 flag or as a
-// fraction of the accessible worlds that still act as counterexamples. The
-// numeric behaviour is unchanged from the previous implementation; what changed
-// is how it is computed and that it is now deterministic.
+// fraction of the accessible worlds that still act as counterexamples.
 //
-// Determinism mattered. Both `ed` and `ks` cut their counterexample scan off
-// after a fixed number of accessible worlds, and the old code walked
-// std::unordered_set, so *which* worlds fell inside the sample — and therefore
-// the heuristic value, and therefore the plan — depended on hash iteration
-// order. Bit sets are traversed in ascending index order, so the same state
-// always yields the same estimate.
+// Determinism is a required property, not an incidental one. Both `ed` and `ks`
+// truncate their counterexample scan after a fixed number of accessible worlds,
+// so the estimate depends on which worlds fall inside the sample; were the
+// sample drawn in an unspecified order, the heuristic value — and therefore the
+// plan returned — would vary between runs over an identical task. Traversal is
+// over bit sets in ascending world index, which fixes the sample and makes the
+// estimate a function of the state alone.
 //
-// The remaining cost is one bottom-up evaluation of the goal per state, shared
-// across conjuncts through the state's satisfaction cache. The old code called
-// s.satisfies() per conjunct, each a fresh recursive descent, on top of a
-// separate per-heuristic (formula, world) memo that could not outlive one call.
-// ─────────────────────────────────────────────────────────────────────────────
+// Cost is one bottom-up evaluation of the goal per state, shared across
+// conjuncts through the state's satisfaction cache, rather than one recursive
+// descent per conjunct.
 
 namespace {
 
@@ -245,7 +260,6 @@ float KnowledgeSpreadHeuristic::operator()(const EpistemicState& s,
     return knowledge_spread(s, goal);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // h5 / h6 — relaxed announcement closure
 //
 // See heuristic.hpp for the relaxation. The loop below is a fixpoint over a
@@ -257,7 +271,6 @@ float KnowledgeSpreadHeuristic::operator()(const EpistemicState& s,
 // Cost is bounded by the fact that the world set strictly shrinks whenever a
 // layer makes progress, so there are at most |W| layers; kMaxLayers caps it
 // further for the pathological case.
-// ─────────────────────────────────────────────────────────────────────────────
 
 namespace {
 
@@ -335,7 +348,7 @@ bool relaxed_step(EpistemicState& m, const PlanningTask& task) {
                                      a.designated_events.end());
         std::sort(events.begin(), events.end());
 
-        // ── Edge cuts ───────────────────────────────────────────────────────
+        // Edge cuts.
         for (EventIdx e : events) {
             if (e >= a.events.size()) continue;
             m.sat_copy(*a.events[e].precondition, ext_e);
@@ -362,7 +375,7 @@ bool relaxed_step(EpistemicState& m, const PlanningTask& task) {
 
     if (progress) m.invalidate();
 
-    // ── World prunes ────────────────────────────────────────────────────────
+    // World prunes.
     const auto designated = m.designated_bits();
     for (const Action& a : task.actions) {
         for (EventIdx e : a.designated_events) {

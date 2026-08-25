@@ -1,3 +1,22 @@
+// Copyright 2026 Haniel Ulises Vasquez Morales
+//
+// Derived from the Aletheia epistemic planner, incorporated here as the
+// in-process planning core of plansys2_epistemic_planner.
+//
+//     Source: https://github.com/HanielUlises/Aletheia
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "plansys2_epistemic_planner/search.hpp"
 
 #include "plansys2_epistemic_planner/bisimulation.hpp"
@@ -16,24 +35,24 @@
 
 // Search
 //
-// Three changes are shared by every algorithm here.
+// Three representation invariants are shared by every algorithm in this file.
 //
-// States are never stored twice. Nodes live in a deque arena and the open list
-// holds (h, g, index) triples of twelve bytes, so heap sift operations move
-// integers rather than Kripke models. The previous code stored Node by value
-// inside a std::priority_queue and read the top with `Node node = open.top()`,
-// which deep-copied an entire model on every expansion and again on every sift.
+// A state is stored exactly once. Nodes live in a deque arena and the open list
+// holds (h, g, index) triples of twelve bytes, so heap sift operations permute
+// integers rather than Kripke models. Holding nodes by value in the priority
+// queue would instead deep-copy a model on every sift and on every expansion.
 //
-// Plans are stored as parent links. Each node carries its parent's index and
-// the action that reached it, and the plan is reconstructed once on success.
-// The previous code copied a std::vector<std::string> of the whole prefix into
-// every generated successor, so plan storage alone was O(nodes · depth).
+// Plans are represented as parent links. Each node carries its parent's index
+// and the action that reached it, and the action sequence is reconstructed once
+// on success. Carrying the prefix in each node would make plan storage alone
+// O(nodes · depth).
 //
-// Closed lists store 128-bit fingerprints, not states. Because contraction
-// assigns a canonical world numbering, fingerprint equality is exactly
-// bisimilarity — the old hash was sensitive to world numbering, so states that
-// were the same epistemic situation under a different labelling hashed
-// differently and were re-expanded.
+// Closed lists store 128-bit fingerprints rather than states. Contraction
+// assigns a canonical world numbering, so fingerprint equality coincides with
+// bisimilarity: two models representing the same epistemic situation under
+// different world labellings fingerprint identically and are not re-expanded. A
+// hash sensitive to world numbering would not have that property, and would
+// re-expand states already closed.
 
 namespace {
 
@@ -218,15 +237,15 @@ namespace {
 // One expanded action: the contracted state of every sensing outcome, plus an
 // aggregate heuristic estimate.
 //
-// The previous implementation ranked actions by running product_update, threw
-// the resulting state away, and then ran product_update_split again on whichever
-// action it committed to — computing the expensive part twice. Here the split is
-// computed once and carried into the recursion.
+// The split is computed once and carried into the recursion. Ranking candidates
+// by an unsplit product_update and re-splitting the committed action would
+// evaluate the dominant cost of the expansion twice.
 //
-// Ranking uses the *worst* branch rather than the heuristic of the merged
-// product. An AND node is only solved when every branch is solved, so the
-// binding constraint is the hardest outcome; the merged product's designated set
-// is the union over designated events and describes no branch in particular.
+// Ranking uses the worst branch rather than the heuristic of the merged product.
+// An AND node is solved only when every branch is solved, so the binding
+// constraint is the hardest outcome; the merged product's designated set is the
+// union over designated events and therefore describes no branch in
+// particular.
 struct Expansion {
     ActionIdx                                       action{0};
     float                                           h{0.f};
@@ -601,7 +620,7 @@ std::optional<SearchResult> search(const PlanningTask& task, const Heuristic& h,
 
         if (improved) continue;
 
-        // ── Plateau escape ──────────────────────────────────────────────────
+        // Plateau escape.
         std::cerr << "[ehc] Plateau at h=" << cur_h << " — BFS escape...\n";
 
         std::queue<std::uint32_t> frontier;
