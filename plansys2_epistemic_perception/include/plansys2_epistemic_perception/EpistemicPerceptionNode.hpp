@@ -87,6 +87,7 @@ public:
   CallbackReturnT on_configure(const rclcpp_lifecycle::State & state);
   CallbackReturnT on_activate(const rclcpp_lifecycle::State & state);
   CallbackReturnT on_deactivate(const rclcpp_lifecycle::State & state);
+  CallbackReturnT on_cleanup(const rclcpp_lifecycle::State & state);
 
   /// A region as configured, with what it is about and what it last said.
   struct Watched
@@ -102,6 +103,18 @@ public:
   const std::vector<Watched> & watched() const {return watched_;}
 
 private:
+  /// Declare one of a region's settings, unless it is already declared.
+  ///
+  /// Configure is reachable more than once over a node's life, and
+  /// declare_parameter throws the second time. The descriptor is
+  /// dynamically typed so that the value's own type does not decide whether
+  /// it is accepted -- read_boxes decides that, and can say why.
+  template<typename T>
+  void declare_region_parameter(const std::string & name, const T & fallback);
+
+  /// Read a region's boxes, from either a double or an integer array.
+  bool read_boxes(const std::string & region, std::vector<double> & boxes);
+
   /// Read `regions` and everything declared under each region's name.
   bool read_regions();
 

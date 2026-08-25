@@ -16,6 +16,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -361,6 +362,120 @@ TEST(perception_node, half_a_sensing_binding_refuses_to_configure)
     rclcpp::Parameter("corridor.boxes", std::vector<double>{0.0, 0.0, 2.0, 2.0}),
     rclcpp::Parameter("corridor.sensing_action", "inspect_r1"),
     rclcpp::Parameter("corridor.outcome_when_clear", "e-inspect-clear"),
+  });
+
+  auto node = std::make_shared<plansys2::EpistemicPerceptionNode>(options);
+
+  EXPECT_EQ(
+    node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE).id(),
+    lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
+}
+
+TEST(perception_node, a_configured_node_can_be_cleaned_up_and_configured_again)
+{
+  // A region's settings are declared at configure time, since there is no list
+  // of regions before the parameters are read, and declaring a parameter twice
+  // throws. Configure is reachable more than once -- a manager that cleans up
+  // and starts over is the ordinary case -- so the second pass has to be as
+  // good as the first.
+  using lifecycle_msgs::msg::State;
+  using lifecycle_msgs::msg::Transition;
+
+  auto node = std::make_shared<plansys2::EpistemicPerceptionNode>(with_corridor(false));
+
+  ASSERT_EQ(
+    node->trigger_transition(Transition::TRANSITION_CONFIGURE).id(),
+    State::PRIMARY_STATE_INACTIVE);
+  ASSERT_EQ(node->watched().size(), 1u);
+
+  ASSERT_EQ(
+    node->trigger_transition(Transition::TRANSITION_CLEANUP).id(),
+    State::PRIMARY_STATE_UNCONFIGURED);
+
+  // Unconfigured means not watching, and the regions went with the
+  // configuration that declared them.
+  EXPECT_TRUE(node->watched().empty());
+
+  EXPECT_EQ(
+    node->trigger_transition(Transition::TRANSITION_CONFIGURE).id(),
+    State::PRIMARY_STATE_INACTIVE);
+  EXPECT_EQ(node->watched().size(), 1u);
+}
+
+TEST(perception_node, boxes_may_be_written_as_whole_metres)
+{
+  // YAML types [0, 0, 2, 2] as integers. A reader means metres by it, and a
+  // parameter that insists on doubles rejects the override before the node can
+  // say anything about the region it belongs to.
+  rclcpp::NodeOptions options;
+  options.parameter_overrides(
+  {
+    rclcpp::Parameter("regions", std::vector<std::string>{"corridor"}),
+    rclcpp::Parameter("corridor.boxes", std::vector<std::int64_t>{0, 0, 2, 2}),
+    rclcpp::Parameter("corridor.atom", "blocked"),
+  });
+
+  auto node = std::make_shared<plansys2::EpistemicPerceptionNode>(options);
+
+  ASSERT_EQ(
+    node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE).id(),
+    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+
+  ASSERT_EQ(node->watched().size(), 1u);
+  ASSERT_EQ(node->watched().front().region.boxes.size(), 1u);
+
+  const auto & box = node->watched().front().region.boxes.front();
+  EXPECT_DOUBLE_EQ(box.min_x, 0.0);
+  EXPECT_DOUBLE_EQ(box.min_y, 0.0);
+  EXPECT_DOUBLE_EQ(box.max_x, 2.0);
+  EXPECT_DOUBLE_EQ(box.max_y, 2.0);
+}
+
+TEST(perception_node, boxes_that_are_not_numbers_refuse_to_configure)
+{
+  rclcpp::NodeOptions options;
+  options.parameter_overrides(
+  {
+    rclcpp::Parameter("regions", std::vector<std::string>{"corridor"}),
+    rclcpp::Parameter("corridor.boxes", std::vector<std::string>{"0.0", "0.0", "2.0", "2.0"}),
+  });
+
+  auto node = std::make_shared<plansys2::EpistemicPerceptionNode>(options);
+
+  EXPECT_EQ(
+    node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE).id(),
+    lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
+}
+
+TEST(perception_node, a_threshold_outside_the_occupancy_range_refuses_to_configure)
+{
+  // An occupancy value is an int8 and a threshold is read as an int, so 200
+  // narrows to -56: it would pass the free_below <= occupied_above test and
+  // then class every cell as unobserved, which is a node that runs and never
+  // says anything.
+  rclcpp::NodeOptions options;
+  options.parameter_overrides(
+  {
+    rclcpp::Parameter("regions", std::vector<std::string>{"corridor"}),
+    rclcpp::Parameter("corridor.boxes", std::vector<double>{0.0, 0.0, 2.0, 2.0}),
+    rclcpp::Parameter("free_below", 200),
+  });
+
+  auto node = std::make_shared<plansys2::EpistemicPerceptionNode>(options);
+
+  EXPECT_EQ(
+    node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE).id(),
+    lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
+}
+
+TEST(perception_node, a_call_timeout_that_is_not_positive_refuses_to_configure)
+{
+  rclcpp::NodeOptions options;
+  options.parameter_overrides(
+  {
+    rclcpp::Parameter("regions", std::vector<std::string>{"corridor"}),
+    rclcpp::Parameter("corridor.boxes", std::vector<double>{0.0, 0.0, 2.0, 2.0}),
+    rclcpp::Parameter("call_timeout", 0.0),
   });
 
   auto node = std::make_shared<plansys2::EpistemicPerceptionNode>(options);
