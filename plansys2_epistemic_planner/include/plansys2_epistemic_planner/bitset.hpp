@@ -1,3 +1,22 @@
+// Copyright 2026 Haniel Ulises Vasquez Morales
+//
+// Derived from the Aletheia epistemic planner, incorporated here as the
+// in-process planning core of plansys2_epistemic_planner.
+//
+//     Source: https://github.com/HanielUlises/Aletheia
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #pragma once
 
 // Flat word-array bit sets.
@@ -151,13 +170,14 @@ constexpr bool for_each_until(ConstWordSpan s, F&& f) {
     return true;
 }
 
-// ── Mixing ────────────────────────────────────────────────────────────────
+// Mixing.
 //
-// splitmix64. The previous code combined raw uint32 values with a boost-style
-// hash_combine, but libstdc++ implements std::hash<uint32_t> as the identity,
-// so the input to the combiner had no avalanche at all. Bisimulation class
-// assignment and the closed list both depend on collision behaviour, so the
-// mixer is now a real finalizer.
+// splitmix64, used as a finalizer rather than as a combiner over raw values.
+// libstdc++ implements std::hash<uint32_t> as the identity, so combining hashed
+// uint32 values boost-style would feed the combiner input with no avalanche.
+// Bisimulation class assignment and the closed list both depend on collision
+// behaviour, which makes full mixing a correctness-relevant property here and
+// not merely a quality-of-implementation one.
 
 [[nodiscard]] constexpr Word mix64(Word x) noexcept {
     x += 0x9E3779B97F4A7C15ULL;

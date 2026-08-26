@@ -29,8 +29,9 @@ int main(int argc, char ** argv)
   rclcpp::init(argc, argv);
 
   // Which nodes to manage is a parameter rather than a constant because the
-  // epistemic state is optional: a classical system has the four below, and an
-  // epistemic one adds "epistemic_state". Naming a node that is not running
+  // epistemic nodes are optional: a classical system has the four below, and
+  // an epistemic one adds "epistemic_state", and "epistemic_perception" when
+  // what does the sensing is a map. Naming a node that is not running
   // makes startup fail, which is the right outcome — it is the same failure as
   // that node crashing — so the launch file decides, not this program.
   auto node = rclcpp::Node::make_shared("lifecycle_manager_node");

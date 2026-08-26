@@ -1,9 +1,27 @@
+// Copyright 2026 Haniel Ulises Vasquez Morales
+//
+// Derived from the Aletheia epistemic planner, incorporated here as the
+// in-process planning core of plansys2_epistemic_planner.
+//
+//     Source: https://github.com/HanielUlises/Aletheia
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "plansys2_epistemic_planner/bisimulation.hpp"
 
 #include <algorithm>
 #include <vector>
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Contraction = reachability restriction + ordered partition refinement.
 //
 // Two worlds w, v of a multi-pointed model are bisimilar when
@@ -13,24 +31,23 @@
 //   (iii) for every agent i, every R_i-successor of w has a bisimilar
 //         R_i-successor of v, and symmetrically.
 //
-// Condition (ii) is what makes the quotient a *pointed* invariant. Dropping it
-// (as the previous implementation did) still preserves formula truth, because
-// bisimilar worlds satisfy the same formulas — but it lets a designated world
-// merge with a non-designated one, so the quotient no longer determines W*, and
-// the canonical form below would identify states that are genuinely different
-// planning situations. Keeping it costs at most a coarser contraction and buys
-// a sound structural identity.
+// Condition (ii) is what makes the quotient a pointed invariant. Omitting it
+// still preserves formula truth, since bisimilar worlds satisfy the same
+// formulas, but it permits a designated world to merge with a non-designated
+// one. The quotient then no longer determines W*, and the canonical form below
+// would identify states that are distinct planning situations. Retaining it
+// costs at most a coarser contraction and yields a sound structural identity.
 //
-// ── Why ordered refinement rather than Paige–Tarjan ─────────────────────────
+// Why ordered refinement rather than Paige–Tarjan.
 //
-// Paige–Tarjan refines in O(m log n), asymptotically better than the O(r·(m +
-// n log n)) loop below (r = number of rounds, bounded by n but in practice
-// small). It does not, however, produce a *canonical* numbering of the
-// resulting classes, and the planner needs one: the closed list identifies
-// states by fingerprint, so bisimilar models must serialise identically.
+// Paige-Tarjan refines in O(m log n), asymptotically better than the O(r·(m +
+// n log n)) loop below (r = number of rounds, bounded by n and in practice
+// small). It does not, however, produce a canonical numbering of the resulting
+// classes, and the planner requires one: the closed list identifies states by
+// fingerprint, so bisimilar models must serialise identically.
 //
-// This implementation gets canonicity for free from the refinement itself. Each
-// round sorts worlds by a key and assigns class ids in sorted order:
+// This implementation obtains canonicity from the refinement itself. Each round
+// sorts worlds by a key and assigns class ids in sorted order:
 //
 //   round 0:  key(w) = ( [w ∈ W*], V(w) )
 //   round k:  key(w) = ( class_{k-1}(w), ⟨sorted class_{k-1} of R_i(w)⟩_{i∈Ag} )
@@ -43,7 +60,6 @@
 // The fixpoint test is exact: since the round-k key begins with the round-(k-1)
 // class, sorting is order-preserving on the previous partition, so ids are
 // stable and "no class split" is exactly "assignment unchanged".
-// ─────────────────────────────────────────────────────────────────────────────
 
 namespace {
 
@@ -96,8 +112,8 @@ EpistemicState bisim_contract(EpistemicState s) {
 
     // Keys are variable-length int32 runs in one flat buffer; `key_at` slices
     // them. Both buffers are reused across rounds, so refinement performs no
-    // per-world allocation — the previous implementation built a fresh
-    // vector<vector<int>> for every world on every round.
+    // per-world allocation: a nested vector<vector<int>> would instead allocate
+    // once per world per round.
     std::vector<std::int32_t> key_data;
     std::vector<std::uint32_t> key_begin(nw + 1, 0);
     std::vector<WorldIdx>      order(nw);
@@ -133,7 +149,7 @@ EpistemicState bisim_contract(EpistemicState s) {
         return id + 1;
     };
 
-    // ── Round 0: valuation and designation ──────────────────────────────────
+    // Round 0: valuation and designation.
     {
         key_data.clear();
         for (WorldIdx w = 0; w < nw; ++w) {
@@ -150,7 +166,7 @@ EpistemicState bisim_contract(EpistemicState s) {
         class_of.swap(next_class);
     }
 
-    // ── Rounds 1..: split on neighbour classes ──────────────────────────────
+    // Rounds 1..: split on neighbour classes.
     std::int32_t num_classes = *std::max_element(class_of.begin(), class_of.end()) + 1;
 
     for (;;) {
@@ -181,7 +197,7 @@ EpistemicState bisim_contract(EpistemicState s) {
         num_classes = count;
     }
 
-    // ── Quotient ────────────────────────────────────────────────────────────
+    // Quotient.
     //
     // Class ids are already canonical, so world c of the result is class c.
     std::vector<WorldIdx> repr(num_classes, kNoWorld);

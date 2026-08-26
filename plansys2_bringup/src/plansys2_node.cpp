@@ -49,6 +49,26 @@ int main(int argc, char ** argv)
   main_node->declare_parameter("use_epistemic_state", use_epistemic_state);
   main_node->get_parameter("use_epistemic_state", use_epistemic_state);
 
+  // Perception is managed the same way and is optional for a second reason:
+  // an epistemic system is complete without it, since a policy can be told
+  // what a sensing action saw by whatever executed it. It is asked for when
+  // the thing that saw is a map. Every route it has for reporting is a call
+  // on the epistemic state, so asking for it without that state is a
+  // configuration that cannot work, and saying so here is better than leaving
+  // it to time out on its first observation.
+  bool use_epistemic_perception = false;
+  main_node->declare_parameter("use_epistemic_perception", use_epistemic_perception);
+  main_node->get_parameter("use_epistemic_perception", use_epistemic_perception);
+
+  if (use_epistemic_perception && !use_epistemic_state) {
+    RCLCPP_ERROR(
+      rclcpp::get_logger("plansys2_bringup"),
+      "use_epistemic_perception needs use_epistemic_state: perception reports what it sees "
+      "to the epistemic state, and there is none to report to.");
+    rclcpp::shutdown();
+    return -1;
+  }
+
   auto domain_node = std::make_shared<plansys2::DomainExpertNode>();
   auto problem_node = std::make_shared<plansys2::ProblemExpertNode>();
   auto planner_node = std::make_shared<plansys2::PlannerNode>();
@@ -71,6 +91,10 @@ int main(int argc, char ** argv)
   if (use_epistemic_state) {
     manager_nodes["epistemic_state"] = std::make_shared<plansys2::LifecycleServiceClient>(
       "epistemic_state_lc_mngr", "epistemic_state");
+  }
+  if (use_epistemic_perception) {
+    manager_nodes["epistemic_perception"] = std::make_shared<plansys2::LifecycleServiceClient>(
+      "epistemic_perception_lc_mngr", "epistemic_perception");
   }
 
   for (auto & manager_node : manager_nodes) {

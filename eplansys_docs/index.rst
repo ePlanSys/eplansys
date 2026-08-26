@@ -43,6 +43,11 @@ Packages
      - The ``plansys2::EpistemicBTBuilder`` plugin for ``plansys2_executor``,
        kept in its own package because it is the only piece that depends on
        the executor.
+   * - ``plansys2_epistemic_perception``
+     - The ``epistemic_perception`` node: named regions of an occupancy grid,
+       classified as clear, blocked or undecided, and reported to the
+       epistemic state as the outcome of a sensing action or as a public
+       announcement.
    * - ``plansys2_aletheia_plan_solver``
      - An alternative plan solver plugin that runs the same planner as an
        external process rather than in process, for deployments where the

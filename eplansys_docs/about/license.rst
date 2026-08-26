@@ -31,6 +31,21 @@ The epistemic packages are original contributions, developed as part of a
 terminal work at the Instituto Politécnico Nacional, Mexico, and are also
 distributed under the Apache License, Version 2.0.
 
+Within ``plansys2_epistemic_planner``, the planning core is derived from the
+`Aletheia <https://github.com/HanielUlises/Aletheia>`_ epistemic planner, a
+work of the same author, also under the Apache License, Version 2.0: the
+Kripke state representation, the DEL product update, bisimulation contraction,
+formula representation and model checking, the heuristics, the search
+strategies, the selection policy, the parser and the validator. It is
+incorporated in process here, rather than invoked as a binary, which is what
+``plansys2_aletheia_plan_solver`` does instead. The rest of that package, the
+plan solver plugin, the policy plan serialisation, the action mapping and the
+formula text front end, is original to this repository.
+
+``plansys2_epddl_grounder`` includes three files reproduced verbatim from other
+projects, used at run time rather than compiled. ``NOTICE`` names them and
+their licences.
+
 Copyright
 ---------
 

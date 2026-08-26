@@ -17,11 +17,48 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.conditions import IfCondition, UnlessCondition
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+
+
+def lifecycle_manager(context, *args, **kwargs):
+    """
+    Build the lifecycle manager for the set of nodes that was actually started.
+
+    Naming a node that is not running makes startup block and then fail, so the
+    managed set has to match the started set exactly. This used to be two
+    managers with two written-out lists, one per value of a single flag. A
+    second optional node turns that into four, and only three of the four are
+    systems anyone can run, so the list is assembled here instead: an
+    OpaqueFunction runs once the launch arguments have values, which is what
+    lets the set be decided in Python rather than out of substitutions.
+    """
+    started = ['domain_expert', 'problem_expert', 'planner', 'executor']
+
+    with_state = IfCondition(LaunchConfiguration('epistemic_state')).evaluate(context)
+    with_perception = IfCondition(LaunchConfiguration('epistemic_perception')).evaluate(context)
+
+    if with_perception and not with_state:
+        raise RuntimeError(
+            'epistemic_perception:=True needs epistemic_state:=True. Perception reports '
+            "what it reads to the epistemic state, over that node's services, and there "
+            'would be none to report to.')
+
+    if with_state:
+        started.append('epistemic_state')
+    if with_perception:
+        started.append('epistemic_perception')
+
+    return [Node(
+        package='plansys2_lifecycle_manager',
+        executable='lifecycle_manager_node',
+        name='lifecycle_manager_node',
+        namespace=LaunchConfiguration('namespace'),
+        output='screen',
+        parameters=[{'managed_nodes': started}])]
 
 
 def generate_launch_description():
@@ -37,6 +74,7 @@ def generate_launch_description():
     end_action_bt_file = LaunchConfiguration('end_action_bt_file')
     bt_builder_plugin = LaunchConfiguration('bt_builder_plugin')
     epistemic_state = LaunchConfiguration('epistemic_state')
+    epistemic_perception = LaunchConfiguration('epistemic_perception')
 
     declare_model_file_cmd = DeclareLaunchArgument(
         'model_file',
@@ -90,6 +128,17 @@ def generate_launch_description():
         description='Start the epistemic state as a fifth managed node. '
                     'Executing an epistemic policy needs it; a classical '
                     'system has no use for it.',
+    )
+
+    declare_epistemic_perception_cmd = DeclareLaunchArgument(
+        'epistemic_perception',
+        default_value='False',
+        description='Start epistemic perception as a sixth managed node, '
+                    'which reads named regions of an occupancy grid and '
+                    'reports them to the epistemic state. Needs '
+                    'epistemic_state:=True, and the regions it watches are '
+                    'named under epistemic_perception: in the parameters '
+                    'file.',
     )
 
     domain_expert_cmd = IncludeLaunchDescription(
@@ -150,32 +199,18 @@ def generate_launch_description():
             'params_file': params_file
         }.items())
 
-    # Two managers rather than one with a computed list: naming a node that is
-    # not running makes startup block and then fail, so the set of managed
-    # nodes has to match the set that was started, and stating both cases is
-    # clearer than assembling the list out of substitutions.
-    lifecycle_manager_cmd = Node(
-        package='plansys2_lifecycle_manager',
-        executable='lifecycle_manager_node',
-        name='lifecycle_manager_node',
-        namespace=namespace,
-        output='screen',
-        condition=UnlessCondition(epistemic_state),
-        parameters=[])
+    epistemic_perception_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(
+            get_package_share_directory('plansys2_epistemic_perception'),
+            'launch',
+            'epistemic_perception_launch.py')),
+        condition=IfCondition(epistemic_perception),
+        launch_arguments={
+            'namespace': namespace,
+            'params_file': params_file
+        }.items())
 
-    lifecycle_manager_epistemic_cmd = Node(
-        package='plansys2_lifecycle_manager',
-        executable='lifecycle_manager_node',
-        name='lifecycle_manager_node',
-        namespace=namespace,
-        output='screen',
-        condition=IfCondition(epistemic_state),
-        parameters=[{
-            'managed_nodes': [
-                'domain_expert', 'problem_expert', 'planner', 'executor',
-                'epistemic_state',
-            ],
-        }])
+    lifecycle_manager_cmd = OpaqueFunction(function=lifecycle_manager)
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -187,6 +222,7 @@ def generate_launch_description():
     ld.add_action(declare_end_action_bt_file_cmd)
     ld.add_action(declare_bt_builder_plugin_cmd)
     ld.add_action(declare_epistemic_state_cmd)
+    ld.add_action(declare_epistemic_perception_cmd)
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_params_file_cmd)
 
@@ -196,7 +232,7 @@ def generate_launch_description():
     ld.add_action(planner_cmd)
     ld.add_action(executor_cmd)
     ld.add_action(epistemic_state_cmd)
+    ld.add_action(epistemic_perception_cmd)
     ld.add_action(lifecycle_manager_cmd)
-    ld.add_action(lifecycle_manager_epistemic_cmd)
 
     return ld

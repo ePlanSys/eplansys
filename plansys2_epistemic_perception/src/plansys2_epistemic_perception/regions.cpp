@@ -206,7 +206,16 @@ RegionClass classify(
 
     const std::int8_t value = grid.data[index];
 
-    if (value >= thresholds.occupied_above) {
+    // Both bounds are strict, so the unsettled band is [free_below,
+    // occupied_above] inclusive. A cell sitting exactly on occupied_above has
+    // been seen without being settled, and calling it occupied would hand an
+    // agent knowledge it does not have -- the same argument that keeps such a
+    // cell from counting as free. The asymmetry matters because the two
+    // answers are not equally recoverable: an unsettled cell reported as
+    // blocked fires the sensing action's blocked outcome, and the state has no
+    // operation for taking that back, while an undecided region reports
+    // nothing at all.
+    if (value > thresholds.occupied_above) {
       return RegionClass::Blocked;
     }
     if (value < 0 || value >= thresholds.free_below) {

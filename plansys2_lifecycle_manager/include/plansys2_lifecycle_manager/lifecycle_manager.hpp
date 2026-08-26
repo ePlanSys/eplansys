@@ -108,9 +108,9 @@ private:
  * @brief Starts up all managed nodes using their LifecycleServiceClient interfaces.
  *
  * Every node in the map is configured and then activated. The four classical
- * PlanSys2 nodes and the epistemic state are brought up in a known order; a
- * node the map does not carry is skipped, so the same function serves a
- * classical bringup and an epistemic one.
+ * PlanSys2 nodes, the epistemic state and epistemic perception are brought up
+ * in a known order; a node the map does not carry is skipped, so the same
+ * function serves a classical bringup and an epistemic one.
  *
  * @param[in,out] manager_nodes Map of node names to their LifecycleServiceClient instances.
  * @param[in] timeout Timeout for each startup operation.

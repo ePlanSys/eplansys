@@ -167,6 +167,75 @@ TEST(regions, occupied_beats_unobserved)
     plansys2::RegionClass::Blocked);
 }
 
+// The four values around the two thresholds, pinned so the band cannot drift.
+//
+// Both bounds are strict: free is below free_below, occupied is above
+// occupied_above, and [free_below, occupied_above] inclusive is the band of
+// cells that have been seen without being settled. epistemic_slam's map fusion
+// classifies cells by the same rule, and a disagreement between the two would
+// mean one grid reading as two different situations.
+TEST(regions, the_free_bound_is_strict)
+{
+  auto grid = free_grid();
+
+  // Default thresholds: free_below 25, occupied_above 65.
+  grid.data[5] = 24;
+  EXPECT_EQ(
+    plansys2::classify(box_region(0.0, 0.0, 2.0, 2.0), grid),
+    plansys2::RegionClass::Clear);
+
+  grid.data[5] = 25;
+  EXPECT_EQ(
+    plansys2::classify(box_region(0.0, 0.0, 2.0, 2.0), grid),
+    plansys2::RegionClass::Unknown);
+}
+
+TEST(regions, the_occupied_bound_is_strict)
+{
+  auto grid = free_grid();
+
+  // Exactly on the threshold the cell has been seen without being settled.
+  // Reporting it as blocked would assert knowledge the map does not carry, and
+  // unlike an undecided region -- which reports nothing -- a blocked region
+  // fires an outcome the epistemic state cannot take back.
+  grid.data[5] = 65;
+  EXPECT_EQ(
+    plansys2::classify(box_region(0.0, 0.0, 2.0, 2.0), grid),
+    plansys2::RegionClass::Unknown);
+
+  grid.data[5] = 66;
+  EXPECT_EQ(
+    plansys2::classify(box_region(0.0, 0.0, 2.0, 2.0), grid),
+    plansys2::RegionClass::Blocked);
+}
+
+TEST(regions, the_bounds_stay_strict_when_the_thresholds_move)
+{
+  auto grid = free_grid();
+
+  const plansys2::Thresholds moved{40, 80};
+
+  grid.data[5] = 39;
+  EXPECT_EQ(
+    plansys2::classify(box_region(0.0, 0.0, 2.0, 2.0), grid, moved),
+    plansys2::RegionClass::Clear);
+
+  grid.data[5] = 40;
+  EXPECT_EQ(
+    plansys2::classify(box_region(0.0, 0.0, 2.0, 2.0), grid, moved),
+    plansys2::RegionClass::Unknown);
+
+  grid.data[5] = 80;
+  EXPECT_EQ(
+    plansys2::classify(box_region(0.0, 0.0, 2.0, 2.0), grid, moved),
+    plansys2::RegionClass::Unknown);
+
+  grid.data[5] = 81;
+  EXPECT_EQ(
+    plansys2::classify(box_region(0.0, 0.0, 2.0, 2.0), grid, moved),
+    plansys2::RegionClass::Blocked);
+}
+
 TEST(regions, thresholds_move_the_line)
 {
   auto grid = free_grid();

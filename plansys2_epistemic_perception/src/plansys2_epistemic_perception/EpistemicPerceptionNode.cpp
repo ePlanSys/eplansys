@@ -35,6 +35,50 @@ EpistemicPerceptionNode::EpistemicPerceptionNode(const rclcpp::NodeOptions & opt
   declare_parameter<double>("call_timeout", 5.0);
 }
 
+template<typename T>
+void EpistemicPerceptionNode::declare_region_parameter(
+  const std::string & name, const T & fallback)
+{
+  if (!has_parameter(name)) {
+    // Dynamic typing so that a box written as [2, 0, 8, 1] is read rather than
+    // refused. YAML makes those integers, a reader means metres, and a
+    // parameter declared as a double array rejects the override outright --
+    // the value never reaches this node's own diagnostics.
+    rcl_interfaces::msg::ParameterDescriptor descriptor;
+    descriptor.dynamic_typing = true;
+    declare_parameter(name, rclcpp::ParameterValue(fallback), descriptor);
+  }
+}
+
+bool EpistemicPerceptionNode::read_boxes(
+  const std::string & region, std::vector<double> & boxes)
+{
+  const auto parameter = get_parameter(region + ".boxes");
+
+  switch (parameter.get_type()) {
+    case rclcpp::ParameterType::PARAMETER_DOUBLE_ARRAY:
+      boxes = parameter.as_double_array();
+      return true;
+
+    case rclcpp::ParameterType::PARAMETER_INTEGER_ARRAY:
+      {
+        // A box on whole metres is the ordinary case, and YAML has already
+        // decided those are integers by the time they arrive here.
+        const auto whole = parameter.as_integer_array();
+        boxes.assign(whole.begin(), whole.end());
+        return true;
+      }
+
+    default:
+      RCLCPP_ERROR(
+        get_logger(),
+        "[epistemic_perception] region '%s' has boxes of type %s, and they have to be "
+        "numbers: [min_x, min_y, max_x, max_y] per box, in metres.",
+        region.c_str(), parameter.get_type_name().c_str());
+      return false;
+  }
+}
+
 bool EpistemicPerceptionNode::read_regions()
 {
   watched_.clear();
@@ -44,16 +88,21 @@ bool EpistemicPerceptionNode::read_regions()
   for (const auto & name : names) {
     // Declared here rather than in the constructor because there is no list of
     // regions until the parameters are read, and a region's own settings are
-    // named after it.
-    declare_parameter<std::vector<double>>(name + ".boxes", std::vector<double>{});
-    declare_parameter<std::string>(name + ".atom", "");
-    declare_parameter<std::string>(name + ".predicate", "clear");
-    declare_parameter<bool>(name + ".atom_true_when_clear", true);
-    declare_parameter<std::string>(name + ".sensing_action", "");
-    declare_parameter<std::string>(name + ".outcome_when_clear", "");
-    declare_parameter<std::string>(name + ".outcome_when_blocked", "");
+    // named after it. Declaring is guarded because configure can be reached
+    // more than once -- a cleanup goes back to unconfigured and a manager may
+    // configure again -- and declaring a parameter twice throws.
+    declare_region_parameter<std::vector<double>>(name + ".boxes", std::vector<double>{});
+    declare_region_parameter<std::string>(name + ".atom", "");
+    declare_region_parameter<std::string>(name + ".predicate", "clear");
+    declare_region_parameter<bool>(name + ".atom_true_when_clear", true);
+    declare_region_parameter<std::string>(name + ".sensing_action", "");
+    declare_region_parameter<std::string>(name + ".outcome_when_clear", "");
+    declare_region_parameter<std::string>(name + ".outcome_when_blocked", "");
 
-    const auto boxes = get_parameter(name + ".boxes").as_double_array();
+    std::vector<double> boxes;
+    if (!read_boxes(name, boxes)) {
+      return false;
+    }
     if (boxes.empty() || boxes.size() % 4 != 0) {
       RCLCPP_ERROR(
         get_logger(),
@@ -115,12 +164,41 @@ EpistemicPerceptionNode::on_configure(const rclcpp_lifecycle::State & state)
 {
   (void)state;
 
-  if (!read_regions()) {
+  // A parameter that is declared, read or typed wrongly throws, and an
+  // exception out of a transition callback is reported by the lifecycle layer
+  // as a raw rclcpp message with no mention of the region it came from. The
+  // transition fails either way; catching it here is what makes the reason
+  // legible and keeps the node in a state a manager can retry from.
+  bool regions_read = false;
+  try {
+    regions_read = read_regions();
+  } catch (const rclcpp::exceptions::ParameterAlreadyDeclaredException & e) {
+    RCLCPP_ERROR(get_logger(), "[epistemic_perception] %s", e.what());
+  } catch (const rclcpp::exceptions::InvalidParameterTypeException & e) {
+    RCLCPP_ERROR(get_logger(), "[epistemic_perception] %s", e.what());
+  } catch (const rclcpp::exceptions::ParameterNotDeclaredException & e) {
+    RCLCPP_ERROR(get_logger(), "[epistemic_perception] %s", e.what());
+  }
+
+  if (!regions_read) {
     return CallbackReturnT::FAILURE;
   }
 
-  thresholds_.free_below = static_cast<std::int8_t>(get_parameter("free_below").as_int());
-  thresholds_.occupied_above = static_cast<std::int8_t>(get_parameter("occupied_above").as_int());
+  // Checked before the cast, not after: an occupancy value is int8 and these
+  // are read as int, so a threshold of 200 would narrow to -56 and pass every
+  // test below while classifying every cell as unobserved.
+  const auto free_below = get_parameter("free_below").as_int();
+  const auto occupied_above = get_parameter("occupied_above").as_int();
+  if (free_below < 0 || free_below > 100 || occupied_above < 0 || occupied_above > 100) {
+    RCLCPP_ERROR(
+      get_logger(),
+      "[epistemic_perception] free_below (%ld) and occupied_above (%ld) are occupancy "
+      "values and have to be within 0..100.", free_below, occupied_above);
+    return CallbackReturnT::FAILURE;
+  }
+
+  thresholds_.free_below = static_cast<std::int8_t>(free_below);
+  thresholds_.occupied_above = static_cast<std::int8_t>(occupied_above);
   if (thresholds_.free_below > thresholds_.occupied_above) {
     RCLCPP_ERROR(
       get_logger(),
@@ -130,8 +208,16 @@ EpistemicPerceptionNode::on_configure(const rclcpp_lifecycle::State & state)
     return CallbackReturnT::FAILURE;
   }
 
+  const auto call_timeout = get_parameter("call_timeout").as_double();
+  if (!(call_timeout > 0.0)) {
+    RCLCPP_ERROR(
+      get_logger(),
+      "[epistemic_perception] call_timeout (%f) has to be positive: a call that is given "
+      "no time to be answered reports every observation as unanswered.", call_timeout);
+    return CallbackReturnT::FAILURE;
+  }
   call_timeout_ = std::chrono::duration_cast<std::chrono::nanoseconds>(
-    std::chrono::duration<double>(get_parameter("call_timeout").as_double()));
+    std::chrono::duration<double>(call_timeout));
 
   state_ = std::make_shared<EpistemicStateClient>("epistemic_perception_state_client");
 
@@ -166,6 +252,23 @@ EpistemicPerceptionNode::on_deactivate(const rclcpp_lifecycle::State & state)
   active_ = false;
 
   RCLCPP_INFO(get_logger(), "[%s] Deactivated", get_name());
+  return CallbackReturnT::SUCCESS;
+}
+
+EpistemicPerceptionNode::CallbackReturnT
+EpistemicPerceptionNode::on_cleanup(const rclcpp_lifecycle::State & state)
+{
+  (void)state;
+
+  // Unconfigured means not watching. Without this the subscription and the
+  // client outlive the configuration that created them, and a node that has
+  // been cleaned up goes on holding a topic it no longer has regions for.
+  map_sub_.reset();
+  state_.reset();
+  watched_.clear();
+  active_ = false;
+
+  RCLCPP_INFO(get_logger(), "[%s] Cleaned up", get_name());
   return CallbackReturnT::SUCCESS;
 }
 

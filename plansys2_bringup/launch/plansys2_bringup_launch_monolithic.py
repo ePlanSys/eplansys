@@ -37,6 +37,7 @@ def generate_launch_description():
     end_action_bt_file = LaunchConfiguration('end_action_bt_file')
     bt_builder_plugin = LaunchConfiguration('bt_builder_plugin')
     epistemic_state = LaunchConfiguration('epistemic_state')
+    epistemic_perception = LaunchConfiguration('epistemic_perception')
 
     declare_model_file_cmd = DeclareLaunchArgument(
         'model_file',
@@ -87,6 +88,17 @@ def generate_launch_description():
                     'system has no use for it.',
     )
 
+    declare_epistemic_perception_cmd = DeclareLaunchArgument(
+        'epistemic_perception',
+        default_value='False',
+        description='Start epistemic perception as a sixth managed node, '
+                    'which reads named regions of an occupancy grid and '
+                    'reports them to the epistemic state. Needs '
+                    'epistemic_state:=True, and the regions it watches are '
+                    'named under epistemic_perception: in the parameters '
+                    'file.',
+    )
+
     plansys2_node_cmd = Node(
         package='plansys2_bringup',
         executable='plansys2_node',
@@ -109,6 +121,8 @@ def generate_launch_description():
           # plansys2_node declares this one as a bool.
           {
             'use_epistemic_state': ParameterValue(epistemic_state, value_type=bool),
+            'use_epistemic_perception': ParameterValue(
+                epistemic_perception, value_type=bool),
           },
         ])
 
@@ -124,6 +138,20 @@ def generate_launch_description():
         condition=IfCondition(epistemic_state),
         parameters=[params_file])
 
+    # Started the same way as the state, and managed the same way: by name,
+    # over services, so plansys2_bringup still links against none of it.
+    # Asking for it without epistemic_state:=True is a system that cannot
+    # work, since every route perception has for reporting is a call on the
+    # state; plansys2_node refuses that pair and says why.
+    epistemic_perception_cmd = Node(
+        package='plansys2_epistemic_perception',
+        executable='epistemic_perception_node',
+        name='epistemic_perception',
+        namespace=namespace,
+        output='screen',
+        condition=IfCondition(epistemic_perception),
+        parameters=[params_file])
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -133,11 +161,13 @@ def generate_launch_description():
     ld.add_action(declare_end_action_bt_file_cmd)
     ld.add_action(declare_bt_builder_plugin_cmd)
     ld.add_action(declare_epistemic_state_cmd)
+    ld.add_action(declare_epistemic_perception_cmd)
     ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_params_file_cmd)
 
     # Declare the launch options
     ld.add_action(plansys2_node_cmd)
     ld.add_action(epistemic_state_cmd)
+    ld.add_action(epistemic_perception_cmd)
 
     return ld

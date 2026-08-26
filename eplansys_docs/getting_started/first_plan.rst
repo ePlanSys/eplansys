@@ -134,6 +134,47 @@ without a planner:
      -p epddl_domain:=<the same domain.epddl> \
      -p epddl_problem:=<the same problem.epddl>
 
+Sensing from a map
+------------------
+
+Something has to tell the state what a sensing action saw. When that something
+is an occupancy grid rather than an operator at a terminal, add a sixth node:
+
+.. code-block:: bash
+
+   ros2 launch plansys2_bringup plansys2_bringup_launch_monolithic.py \
+     model_file:=<domain.pddl> \
+     params_file:=<share>/plansys2_bringup/params/plansys2_epistemic_params.yaml \
+     epistemic_state:=True \
+     epistemic_perception:=True
+
+It needs ``epistemic_state:=True``. Perception reports what it reads over that
+node's services, so the pair without it is refused at launch rather than
+started with nowhere to report.
+
+It watches nothing until the parameters file names regions for it. Each region
+is a set of boxes in metres in the map frame, the atom its occupancy decides,
+and how the finding is reported:
+
+.. code-block:: yaml
+
+   epistemic_perception:
+     ros__parameters:
+       regions: ["corridor"]
+       corridor:
+         boxes: [2.0, -0.5, 8.0, 0.5]
+         atom: "blocked"
+         atom_true_when_clear: false
+         sensing_action: "inspect_r1"
+         outcome_when_clear: "e-inspect-clear"
+         outcome_when_blocked: "e-inspect-blocked"
+
+A region bound to a sensing action reports as that action's outcome, which is
+the branch the policy was built around. A region left unbound is announced
+instead, as information that arrived outside the plan. Why each route exists,
+and when a region counts as clear rather than merely unobserved, is in
+:doc:`../concepts/architecture`.
+
 Requesting a plan
 -----------------
 
