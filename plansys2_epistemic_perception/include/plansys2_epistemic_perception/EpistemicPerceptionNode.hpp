@@ -96,7 +96,16 @@ public:
     RegionVocabulary about;
     RegionClass last{RegionClass::Unknown};
     bool reported{false};
+
+    /// Attempts spent on a refusal that reads as a race rather than as a
+    /// disagreement. See the note in tell().
+    int retries{0};
   };
+
+  /// How many grids to keep offering an observation the state was not yet
+  /// ready for. A few seconds at map rate: long enough for the executor to
+  /// apply the action before it, short enough not to mask a real conflict.
+  static constexpr int kApplicabilityRetries = 40;
 
   /// The configured regions, for tests and for a node that wants to report
   /// what it is watching.
@@ -125,7 +134,7 @@ private:
 
   /// Say one thing to the state. Returns false when the state did not take it,
   /// which leaves the region unreported so that the next grid tries again.
-  bool tell(const Watched & watched, const Emission & emission);
+  bool tell(Watched & watched, const Emission & emission);
 
   std::vector<Watched> watched_;
   Thresholds thresholds_;

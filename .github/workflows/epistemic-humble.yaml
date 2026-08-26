@@ -76,7 +76,11 @@ jobs:
           # plansys2_msgs and the planner, not on plansys2_executor. Only
           # plansys2_epistemic_bt_builder does, which is why it is a separate
           # package and why it is absent from this list — see rolling.yaml.
-          package-name: plank plansys2_epddl_grounder plansys2_epistemic_planner plansys2_epistemic_msgs plansys2_epistemic_executor plansys2_epistemic_perception plansys2_aletheia_plan_solver
+          #
+          # plansys2_tui_cli is here for the epistemic verbs it carries, which
+          # are the only part of the command line that depends on the packages
+          # above. It is pure Python and has no such link against the executor.
+          package-name: plank plansys2_epddl_grounder plansys2_epistemic_planner plansys2_epistemic_msgs plansys2_epistemic_executor plansys2_epistemic_perception plansys2_aletheia_plan_solver plansys2_tui_cli
           vcs-repo-file-url: ${GITHUB_WORKSPACE}/dependency_repos.repos
           target-ros2-distro: humble
           # action-ros-ci runs 'colcon lcov-result' and 'colcon

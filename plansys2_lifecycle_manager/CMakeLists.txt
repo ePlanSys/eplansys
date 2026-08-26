@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
+find_package(plansys2_core REQUIRED)
 
 add_library(${PROJECT_NAME}
   src/plansys2_lifecycle_manager/lifecycle_manager.cpp
@@ -21,6 +22,7 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC
   rclcpp::rclcpp
   ${lifecycle_msgs_TARGETS}
+  plansys2_core::plansys2_core
 )
 
 add_executable(lifecycle_manager_node
@@ -65,6 +67,7 @@ ament_export_targets(export_${PROJECT_NAME})
 ament_export_dependencies(
   rclcpp
   lifecycle_msgs
+  plansys2_core
 )
 
 ament_package()

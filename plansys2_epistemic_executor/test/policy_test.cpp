@@ -74,11 +74,11 @@ TEST(PolicyTest, AClassicalPlanIsAValidPolicy)
 TEST(PolicyTest, ALinkedPlanIsNotReadSequentially)
 {
   auto plan = sequence_of(
-    {
-      action("(peek A)", 0.0f, {1, 2}, {"a", "b"}),
-      action("(x)", 1.0f),
-      action("(y)", 1.0f),
-    });
+  {
+    action("(peek A)", 0.0f, {1, 2}, {"a", "b"}),
+    action("(x)", 1.0f),
+    action("(y)", 1.0f),
+  });
   ASSERT_EQ(Policy::validate(plan), "");
 
   const Policy policy(plan);
@@ -97,11 +97,11 @@ TEST(PolicyTest, AnEmptyPlanIsAValidPolicy)
 TEST(PolicyTest, BranchesAreFoundAndFollowed)
 {
   auto plan = sequence_of(
-    {
-      action("(peek A)", 0.0f, {1, 2}, {"e_tails", "e_heads"}),
-      action("(shout A)", 1.0f),
-      action("(open A)", 1.0f),
-    });
+  {
+    action("(peek A)", 0.0f, {1, 2}, {"e_tails", "e_heads"}),
+    action("(shout A)", 1.0f),
+    action("(open A)", 1.0f),
+  });
   ASSERT_EQ(Policy::validate(plan), "");
 
   const Policy policy(plan);
@@ -117,10 +117,10 @@ TEST(PolicyTest, BranchesAreFoundAndFollowed)
 TEST(PolicyTest, TerminalOutcomesAreDistinguishedFromUnplannedOnes)
 {
   auto plan = sequence_of(
-    {
-      action("(peek A)", 0.0f, {1, PlanItem::POLICY_DONE}, {"e_tails", "e_heads"}),
-      action("(shout A)", 1.0f),
-    });
+  {
+    action("(peek A)", 0.0f, {1, PlanItem::POLICY_DONE}, {"e_tails", "e_heads"}),
+    action("(shout A)", 1.0f),
+  });
   ASSERT_EQ(Policy::validate(plan), "");
 
   const Policy policy(plan);
@@ -131,10 +131,10 @@ TEST(PolicyTest, TerminalOutcomesAreDistinguishedFromUnplannedOnes)
 TEST(PolicyTest, OnlySuccessorIsTheUnconditionalContinuation)
 {
   auto plan = sequence_of(
-    {
-      action("(move r1 a b)", 0.0f, {1}, {"e_done"}),
-      action("(pick r1 o)", 1.0f, {PlanItem::POLICY_DONE}, {"e_done"}),
-    });
+  {
+    action("(move r1 a b)", 0.0f, {1}, {"e_done"}),
+    action("(pick r1 o)", 1.0f, {PlanItem::POLICY_DONE}, {"e_done"}),
+  });
   ASSERT_EQ(Policy::validate(plan), "");
 
   const Policy policy(plan);
@@ -146,12 +146,12 @@ TEST(PolicyTest, OnlySuccessorIsTheUnconditionalContinuation)
 TEST(PolicyTest, PreorderVisitsEveryNodeParentsFirst)
 {
   auto plan = sequence_of(
-    {
-      action("(peek A)", 0.0f, {1, 2}, {"a", "b"}),
-      action("(x)", 1.0f),
-      action("(y)", 1.0f, {3}, {"c"}),
-      action("(z)", 2.0f),
-    });
+  {
+    action("(peek A)", 0.0f, {1, 2}, {"a", "b"}),
+    action("(x)", 1.0f),
+    action("(y)", 1.0f, {3}, {"c"}),
+    action("(z)", 2.0f),
+  });
   ASSERT_EQ(Policy::validate(plan), "");
 
   const auto order = Policy(plan).preorder();
@@ -166,7 +166,8 @@ TEST(PolicyTest, PreorderVisitsEveryNodeParentsFirst)
 // to parse. Each of these would run, and run wrongly.
 TEST(PolicyTest, ValidateRejectsMisalignedOutcomes)
 {
-  auto plan = sequence_of({action("(peek A)", 0.0f, {1, 2}, {"only_one"}), action("(x)", 1.0f),
+  auto plan = sequence_of(
+    {action("(peek A)", 0.0f, {1, 2}, {"only_one"}), action("(x)", 1.0f),
       action("(y)", 1.0f)});
   EXPECT_NE(Policy::validate(plan), "");
 }
@@ -207,11 +208,11 @@ TEST(PolicyTest, ValidateRejectsAnUnreachableNode)
   // A linked plan, so the sequential reading does not apply: item 2 is named
   // by nobody and the executor could never run it.
   auto plan = sequence_of(
-    {
-      action("(a)", 0.0f, {1}, {"x"}),
-      action("(b)", 1.0f),
-      action("(orphan)", 2.0f),
-    });
+  {
+    action("(a)", 0.0f, {1}, {"x"}),
+    action("(b)", 1.0f),
+    action("(orphan)", 2.0f),
+  });
   EXPECT_NE(Policy::validate(plan), "")
     << "the executor could never run it, so the policy does not mean what it says";
 }
@@ -219,10 +220,10 @@ TEST(PolicyTest, ValidateRejectsAnUnreachableNode)
 TEST(PolicyTest, ValidateRejectsASharedSubtree)
 {
   auto plan = sequence_of(
-    {
-      action("(peek A)", 0.0f, {1, 1}, {"a", "b"}),
-      action("(x)", 1.0f),
-    });
+  {
+    action("(peek A)", 0.0f, {1, 1}, {"a", "b"}),
+    action("(x)", 1.0f),
+  });
   EXPECT_NE(Policy::validate(plan), "")
     << "one node reached from two branches would run as one action from both";
 }

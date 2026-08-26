@@ -24,6 +24,7 @@
 #include <thread>
 #include <vector>
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_executor/ComputeBT.hpp"
 
 #include "behaviortree_cpp/behavior_tree.h"
@@ -235,7 +236,7 @@ ComputeBT::computeBTCallback(
   domain_node_->set_parameter({"model_file", domain_filename});
   problem_node_->set_parameter({"model_file", domain_filename});
 
-  rclcpp::experimental::executors::EventsExecutor exe;
+  plansys2::SpinExecutor exe;
 
   exe.add_node(domain_node_->get_node_base_interface());
   exe.add_node(problem_node_->get_node_base_interface());

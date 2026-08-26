@@ -15,6 +15,7 @@
 #ifndef PLANSYS2_EPISTEMIC_EXECUTOR__EPISTEMICSTATENODE_HPP_
 #define PLANSYS2_EPISTEMIC_EXECUTOR__EPISTEMICSTATENODE_HPP_
 
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -143,6 +144,12 @@ private:
 
   std::optional<PlanningTask> task_;
   std::optional<EpistemicState> state_;
+
+  /// The outcome each action produced when it was applied, so that applying
+  /// the same action again -- which happens when an observation reaches the
+  /// state before the executor's own update for that action -- can be answered
+  /// with what it produced rather than refused as a divergence.
+  std::map<std::string, std::string> applied_outcomes_;
 
   /// The goal being aimed at. Null means the loaded task's own goal, which is
   /// what the state starts with; a set_goal call replaces it, and setting it

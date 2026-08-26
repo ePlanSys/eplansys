@@ -13,6 +13,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
+  <depend>plansys2_core</depend>
   <depend>lifecycle_msgs</depend>
 
   <test_depend>ament_lint_common</test_depend>

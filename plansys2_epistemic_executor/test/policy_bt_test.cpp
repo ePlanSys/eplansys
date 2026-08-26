@@ -86,25 +86,30 @@ void expect_parses(const std::string & xml)
 {
   BT::BehaviorTreeFactory factory;
 
-  factory.registerSimpleCondition("CheckKnowledge", [](BT::TreeNode &) {
+  factory.registerSimpleCondition(
+    "CheckKnowledge", [](BT::TreeNode &) {
       return BT::NodeStatus::SUCCESS;
     }, {BT::InputPort<std::string>("node"), BT::InputPort<std::string>("action")});
-  factory.registerSimpleCondition("CheckEpistemicGoal", [](BT::TreeNode &) {
+  factory.registerSimpleCondition(
+    "CheckEpistemicGoal", [](BT::TreeNode &) {
       return BT::NodeStatus::SUCCESS;
     }, {BT::InputPort<std::string>("goal")});
-  factory.registerSimpleAction("ApplyEpistemicUpdate", [](BT::TreeNode &) {
+  factory.registerSimpleAction(
+    "ApplyEpistemicUpdate", [](BT::TreeNode &) {
       return BT::NodeStatus::SUCCESS;
     }, {BT::InputPort<std::string>("node"), BT::InputPort<std::string>("action"),
-      BT::InputPort<std::string>("observed"), BT::OutputPort<std::string>("outcome")});
+        BT::InputPort<std::string>("observed"), BT::OutputPort<std::string>("outcome")});
 
   // The PlanSys2 nodes the template reuses unchanged.
   for (const auto & name : {"WaitAtStartReq", "CheckOverAllReq", "CheckAtEndReq"}) {
-    factory.registerSimpleCondition(name, [](BT::TreeNode &) {
+    factory.registerSimpleCondition(
+      name, [](BT::TreeNode &) {
         return BT::NodeStatus::SUCCESS;
       }, {BT::InputPort<std::string>("action")});
   }
   for (const auto & name : {"ApplyAtStartEffect", "ExecuteAction", "ApplyAtEndEffect"}) {
-    factory.registerSimpleAction(name, [](BT::TreeNode &) {
+    factory.registerSimpleAction(
+      name, [](BT::TreeNode &) {
         return BT::NodeStatus::SUCCESS;
       }, {BT::InputPort<std::string>("action")});
   }
@@ -112,10 +117,10 @@ void expect_parses(const std::string & xml)
   factory.registerNodeType<SwitchStub>("EpistemicSwitch");
 
   EXPECT_NO_THROW(
-  {
-    auto tree = factory.createTreeFromText(xml);
-    (void)tree;
-  }) << xml;
+    {
+      auto tree = factory.createTreeFromText(xml);
+      (void)tree;
+    }) << xml;
 }
 
 }  // namespace

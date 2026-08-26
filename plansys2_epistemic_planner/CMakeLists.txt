@@ -67,8 +67,50 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
+  # The planning core is shared with the Aletheia repository, which is where it
+  # is developed and from which it is re-synced. Its style is that project's --
+  # four-space indent, brace on the same line -- and reformatting it to the ROS
+  # convention would make every future diff between the two copies unreadable
+  # for no behavioural gain. So the two style linters skip it, and everything
+  # else is linted everywhere: ament_copyright still checks these files, which
+  # is what keeps the provenance headers honest, and the files original to this
+  # package are held to the full ROS style.
+  set(ALETHEIA_CORE
+    include/plansys2_epistemic_planner/action.hpp
+    include/plansys2_epistemic_planner/bisimulation.hpp
+    include/plansys2_epistemic_planner/bitset.hpp
+    include/plansys2_epistemic_planner/formula.hpp
+    include/plansys2_epistemic_planner/heuristic.hpp
+    include/plansys2_epistemic_planner/outcome.hpp
+    include/plansys2_epistemic_planner/parser.hpp
+    include/plansys2_epistemic_planner/product_update.hpp
+    include/plansys2_epistemic_planner/search.hpp
+    include/plansys2_epistemic_planner/selection_policy.hpp
+    include/plansys2_epistemic_planner/state.hpp
+    include/plansys2_epistemic_planner/task.hpp
+    include/plansys2_epistemic_planner/types.hpp
+    include/plansys2_epistemic_planner/validator.hpp
+    include/plansys2_epistemic_planner/world_cap_policy.hpp
+    src/action.cpp
+    src/bisimulation.cpp
+    src/formula.cpp
+    src/heuristic.cpp
+    src/parser.cpp
+    src/product_update.cpp
+    src/search.cpp
+    src/selection_policy.cpp
+    src/state.cpp
+    src/validator.cpp
+  )
+
   find_package(ament_lint_auto REQUIRED)
+  list(APPEND AMENT_LINT_AUTO_EXCLUDE ament_cmake_cpplint ament_cmake_uncrustify)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_cpplint REQUIRED)
+  find_package(ament_cmake_uncrustify REQUIRED)
+  ament_cpplint(EXCLUDE ${ALETHEIA_CORE})
+  ament_uncrustify(EXCLUDE ${ALETHEIA_CORE})
 
   find_package(ament_cmake_gtest REQUIRED)
   add_subdirectory(test)
