@@ -1314,7 +1314,7 @@ template&lt;typename NodeT&gt; </div>
 </div><div class="memdoc">
 
 <p>Starts up all managed nodes using their <a class="el" href="classplansys2_1_1LifecycleServiceClient.html" title="Client node to manage the lifecycle of another ROS2 node.">LifecycleServiceClient</a> interfaces. </p>
-<p>Every node in the map is configured and then activated. The four classical PlanSys2 nodes and the epistemic state are brought up in a known order; a node the map does not carry is skipped, so the same function serves a classical bringup and an epistemic one.</p>
+<p>Every node in the map is configured and then activated. The four classical PlanSys2 nodes, the epistemic state and epistemic perception are brought up in a known order; a node the map does not carry is skipped, so the same function serves a classical bringup and an epistemic one.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in,out]</td><td class="paramname">manager_nodes</td><td>Map of node names to their <a class="el" href="classplansys2_1_1LifecycleServiceClient.html" title="Client node to manage the lifecycle of another ROS2 node.">LifecycleServiceClient</a> instances. </td></tr>
