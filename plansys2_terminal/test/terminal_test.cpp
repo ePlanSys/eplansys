@@ -23,6 +23,7 @@
 #include <cstdlib>
 
 #include "rclcpp/rclcpp.hpp"
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 #include "plansys2_domain_expert/DomainExpertNode.hpp"
@@ -308,7 +309,7 @@ TEST_F(TerminalTestCase, load_popf_plugin)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -646,7 +647,7 @@ TEST_F(TerminalTestCase, add_problem)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -777,7 +778,7 @@ TEST_F(TerminalTestCase, add_problem_empty_domain)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -903,7 +904,7 @@ TEST_F(TerminalTestCase, check_actors)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -1074,7 +1075,7 @@ TEST_F(TerminalTestCase, source_run_plan)
     std::string cmd_file = pkgpath + "/pddl/commands";
     std::string plan_file = pkgpath + "/pddl/plan";
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());

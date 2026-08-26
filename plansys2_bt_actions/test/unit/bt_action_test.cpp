@@ -29,6 +29,7 @@
 #include "../behavior_tree/Move.hpp"
 #include "../behavior_tree/FailureNodes.hpp"
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_executor/ActionExecutor.hpp"
 #include "plansys2_core/Utils.hpp"
 
@@ -309,7 +310,7 @@ TEST_F(BTActionsTestCase, bt_action)
 
     bt_action->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
     exe.add_node(bt_action->get_node_base_interface());
     exe.add_node(lc_node->get_node_base_interface());
 
@@ -352,7 +353,7 @@ TEST_F(BTActionsTestCase, bt_action_old_constructor)
 
     bt_action->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
     exe.add_node(bt_action->get_node_base_interface());
     exe.add_node(lc_node->get_node_base_interface());
 
@@ -396,7 +397,7 @@ TEST_F(BTActionsTestCase, cancel_bt_action)
 
     bt_action->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
     exe.add_node(bt_action->get_node_base_interface());
     exe.add_node(lc_node->get_node_base_interface());
 

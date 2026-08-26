@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 #include "gtest/gtest.h"
@@ -72,7 +73,7 @@ TEST(problem_expert_node, addget_instances)
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
     problem_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -617,7 +618,7 @@ TEST(problem_expert_node, addget_goal_is_satisfied)
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
     problem_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());

@@ -22,6 +22,7 @@
 #include <atomic>
 #include <thread>
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 #include "gtest/gtest.h"
@@ -107,7 +108,7 @@ TEST(domain_expert, lifecycle)
     std::string pkgpath = plansys2::get_package_share_dir("plansys2_domain_expert");
 
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/domain_simple.pddl"});
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
 
@@ -166,7 +167,7 @@ TEST(domain_expert, lifecycle_error)
     std::string pkgpath = plansys2::get_package_share_dir("plansys2_domain_expert");
 
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/domain_2_error.pddl"});
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
 

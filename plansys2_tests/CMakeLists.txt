@@ -11,6 +11,7 @@ find_package(behaviortree_cpp REQUIRED)
 find_package(plansys2_executor REQUIRED)
 find_package(plansys2_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(plansys2_core REQUIRED)
 find_package(std_msgs REQUIRED)
 
 set(${PROJECT_NAME}_SOURCES
