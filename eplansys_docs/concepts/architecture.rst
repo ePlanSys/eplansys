@@ -326,9 +326,12 @@ way round.
 
 ``startup_function`` in ``plansys2_lifecycle_manager`` brings up whatever map
 it is given, skipping a name it does not find, which is what lets one function
-serve a four-node classical bringup and a five-node epistemic one. The
-standalone ``lifecycle_manager_node`` the distributed launch runs takes the set
-as its ``managed_nodes`` parameter for the same reason.
+serve a four-node classical bringup, a five-node epistemic one, and the
+six-node system that adds perception. The standalone
+``lifecycle_manager_node`` the distributed launch runs takes the set as its
+``managed_nodes`` parameter for the same reason; the distributed launch
+assembles that set in Python, once the launch arguments have values, because
+naming a node that was not started makes startup block and then fail.
 
 Announcing is the counterpart of the problem expert's ``set predicate``, and it
 is deliberately not the same operation. Setting a predicate changes what is
@@ -427,6 +430,27 @@ in the model, since restricting to worlds where a formula already holds changes
 nothing, but a sensing action applied twice is not, and both routes follow the
 one rule. A region that goes back to undecided produces no call at all: the
 state has no operation for taking knowledge back.
+
+It is brought up the way the state is. Both launch files start it on
+``epistemic_perception:=True``, as a sixth managed node, and the lifecycle
+manager configures and activates it with the others. It is off by default, and
+it starts watching nothing until the parameters file names regions under
+``epistemic_perception:``.
+
+Asking for it without ``epistemic_state:=True`` is refused rather than
+started. Every route perception has for reporting is a call on the state, so
+the pair is not a degraded system but one that cannot work at all, and both the
+distributed launch and ``plansys2_node`` say so instead of bringing up a node
+with nowhere to report. As with the state, ``plansys2_bringup`` manages it by
+name over services and links against none of it.
+
+Regions are declared at configure time rather than at construction, since there
+is no list of regions before the parameters are read. Configure is reachable
+more than once, so the node declares each region's settings only if they are
+not already declared, and ``on_cleanup`` releases the subscription and the
+service client that the configuration created. A box is accepted as an integer
+array as well as a double array, because ``[2, -1, 8, 1]`` in a YAML file is a
+list of integers and a reader writing metres has no reason to expect otherwise.
 
 Executor configuration
 ----------------------
