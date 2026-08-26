@@ -210,7 +210,13 @@ epistemic_perception:
     #     sensing_action: "inspect_r1"
     #     outcome_when_clear: "e-inspect-clear"
     #     outcome_when_blocked: "e-inspect-blocked"
-    regions: []
+    # Left out rather than written as an empty list, for the reason given
+    # about epddl_libraries above: a `[]` in a parameters file has no element
+    # type, so the override reaches the node with no value at all and node
+    # construction throws. The node declares this parameter with an empty
+    # string array of its own, which is what "watch nothing yet" should mean.
+    #
+    #   regions: ["corridor"]
 
     # Where the line falls between free, occupied and undecided, on the nav2
     # and slam_toolbox convention. Both are occupancy values, within 0..100. A
