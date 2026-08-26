@@ -44,7 +44,7 @@ def lifecycle_manager(context, *args, **kwargs):
     if with_perception and not with_state:
         raise RuntimeError(
             'epistemic_perception:=True needs epistemic_state:=True. Perception reports '
-            'what it reads to the epistemic state, over that node\'s services, and there '
+            "what it reads to the epistemic state, over that node's services, and there "
             'would be none to report to.')
 
     if with_state:
