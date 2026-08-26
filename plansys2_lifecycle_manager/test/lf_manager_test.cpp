@@ -26,6 +26,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
+#include "plansys2_lifecycle_manager/executor.hpp"
 #include "plansys2_lifecycle_manager/lifecycle_manager.hpp"
 
 using namespace std::chrono_literals;
@@ -35,7 +36,7 @@ TEST(lifecycle_manager, lf_client)
   auto test_node = rclcpp_lifecycle::LifecycleNode::make_shared("test");
   auto client_node = std::make_shared<plansys2::LifecycleServiceClient>("mng_client", "test");
 
-  auto exe = rclcpp::experimental::executors::EventsExecutor::make_shared();
+  auto exe = plansys2::ManagerExecutor::make_shared();
   exe->add_node(test_node->get_node_base_interface());
   exe->add_node(client_node->get_node_base_interface());
 
@@ -99,7 +100,7 @@ TEST(lifecycle_manager, lf_startup)
   manager_nodes["executor"] = std::make_shared<plansys2::LifecycleServiceClient>(
     "domain_expert_lc_mngr", "executor");
 
-  rclcpp::experimental::executors::EventsExecutor exe;
+  plansys2::ManagerExecutor exe;
   for (auto & manager_node : manager_nodes) {
     manager_node.second->init();
     exe.add_node(manager_node.second);
@@ -166,7 +167,7 @@ TEST(lifecycle_manager, lf_startup_with_epistemic_state)
       std::string(name) + "_epistemic_lc_mngr", name);
   }
 
-  rclcpp::experimental::executors::EventsExecutor exe;
+  plansys2::ManagerExecutor exe;
   for (auto & manager_node : manager_nodes) {
     manager_node.second->init();
     exe.add_node(manager_node.second);
