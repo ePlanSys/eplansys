@@ -478,7 +478,14 @@ ExecutorNode::get_tree_from_plan(PlanRuntineInfo & runtime_info)
 
   BT::BehaviorTreeFactory factory;
 
-  for (const auto & plugin : this->get_parameter("bt_node_plugins").as_string_array()) {
+  // Held by value on purpose. as_string_array() returns a reference into the
+  // rclcpp::Parameter that get_parameter() returned, and that Parameter is a
+  // temporary: it dies at the end of the full expression, so a range-for over
+  // the reference iterates a vector that no longer exists. The strings it
+  // yields are freed memory, and the first thing done with one is to hand it
+  // to dlopen, which walks it looking for a '$' and segfaults in strchr.
+  const auto bt_node_plugins = this->get_parameter("bt_node_plugins").as_string_array();
+  for (const auto & plugin : bt_node_plugins) {
     try {
       factory.registerFromPlugin(plugin);
       RCLCPP_INFO(get_logger(), "Loaded behavior tree nodes from %s", plugin.c_str());
