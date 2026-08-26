@@ -338,9 +338,32 @@ void EpistemicStateNode::apply_action_callback(
   const Action & action = task_->actions[it->second];
 
   if (!action.applicable(*state_)) {
-    // Reporting this rather than updating anyway matters: an inapplicable
-    // action means the model and the world have already diverged, and applying
-    // it would bury the divergence under a state nothing produced.
+    // One inapplicable action is not like the others. A sensing action whose
+    // outcome has already been applied is inapplicable precisely because it
+    // worked: its own precondition says the agent does not yet know, and the
+    // agent now knows. That happens whenever the observation reaches the state
+    // before the executor's own update for the same action does -- perception
+    // reports the moment a region resolves, and the behavior tree applies the
+    // action a little later. Answering "the model and the world disagree"
+    // there fails a policy that is in fact proceeding correctly.
+    //
+    // So an action that has already been applied is answered with the outcome
+    // it produced, and the update is not repeated. Every other inapplicable
+    // action is still refused: an inapplicable action means the model and the
+    // world have diverged, and applying it would bury the divergence under a
+    // state nothing produced.
+    const auto seen = applied_outcomes_.find(request->epistemic_action);
+    if (seen != applied_outcomes_.end()) {
+      response->success = true;
+      response->outcome = seen->second;
+      RCLCPP_INFO(
+        get_logger(),
+        "[epistemic_state] '%s' was already applied; its outcome was %s",
+        request->epistemic_action.c_str(),
+        seen->second.empty() ? "(ontic)" : seen->second.c_str());
+      return;
+    }
+
     response->success = false;
     response->error =
       "'" + request->epistemic_action + "' is not applicable in the current "
@@ -361,6 +384,7 @@ void EpistemicStateNode::apply_action_callback(
     state_ = std::move(*updated);
     response->success = true;
     response->outcome = "";   // an ontic action has nothing to observe
+    applied_outcomes_[request->epistemic_action] = "";
   } else {
     auto outcomes = product_update_split(*state_, action, task_->kd45);
     if (outcomes.empty()) {
@@ -408,6 +432,7 @@ void EpistemicStateNode::apply_action_callback(
     response->success = true;
     response->outcome = event < action.events.size() ? action.events[event].name :
       "e" + std::to_string(event);
+    applied_outcomes_[request->epistemic_action] = response->outcome;
   }
 
   response->num_worlds = state_->num_worlds;

@@ -310,7 +310,7 @@ void EpistemicPerceptionNode::report(const nav_msgs::msg::OccupancyGrid & grid)
   }
 }
 
-bool EpistemicPerceptionNode::tell(const Watched & watched, const Emission & emission)
+bool EpistemicPerceptionNode::tell(Watched & watched, const Emission & emission)
 {
   // This blocks the callback until the state answers or the timeout runs out.
   // A map arrives several times a second and a region resolves once, so the
@@ -341,15 +341,44 @@ bool EpistemicPerceptionNode::tell(const Watched & watched, const Emission & emi
   }
 
   if (!answer.success) {
-    // The state took the call and refused it: an announcement that holds
-    // nowhere, or an outcome the model cannot account for. Both mean the model
-    // and the map disagree, which is a reason to replan and not a reason to
-    // keep trying, so the region counts as reported.
+    // The state took the call and refused it. Two different things look alike
+    // here, and only one of them is final.
+    //
+    // An announcement that holds nowhere, or an outcome the model cannot
+    // account for, means the model and the map disagree: a reason to replan
+    // and not to keep trying, so the region counts as reported.
+    //
+    // "Not applicable in the current epistemic state" is usually neither. The
+    // observation and the executor's own update are asynchronous: perception
+    // reports the moment a region resolves, while the model learns that the
+    // robot reached the doorway only when the executor applies the preceding
+    // action. Refusing an observation that arrived a few milliseconds early,
+    // and never trying again, throws away a reading the model was about to be
+    // ready for -- measured at 78 ms in the six-room demo. So that one is
+    // retried while the region still reads the same way, for a bounded number
+    // of grids, and then given up on so that a genuine disagreement is not
+    // hammered at for ever.
+    const bool premature =
+      answer.error.find("not applicable") != std::string::npos;
+
+    if (premature && watched.retries < kApplicabilityRetries) {
+      ++watched.retries;
+      RCLCPP_DEBUG(
+        get_logger(),
+        "[epistemic_perception] '%s' is %s, and the state is not ready for it yet "
+        "(attempt %d of %d)",
+        watched.region.name.c_str(), to_string(watched.last),
+        watched.retries, kApplicabilityRetries);
+      return false;
+    }
+
     RCLCPP_ERROR(
       get_logger(), "[epistemic_perception] '%s' is %s, and the state refused it: %s",
       watched.region.name.c_str(), to_string(watched.last), answer.error.c_str());
     return true;
   }
+
+  watched.retries = 0;
 
   if (emission.kind == Emission::Kind::Announce) {
     RCLCPP_INFO(
