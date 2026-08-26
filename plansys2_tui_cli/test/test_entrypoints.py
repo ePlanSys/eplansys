@@ -1,3 +1,17 @@
+# Copyright 2026 Intelligent Robotics Lab
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import unittest
 from importlib.metadata import entry_points
 
@@ -33,7 +47,8 @@ class TestConsoleEntryPoints(unittest.TestCase):
 
 class TestVerbEntryPoints(unittest.TestCase):
     def test_epistemic_verb_loads(self):
-        """The verb must import without the epistemic messages being present.
+        """
+        The verb must import without the epistemic messages being present.
 
         ros2cli loads every registered verb to build its help, so a verb that
         imported plansys2_epistemic_msgs at module scope would take the whole

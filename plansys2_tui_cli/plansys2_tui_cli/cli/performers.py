@@ -54,7 +54,10 @@ class PerformersVerb(VerbExtension):
     def main(self, *, args):
         with NodeStrategy(args) as node:
             try:
-                _sub = PerformersProcessor(node, self._callback)
+                # Bound to a name it never reads: the subscription is kept alive
+                # by this reference for as long as the loop below runs, and
+                # dropping it would let the processor be collected mid-poll.
+                _sub = PerformersProcessor(node, self._callback)  # noqa: F841
 
                 t_end = time.time() + args.duration
                 while time.time() < t_end:

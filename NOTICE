@@ -48,6 +48,18 @@ from other projects, both used at run time rather than compiled:
     Source:  https://github.com/HanielUlises/Epistemic-Robotics
     License: Apache License, Version 2.0
 
+The package plansys2_tui_cli vendors the Textual terminal UI library
+under plansys2_tui_cli/vendor/textual, so that the command line front
+end runs without a pip install into the ROS environment:
+
+  plansys2_tui_cli/vendor/textual/
+    The Textual TUI framework by Will McGugan and contributors.
+    Source:  https://github.com/Textualize/textual
+    License: MIT, reproduced verbatim in that directory's LICENSE file.
+
+It is vendored unmodified and is excluded from this repository's linters
+for that reason.
+
 plank itself is not vendored. It is fetched and built from source
 through dependency_repos.repos and invoked as a subprocess; its MIT
 license applies to that build.

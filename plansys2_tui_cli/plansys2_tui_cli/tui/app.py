@@ -30,14 +30,18 @@ _vendor_dir = os.path.normpath(
 if os.path.isdir(_vendor_dir) and _vendor_dir not in sys.path:
     sys.path.insert(0, _vendor_dir)
 
-import rclpy
-from rclpy.executors import ExternalShutdownException
+# Imported below the path insertion above rather than at the top of the file,
+# which is what E402 flags: `textual` is only importable once the vendored copy
+# is on sys.path, and the ROS imports are kept with it so the block reads as one
+# thing rather than being split around the reason.
+import rclpy  # noqa: E402
+from rclpy.executors import ExternalShutdownException  # noqa: E402
 
-from textual.app import App, ComposeResult
-from textual.containers import Horizontal, ScrollableContainer, Vertical
-from textual.widgets import Footer, Label, Static
+from textual.app import App, ComposeResult  # noqa: E402
+from textual.containers import Horizontal, ScrollableContainer, Vertical  # noqa: E402
+from textual.widgets import Footer, Label, Static  # noqa: E402
 
-from ..controller.ros_controllers import (
+from ..controller.ros_controllers import (  # noqa: E402
     ActionExecutionProcessor,
     KnowledgeProcessor,
     PerformersProcessor,
@@ -47,7 +51,7 @@ from ..controller.ros_controllers import (
 
 class PlanSys2App(App):
     """
-    PlanSys2 TUI — 4-quadrant layout:
+    Four quadrants over one ROS node, laid out as below.
 
     ┌────────────────────┬─────────────────────┐
     │  Action Execution  │  Plan Monitor       │
