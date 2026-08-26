@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>eplansys</name>
+  <version>0.1.0</version>
+
+  <description>
+    Epistemic planning and execution for ROS 2. Installs PlanSys2 and the
+    packages that add planning under partial observability to it: a planner
+    that returns a policy rather than a sequence, an executor that runs one,
+    a model of what the agents know, and perception that reports a map to
+    that model.
+  </description>
+
+  <maintainer email="thesis@eplansys.dev">Thesis Dev</maintainer>
+
+  <license>Apache License, Version 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- The classical system, unchanged. Its own metapackage rather than its
+       packages one by one, so that this one does not have to be revised when
+       PlanSys2 gains or loses a package. -->
+  <exec_depend>plansys2</exec_depend>
+
+  <!-- The epistemic half. plansys2_epistemic_bt_builder is the only one that
+       links plansys2_executor, which is why it is a package of its own. -->
+  <exec_depend>plansys2_aletheia_plan_solver</exec_depend>
+  <exec_depend>plansys2_epddl_grounder</exec_depend>
+  <exec_depend>plansys2_epistemic_bt_builder</exec_depend>
+  <exec_depend>plansys2_epistemic_executor</exec_depend>
+  <exec_depend>plansys2_epistemic_msgs</exec_depend>
+  <exec_depend>plansys2_epistemic_perception</exec_depend>
+  <exec_depend>plansys2_epistemic_planner</exec_depend>
+
+  <!-- The command line front end, which carries the epistemic verbs. -->
+  <exec_depend>plansys2_tui_cli</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
+</package>
