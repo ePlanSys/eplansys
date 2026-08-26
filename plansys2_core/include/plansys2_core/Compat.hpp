@@ -25,8 +25,9 @@
 // distribution that changes back, or a backport, is handled without editing
 // this file.
 
-#include <rclcpp/rclcpp.hpp>
 #include <rclcpp/version.h>
+
+#include <rclcpp/rclcpp.hpp>
 
 #if __has_include(<rclcpp/experimental/executors/events_executor/events_executor.hpp>)
 #include <rclcpp/experimental/executors/events_executor/events_executor.hpp>

@@ -304,10 +304,10 @@ TEST(executor, action_executor_client)
     std::vector<plansys2_msgs::msg::ActionExecution> history_msgs;
     bool confirmed = false;
     auto actions_sub = aux_node->create_subscription<plansys2_msgs::msg::ActionExecution>(
-    "actions_hub",
-    rclcpp::QoS(100).reliable(), [&](plansys2_msgs::msg::ActionExecution::UniquePtr msg) {
+      "actions_hub",
+      rclcpp::QoS(100).reliable(), [&](plansys2_msgs::msg::ActionExecution::UniquePtr msg) {
         history_msgs.push_back(*msg);
-    });
+      });
 
     bool finish = false;
     std::thread t([&]() {
@@ -360,12 +360,12 @@ TEST(executor, action_executor_client)
     ASSERT_EQ(move_action_2_node->cycles_, 5);
     ASSERT_EQ(transport_action_node->executions_, 3);
     ASSERT_EQ(transport_action_node->cycles_, 15);
-  // ASSERT_EQ(history_msgs.size(), 64);
+    // ASSERT_EQ(history_msgs.size(), 64);
 
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -409,10 +409,10 @@ TEST(executor, action_executor_client_old_constructor)
     std::vector<plansys2_msgs::msg::ActionExecution> history_msgs;
     bool confirmed = false;
     auto actions_sub = aux_node->create_subscription<plansys2_msgs::msg::ActionExecution>(
-    "actions_hub",
-    rclcpp::QoS(100).reliable(), [&](plansys2_msgs::msg::ActionExecution::UniquePtr msg) {
+      "actions_hub",
+      rclcpp::QoS(100).reliable(), [&](plansys2_msgs::msg::ActionExecution::UniquePtr msg) {
         history_msgs.push_back(*msg);
-    });
+      });
 
     bool finish = false;
     std::thread t([&]() {
@@ -465,12 +465,12 @@ TEST(executor, action_executor_client_old_constructor)
     ASSERT_EQ(move_action_2_node->cycles_, 5);
     ASSERT_EQ(transport_action_node->executions_, 3);
     ASSERT_EQ(transport_action_node->cycles_, 15);
-  // ASSERT_EQ(history_msgs.size(), 64);
+    // ASSERT_EQ(history_msgs.size(), 64);
 
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -593,7 +593,7 @@ TEST(executor, action_executor)
     ASSERT_TRUE(problem_client->setGoal(plansys2::Goal("(and (car_assembled car_1))")));
 
     auto plan = planner_client->getPlan(
-    domain_client->getDomain(true), problem_client->getProblem(true));
+      domain_client->getDomain(true), problem_client->getProblem(true));
     ASSERT_TRUE(plan);
 
 
@@ -613,7 +613,7 @@ TEST(executor, action_executor)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -923,11 +923,11 @@ TEST(executor, action_real_action_1)
       plansys2::ActionExecutionInfo();
     (*action_map)["(move r2d2 steering_wheels_zone assembly_zone):0"].action_executor =
       plansys2::ActionExecutor::make_shared(
-    "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
+      "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
     (*action_map)["(move r2d2 steering_wheels_zone assembly_zone):0"].action_info =
       domain_client->getDurativeAction(
-    plansys2::get_action_name("(move r2d2 steering_wheels_zone assembly_zone):0"),
-    plansys2::get_action_params("(move r2d2 steering_wheels_zone assembly_zone):0"));
+      plansys2::get_action_name("(move r2d2 steering_wheels_zone assembly_zone):0"),
+      plansys2::get_action_params("(move r2d2 steering_wheels_zone assembly_zone):0"));
 
     auto blackboard = BT::Blackboard::create();
 
@@ -945,7 +945,7 @@ TEST(executor, action_real_action_1)
     factory.registerNodeType<ApplyAtStartEffectTest>("ApplyAtStartEffect");
     factory.registerNodeType<ApplyAtEndEffectTest>("ApplyAtEndEffect");
 
-  // Test WaitAtStartReq
+    // Test WaitAtStartReq
     try {
       auto tree = factory.createTreeFromText(bt_xml_tree, blackboard);
 
@@ -960,7 +960,7 @@ TEST(executor, action_real_action_1)
       std::cerr << e.what() << '\n';
     }
 
-  // Test ApplyAtStartEffect and CheckOverAllReq
+    // Test ApplyAtStartEffect and CheckOverAllReq
     bt_xml_tree =
       R"(
     <root BTCPP_format="4" main_tree_to_execute="MainTree">
@@ -1001,9 +1001,9 @@ TEST(executor, action_real_action_1)
       ASSERT_EQ(ApplyAtStartEffectTest::test_status, BT::NodeStatus::SUCCESS);
       ASSERT_FALSE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
       ASSERT_FALSE(
-      problem_client->existPredicate(
-        plansys2::Predicate(
-          "(robot_at r2d2 steering_wheels_zone)")));
+        problem_client->existPredicate(
+          plansys2::Predicate(
+            "(robot_at r2d2 steering_wheels_zone)")));
 
       status = tree.tickOnce();
       ASSERT_EQ(CheckOverAllReqTest::test_status, BT::NodeStatus::SUCCESS);
@@ -1021,7 +1021,7 @@ TEST(executor, action_real_action_1)
       std::cerr << e.what() << '\n';
     }
 
-  // Test CheckAtEndReq and ApplyAtEndEffect
+    // Test CheckAtEndReq and ApplyAtEndEffect
     (*action_map)["(move r2d2 steering_wheels_zone assembly_zone):0"].at_start_effects_applied =
       false;
 
@@ -1043,9 +1043,9 @@ TEST(executor, action_real_action_1)
       }
 
       ASSERT_FALSE(
-      problem_client->existPredicate(
-        plansys2::Predicate(
-          "(robot_at r2d2 assembly_zone)")));
+        problem_client->existPredicate(
+          plansys2::Predicate(
+            "(robot_at r2d2 assembly_zone)")));
       ASSERT_FALSE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
 
       while (ExecuteActionTest::test_status != BT::NodeStatus::SUCCESS) {
@@ -1058,7 +1058,7 @@ TEST(executor, action_real_action_1)
       }
 
       ASSERT_TRUE(
-      problem_client->existPredicate(plansys2::Predicate("(robot_at r2d2 assembly_zone)")));
+        problem_client->existPredicate(plansys2::Predicate("(robot_at r2d2 assembly_zone)")));
       ASSERT_TRUE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
     } catch (const std::exception & e) {
       std::cerr << e.what() << '\n';
@@ -1083,7 +1083,7 @@ TEST(executor, action_real_action_1)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -1185,11 +1185,11 @@ TEST(executor, action_real_action_1_with_restore)
       plansys2::ActionExecutionInfo();
     (*action_map)["(move r2d2 steering_wheels_zone assembly_zone):0"].action_executor =
       plansys2::ActionExecutor::make_shared(
-    "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
+      "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
     (*action_map)["(move r2d2 steering_wheels_zone assembly_zone):0"].action_info =
       domain_client->getDurativeAction(
-    plansys2::get_action_name("(move r2d2 steering_wheels_zone assembly_zone):0"),
-    plansys2::get_action_params("(move r2d2 steering_wheels_zone assembly_zone):0"));
+      plansys2::get_action_name("(move r2d2 steering_wheels_zone assembly_zone):0"),
+      plansys2::get_action_params("(move r2d2 steering_wheels_zone assembly_zone):0"));
 
     auto blackboard = BT::Blackboard::create();
 
@@ -1208,7 +1208,7 @@ TEST(executor, action_real_action_1_with_restore)
     factory.registerNodeType<RestoreAtStartEffectTest>("RestoreAtStartEffect");
     factory.registerNodeType<ApplyAtEndEffectTest>("ApplyAtEndEffect");
 
-  // Test WaitAtStartReq
+    // Test WaitAtStartReq
     try {
       auto tree = factory.createTreeFromText(bt_xml_tree, blackboard);
 
@@ -1223,7 +1223,7 @@ TEST(executor, action_real_action_1_with_restore)
       std::cerr << e.what() << '\n';
     }
 
-  // Test ApplyAtStartEffect and CheckOverAllReq
+    // Test ApplyAtStartEffect and CheckOverAllReq
     bt_xml_tree =
       R"(
     <root BTCPP_format="4" main_tree_to_execute="MainTree">
@@ -1269,9 +1269,9 @@ TEST(executor, action_real_action_1_with_restore)
       ASSERT_EQ(ApplyAtStartEffectTest::test_status, BT::NodeStatus::SUCCESS);
       ASSERT_FALSE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
       ASSERT_FALSE(
-      problem_client->existPredicate(
-        plansys2::Predicate(
-          "(robot_at r2d2 steering_wheels_zone)")));
+        problem_client->existPredicate(
+          plansys2::Predicate(
+            "(robot_at r2d2 steering_wheels_zone)")));
 
       status = tree.tickOnce();
       ASSERT_EQ(CheckOverAllReqTest::test_status, BT::NodeStatus::SUCCESS);
@@ -1282,21 +1282,23 @@ TEST(executor, action_real_action_1_with_restore)
 
       ASSERT_TRUE(problem_client->removePredicate(plansys2::Predicate("(battery_full r2d2)")));
       ASSERT_FALSE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
-      ASSERT_FALSE(problem_client->existPredicate(
-      plansys2::Predicate("(robot_at r2d2 steering_wheels_zone)")));
+      ASSERT_FALSE(
+        problem_client->existPredicate(
+          plansys2::Predicate("(robot_at r2d2 steering_wheels_zone)")));
 
       status = tree.tickOnce();
       ASSERT_EQ(CheckOverAllReqTest::test_status, BT::NodeStatus::FAILURE);
       ASSERT_EQ(status, BT::NodeStatus::FAILURE);
 
       ASSERT_TRUE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
-      ASSERT_TRUE(problem_client->existPredicate(
-      plansys2::Predicate("(robot_at r2d2 steering_wheels_zone)")));
+      ASSERT_TRUE(
+        problem_client->existPredicate(
+          plansys2::Predicate("(robot_at r2d2 steering_wheels_zone)")));
     } catch (const std::exception & e) {
       std::cerr << e.what() << '\n';
     }
 
-  // Test CheckAtEndReq and ApplyAtEndEffect
+    // Test CheckAtEndReq and ApplyAtEndEffect
     (*action_map)["(move r2d2 steering_wheels_zone assembly_zone):0"].at_start_effects_applied =
       false;
 
@@ -1318,9 +1320,9 @@ TEST(executor, action_real_action_1_with_restore)
       }
 
       ASSERT_FALSE(
-      problem_client->existPredicate(
-        plansys2::Predicate(
-          "(robot_at r2d2 assembly_zone)")));
+        problem_client->existPredicate(
+          plansys2::Predicate(
+            "(robot_at r2d2 assembly_zone)")));
       ASSERT_FALSE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
 
       while (ExecuteActionTest::test_status != BT::NodeStatus::SUCCESS) {
@@ -1333,7 +1335,7 @@ TEST(executor, action_real_action_1_with_restore)
       }
 
       ASSERT_TRUE(
-      problem_client->existPredicate(plansys2::Predicate("(robot_at r2d2 assembly_zone)")));
+        problem_client->existPredicate(plansys2::Predicate("(robot_at r2d2 assembly_zone)")));
       ASSERT_TRUE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
     } catch (const std::exception & e) {
       std::cerr << e.what() << '\n';
@@ -1360,7 +1362,7 @@ TEST(executor, action_real_action_1_with_restore)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -1460,11 +1462,11 @@ TEST(executor, action_real_action_2)
       plansys2::ActionExecutionInfo();
     (*action_map)["(move r2d2 steering_wheels_zone assembly_zone):0"].action_executor =
       plansys2::ActionExecutor::make_shared(
-    "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
+      "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
     (*action_map)["(move r2d2 steering_wheels_zone assembly_zone):0"].action_info =
       domain_client->getAction(
-    plansys2::get_action_name("(move r2d2 steering_wheels_zone assembly_zone):0"),
-    plansys2::get_action_params("(move r2d2 steering_wheels_zone assembly_zone):0"));
+      plansys2::get_action_name("(move r2d2 steering_wheels_zone assembly_zone):0"),
+      plansys2::get_action_params("(move r2d2 steering_wheels_zone assembly_zone):0"));
 
     auto blackboard = BT::Blackboard::create();
 
@@ -1482,7 +1484,7 @@ TEST(executor, action_real_action_2)
     factory.registerNodeType<ApplyAtStartEffectTest>("ApplyAtStartEffect");
     factory.registerNodeType<ApplyAtEndEffectTest>("ApplyAtEndEffect");
 
-  // Test WaitAtStartReq
+    // Test WaitAtStartReq
     try {
       auto tree = factory.createTreeFromText(bt_xml_tree, blackboard);
 
@@ -1497,7 +1499,7 @@ TEST(executor, action_real_action_2)
       std::cerr << e.what() << '\n';
     }
 
-  // Test ApplyAtStartEffect and CheckOverAllReq
+    // Test ApplyAtStartEffect and CheckOverAllReq
     bt_xml_tree =
       R"(
     <root BTCPP_format="4" main_tree_to_execute="MainTree">
@@ -1538,9 +1540,9 @@ TEST(executor, action_real_action_2)
       ASSERT_EQ(ApplyAtStartEffectTest::test_status, BT::NodeStatus::SUCCESS);
       ASSERT_TRUE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
       ASSERT_TRUE(
-      problem_client->existPredicate(
-        plansys2::Predicate(
-          "(robot_at r2d2 steering_wheels_zone)")));
+        problem_client->existPredicate(
+          plansys2::Predicate(
+            "(robot_at r2d2 steering_wheels_zone)")));
 
       status = tree.tickOnce();
       ASSERT_EQ(CheckOverAllReqTest::test_status, BT::NodeStatus::SUCCESS);
@@ -1560,7 +1562,7 @@ TEST(executor, action_real_action_2)
       std::cerr << e.what() << '\n';
     }
 
-  // Test CheckAtEndReq and ApplyAtEndEffect
+    // Test CheckAtEndReq and ApplyAtEndEffect
     (*action_map)["(move r2d2 steering_wheels_zone assembly_zone):0"].at_start_effects_applied =
       false;
 
@@ -1582,9 +1584,9 @@ TEST(executor, action_real_action_2)
       }
 
       ASSERT_FALSE(
-      problem_client->existPredicate(
-        plansys2::Predicate(
-          "(robot_at r2d2 assembly_zone)")));
+        problem_client->existPredicate(
+          plansys2::Predicate(
+            "(robot_at r2d2 assembly_zone)")));
       ASSERT_FALSE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
 
       while (ExecuteActionTest::test_status != BT::NodeStatus::SUCCESS) {
@@ -1597,7 +1599,7 @@ TEST(executor, action_real_action_2)
       }
 
       ASSERT_TRUE(
-      problem_client->existPredicate(plansys2::Predicate("(robot_at r2d2 assembly_zone)")));
+        problem_client->existPredicate(plansys2::Predicate("(robot_at r2d2 assembly_zone)")));
       ASSERT_TRUE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
 
       clean_up_action_map(action_map);
@@ -1624,7 +1626,7 @@ TEST(executor, action_real_action_2)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -1722,11 +1724,11 @@ TEST(executor, cancel_bt_execution)
       plansys2::ActionExecutionInfo();
     (*action_map)["(move r2d2 steering_wheels_zone assembly_zone):0"].action_executor =
       plansys2::ActionExecutor::make_shared(
-    "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
+      "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
     (*action_map)["(move r2d2 steering_wheels_zone assembly_zone):0"].action_info =
       domain_client->getDurativeAction(
-    plansys2::get_action_name("(move r2d2 steering_wheels_zone assembly_zone):0"),
-    plansys2::get_action_params("(move r2d2 steering_wheels_zone assembly_zone):0"));
+      plansys2::get_action_name("(move r2d2 steering_wheels_zone assembly_zone):0"),
+      plansys2::get_action_params("(move r2d2 steering_wheels_zone assembly_zone):0"));
 
     auto blackboard = BT::Blackboard::create();
 
@@ -1765,9 +1767,9 @@ TEST(executor, cancel_bt_execution)
       ASSERT_EQ(ApplyAtStartEffectTest::test_status, BT::NodeStatus::SUCCESS);
       ASSERT_FALSE(problem_client->existPredicate(plansys2::Predicate("(robot_available r2d2)")));
       ASSERT_FALSE(
-      problem_client->existPredicate(
-        plansys2::Predicate(
-          "(robot_at r2d2 steering_wheels_zone)")));
+        problem_client->existPredicate(
+          plansys2::Predicate(
+            "(robot_at r2d2 steering_wheels_zone)")));
 
       status = tree.tickOnce();
       ASSERT_EQ(CheckOverAllReqTest::test_status, BT::NodeStatus::SUCCESS);
@@ -1820,7 +1822,7 @@ TEST(executor, cancel_bt_execution)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -1937,8 +1939,10 @@ TEST(executor, executor_client_execute_plan)
       }
     }
 
-    ASSERT_TRUE(problem_client->existPredicate(plansys2::Predicate(
-      "(robot_at r2d2 assembly_zone)")));
+    ASSERT_TRUE(
+      problem_client->existPredicate(
+        plansys2::Predicate(
+          "(robot_at r2d2 assembly_zone)")));
 
     ASSERT_TRUE(executor_client->getResult().has_value());
     auto result = executor_client->getResult().value();
@@ -1970,7 +1974,7 @@ TEST(executor, executor_client_execute_plan)
     }
 
     ASSERT_TRUE(
-    problem_client->existPredicate(plansys2::Predicate("(robot_at r2d2 body_car_zone)")));
+      problem_client->existPredicate(plansys2::Predicate("(robot_at r2d2 body_car_zone)")));
 
     ASSERT_TRUE(executor_client->getResult().has_value());
     result = executor_client->getResult().value();
@@ -1980,7 +1984,7 @@ TEST(executor, executor_client_execute_plan)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -2091,8 +2095,10 @@ TEST(executor, executor_client_execute_plan_2)
       }
     }
 
-    ASSERT_TRUE(problem_client->existPredicate(plansys2::Predicate(
-      "(robot_at r2d2 assembly_zone)")));
+    ASSERT_TRUE(
+      problem_client->existPredicate(
+        plansys2::Predicate(
+          "(robot_at r2d2 assembly_zone)")));
 
     ASSERT_TRUE(executor_client->getResult().has_value());
     auto result = executor_client->getResult().value();
@@ -2121,7 +2127,7 @@ TEST(executor, executor_client_execute_plan_2)
     }
 
     ASSERT_TRUE(
-    problem_client->existPredicate(plansys2::Predicate("(robot_at r2d2 body_car_zone)")));
+      problem_client->existPredicate(plansys2::Predicate("(robot_at r2d2 body_car_zone)")));
 
     ASSERT_TRUE(executor_client->getResult().has_value());
     result = executor_client->getResult().value();
@@ -2131,7 +2137,7 @@ TEST(executor, executor_client_execute_plan_2)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -2175,13 +2181,13 @@ TEST(executor, executor_client_execute_plan_3)
     int changes_plan = 0;
     plansys2_msgs::msg::Plan current_plan;
     auto current_plan_sub = test_node_1->create_subscription<plansys2_msgs::msg::Plan>(
-    "/remaining_plan", rclcpp::QoS(100),
+      "/remaining_plan", rclcpp::QoS(100),
       [&current_plan, &changes_plan](plansys2_msgs::msg::Plan::SharedPtr plan) {
         if (plan->items.size() != current_plan.items.size()) {
           changes_plan++;
         }
         current_plan = *plan;
-    });
+      });
 
     bool finish = false;
     std::thread t([&]() {
@@ -2270,7 +2276,7 @@ TEST(executor, executor_client_execute_plan_3)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -2314,13 +2320,13 @@ TEST(executor, executor_client_execute_plan_two_plans)
     int changes_plan = 0;
     plansys2_msgs::msg::Plan current_plan;
     auto current_plan_sub = test_node_1->create_subscription<plansys2_msgs::msg::Plan>(
-    "/remaining_plan", rclcpp::QoS(100),
+      "/remaining_plan", rclcpp::QoS(100),
       [&current_plan, &changes_plan](plansys2_msgs::msg::Plan::SharedPtr plan) {
         if (plan->items.size() != current_plan.items.size()) {
           changes_plan++;
         }
         current_plan = *plan;
-    });
+      });
 
     bool finish = false;
     std::thread t([&]() {
@@ -2443,7 +2449,7 @@ TEST(executor, executor_client_execute_plan_two_plans)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -2487,13 +2493,13 @@ TEST(executor, executor_client_execute_plan_replan)
     int changes_plan = 0;
     plansys2_msgs::msg::Plan current_plan;
     auto current_plan_sub = test_node_1->create_subscription<plansys2_msgs::msg::Plan>(
-    "/remaining_plan", rclcpp::QoS(100),
+      "/remaining_plan", rclcpp::QoS(100),
       [&current_plan, &changes_plan](plansys2_msgs::msg::Plan::SharedPtr plan) {
         if (plan->items.size() != current_plan.items.size()) {
           changes_plan++;
         }
         current_plan = *plan;
-    });
+      });
 
     bool finish = false;
     std::thread t([&]() {
@@ -2605,7 +2611,7 @@ TEST(executor, executor_client_execute_plan_replan)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -2660,13 +2666,13 @@ TEST(executor, executor_client_execute_plan_multi_replan)
     int changes_plan = 0;
     plansys2_msgs::msg::Plan current_plan;
     auto current_plan_sub = test_node_1->create_subscription<plansys2_msgs::msg::Plan>(
-    "/remaining_plan", rclcpp::QoS(100),
+      "/remaining_plan", rclcpp::QoS(100),
       [&current_plan, &changes_plan](plansys2_msgs::msg::Plan::SharedPtr plan) {
         if (plan->items.size() != current_plan.items.size()) {
           changes_plan++;
         }
         current_plan = *plan;
-    });
+      });
 
     bool finish = false;
     std::thread t([&]() {
@@ -2730,8 +2736,9 @@ TEST(executor, executor_client_execute_plan_multi_replan)
     ASSERT_TRUE(problem_client->addPredicate(plansys2::Predicate("(robot_at c3po wp1)")));
     ASSERT_TRUE(problem_client->addPredicate(plansys2::Predicate("(robot_at bb8 wp1)")));
 
-    problem_client->setGoal(plansys2::Goal(
-    "(and(robot_at r2d2 wp7)(robot_at c3po wp7)(robot_at bb8 wp7))"));
+    problem_client->setGoal(
+      plansys2::Goal(
+        "(and(robot_at r2d2 wp7)(robot_at c3po wp7)(robot_at bb8 wp7))"));
 
     auto domain = domain_client->getDomain(true);
 
@@ -2793,7 +2800,7 @@ TEST(executor, executor_client_execute_plan_multi_replan)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -2985,21 +2992,21 @@ TEST(executor, executor_client_ordered_sub_goals)
 
         auto actual_sub_goals = executor_client->getOrderedSubGoals();
 
-      // if (!subgoal_checked) {
-      //   ASSERT_EQ(actual_sub_goals.size(), expected_sub_goals.size());
-      //   for (size_t i = 0; i < actual_sub_goals.size(); i++) {
-      //     ASSERT_EQ(
-      //       parser::pddl::toString(actual_sub_goals[i]),
-      //       parser::pddl::toString(expected_sub_goals[i]));
-      //   }
-      //   subgoal_checked = true;
-      // }
+        // if (!subgoal_checked) {
+        //   ASSERT_EQ(actual_sub_goals.size(), expected_sub_goals.size());
+        //   for (size_t i = 0; i < actual_sub_goals.size(); i++) {
+        //     ASSERT_EQ(
+        //       parser::pddl::toString(actual_sub_goals[i]),
+        //       parser::pddl::toString(expected_sub_goals[i]));
+        //   }
+        //   subgoal_checked = true;
+        // }
       }
     }
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -3130,8 +3137,8 @@ TEST(executor, executor_client_cancel_plan)
     }
 
     ASSERT_EQ(
-    move_action_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      move_action_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     finish = true;
     t.join();
@@ -3171,9 +3178,9 @@ TEST(executor, action_timeout)
         pkgpath + "/test_behavior_trees/test_action_timeout_bt.xml"});
     executor_node->set_parameter({"bt_builder_plugin", "SimpleBTBuilder"});
     executor_node->set_parameter({"action_timeouts.actions", std::vector<std::string>({"move"})});
-  // have to declare because the actions vector above was not available at node creation
+    // have to declare because the actions vector above was not available at node creation
     executor_node->declare_parameter<double>(
-    "action_timeouts.move.duration_overrun_percentage", 1.0);
+      "action_timeouts.move.duration_overrun_percentage", 1.0);
     executor_node->set_parameter({"action_timeouts.move.duration_overrun_percentage", 1.0});
 
     plansys2::SpinExecutor exe;
@@ -3269,8 +3276,8 @@ TEST(executor, action_timeout)
     auto result = executor_client->getResult().value();
     ASSERT_EQ(result.result, plansys2_msgs::action::ExecutePlan::Result::FAILURE);
     ASSERT_EQ(
-    result.action_execution_status[0].status,
-    plansys2_msgs::msg::ActionExecutionInfo::CANCELLED);
+      result.action_execution_status[0].status,
+      plansys2_msgs::msg::ActionExecutionInfo::CANCELLED);
 
     {
       rclcpp::Rate rate(10);
@@ -3281,8 +3288,8 @@ TEST(executor, action_timeout)
     }
 
     ASSERT_EQ(
-    move_action_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      move_action_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     finish = true;
     t.join();

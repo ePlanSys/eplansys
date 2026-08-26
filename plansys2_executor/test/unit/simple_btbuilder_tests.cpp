@@ -312,7 +312,7 @@ TEST(simple_btbuilder_tests, test_plan_1)
       std::bind(
         &parser::pddl::checkNodeEquality, std::placeholders::_1,
         parser::pddl::fromStringPredicate("(robot_at leia chargingroom)"), true)) ==
-        predicates.end());
+    predicates.end());
 
   plansys2::apply(
     action_sequence[0].action.get_at_start_effects(),
@@ -327,14 +327,14 @@ TEST(simple_btbuilder_tests, test_plan_1)
       std::bind(
         &parser::pddl::checkNodeEquality, std::placeholders::_1,
         parser::pddl::fromStringPredicate("(robot_at leia entrance)"), true)) ==
-        predicates.end());
+    predicates.end());
   EXPECT_TRUE(
     std::find_if(
       predicates.begin(), predicates.end(),
       std::bind(
         &parser::pddl::checkNodeEquality, std::placeholders::_1,
         parser::pddl::fromStringPredicate("(robot_at leia chargingroom)"), true)) !=
-        predicates.end());
+    predicates.end());
 
   ASSERT_TRUE(btbuilder->is_action_executable(action_sequence[1], predicates, functions));
   ASSERT_FALSE(btbuilder->is_action_executable(action_sequence[2], predicates, functions));
@@ -565,21 +565,21 @@ TEST(simple_btbuilder_tests, test_plan_2)
       std::bind(
         &parser::pddl::checkNodeEquality, std::placeholders::_1,
         parser::pddl::fromStringPredicate("(robot_at robot1 body_car_zone)"), true)) !=
-        predicates.end());
+    predicates.end());
   EXPECT_TRUE(
     std::find_if(
       predicates.begin(), predicates.end(),
       std::bind(
         &parser::pddl::checkNodeEquality, std::placeholders::_1,
         parser::pddl::fromStringPredicate("(robot_at robot2 steering_wheels_zone)"), true)) !=
-        predicates.end());
+    predicates.end());
   EXPECT_TRUE(
     std::find_if(
       predicates.begin(), predicates.end(),
       std::bind(
         &parser::pddl::checkNodeEquality, std::placeholders::_1,
         parser::pddl::fromStringPredicate("(robot_at robot3 wheels_zone)"), true)) !=
-        predicates.end());
+    predicates.end());
 
   tree.nodes.clear();
   parser::pddl::fromString(

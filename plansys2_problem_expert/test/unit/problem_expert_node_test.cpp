@@ -82,12 +82,12 @@ TEST(problem_expert_node, addget_instances)
     plansys2_msgs::msg::Knowledge last_knowledge_msg;
     int knowledge_msg_counter = 0;
     auto knowledge_sub = test_node_2->create_subscription<plansys2_msgs::msg::Knowledge>(
-    "problem_expert/knowledge", rclcpp::QoS(100).transient_local(),
+      "problem_expert/knowledge", rclcpp::QoS(100).transient_local(),
       [&last_knowledge_msg, &knowledge_msg_counter]
-      (const plansys2_msgs::msg::Knowledge::SharedPtr msg) {
+        (const plansys2_msgs::msg::Knowledge::SharedPtr msg) {
         last_knowledge_msg = *msg;
         knowledge_msg_counter++;
-    });
+      });
 
     bool finish = false;
     std::thread t([&]() {
@@ -241,7 +241,7 @@ TEST(problem_expert_node, addget_instances)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -627,12 +627,12 @@ TEST(problem_expert_node, addget_goal_is_satisfied)
     plansys2_msgs::msg::Knowledge last_knowledge_msg;
     int knowledge_msg_counter = 0;
     auto knowledge_sub = test_node_2->create_subscription<plansys2_msgs::msg::Knowledge>(
-    "problem_expert/knowledge", rclcpp::QoS(100).transient_local(),
+      "problem_expert/knowledge", rclcpp::QoS(100).transient_local(),
       [&last_knowledge_msg, &knowledge_msg_counter]
-      (const plansys2_msgs::msg::Knowledge::SharedPtr msg) {
+        (const plansys2_msgs::msg::Knowledge::SharedPtr msg) {
         last_knowledge_msg = *msg;
         knowledge_msg_counter++;
-    });
+      });
 
     bool finish = false;
     std::thread t([&]() {
@@ -664,9 +664,9 @@ TEST(problem_expert_node, addget_goal_is_satisfied)
     ASSERT_EQ(last_knowledge_msg.goal, "");
 
     ASSERT_TRUE(
-    problem_client->addPredicate(plansys2::Predicate("(robot_at leia kitchen)")));
+      problem_client->addPredicate(plansys2::Predicate("(robot_at leia kitchen)")));
     ASSERT_TRUE(
-    problem_client->addPredicate(plansys2::Predicate("(person_at jack bedroom)")));
+      problem_client->addPredicate(plansys2::Predicate("(person_at jack bedroom)")));
 
     std::string expression = "(and (robot_talk leia m1 jack))";
     plansys2_msgs::msg::Tree goal;
@@ -695,7 +695,7 @@ TEST(problem_expert_node, addget_goal_is_satisfied)
     ASSERT_EQ(last_knowledge_msg.goal, "(and (robot_talk leia m1 jack))");
 
     ASSERT_TRUE(
-    problem_client->addPredicate(plansys2::Predicate("(robot_talk leia m1 jack)")));
+      problem_client->addPredicate(plansys2::Predicate("(robot_talk leia m1 jack)")));
 
     ASSERT_TRUE(problem_client->isGoalSatisfied(goal));
 

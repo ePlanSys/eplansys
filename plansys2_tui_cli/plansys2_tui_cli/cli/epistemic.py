@@ -41,7 +41,7 @@ def _call(node, srv_type, name, request, timeout=5.0):
     try:
         if not client.wait_for_service(timeout_sec=timeout):
             print(
-                f"{name} is not available. Is the epistemic state running?\n"
+                f'{name} is not available. Is the epistemic state running?\n'
                 'Start it with epistemic_state:=True on either bringup launch '
                 'file.',
                 file=sys.stderr,

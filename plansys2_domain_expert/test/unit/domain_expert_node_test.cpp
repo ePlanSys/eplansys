@@ -124,8 +124,8 @@ TEST(domain_expert, lifecycle)
       domain_node, test_node, lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     ASSERT_EQ(
-    domain_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      domain_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
@@ -133,8 +133,8 @@ TEST(domain_expert, lifecycle)
       domain_node, test_node, lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 
     ASSERT_EQ(
-    domain_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      domain_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 
     ASSERT_EQ(domain_client->getDomain(), domain_client->getDomain(true));
     auto domain_str = domain_client->getDomain();
@@ -193,8 +193,8 @@ TEST(domain_expert, lifecycle_error)
       domain_node, test_node, lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
 
     ASSERT_EQ(
-    domain_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
+      domain_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
   }
   plansys2::drain_ros(200ms);
 }

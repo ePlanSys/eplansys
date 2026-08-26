@@ -18,8 +18,6 @@
 
 from __future__ import annotations
 
-from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
-
 from plansys2_msgs.msg import (
     ActionExecution,
     ActionExecutionInfo,
@@ -27,6 +25,9 @@ from plansys2_msgs.msg import (
     Knowledge,
     Plan,
 )
+
+from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
+
 
 # ---------------------------------------------------------------------------
 # QoS profiles

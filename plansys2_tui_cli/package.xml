@@ -20,6 +20,10 @@
   <exec_depend>ros2cli</exec_depend>
   <exec_depend>python3-rich</exec_depend>
   <exec_depend>python3-platformdirs</exec_depend>
+  <!-- Required by the vendored textual, which tui/app.py imports. Undeclared,
+       the entry point loads only where something else happens to have
+       installed it. -->
+  <exec_depend>python3-typing-extensions</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
