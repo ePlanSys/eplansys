@@ -24,6 +24,7 @@
 #include "plansys2_planner/PlannerNode.hpp"
 #include "plansys2_executor/ExecutorNode.hpp"
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_lifecycle_manager/lifecycle_manager.hpp"
 
 int main(int argc, char ** argv)
@@ -32,7 +33,7 @@ int main(int argc, char ** argv)
 
   rclcpp::init(argc, argv);
 
-  rclcpp::experimental::executors::EventsExecutor exe;
+  plansys2::SpinExecutor exe;
 
   auto main_node = rclcpp::Node::make_shared("plansys2");
   bool real_time = false;

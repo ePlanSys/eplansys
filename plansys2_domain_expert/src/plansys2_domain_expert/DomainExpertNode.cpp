@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "plansys2_core/Utils.hpp"
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_domain_expert/DomainExpertNode.hpp"
 #include "plansys2_msgs/msg/node.hpp"
 
@@ -128,7 +129,7 @@ DomainExpertNode::on_configure(const rclcpp_lifecycle::State & state)
 
   if (validate_using_planner_node) {
     validate_domain_client_ = create_client<plansys2_msgs::srv::ValidateDomain>(
-      "planner/validate_domain", rclcpp::ServicesQoS(), validate_domain_callback_group_);
+      "planner/validate_domain", plansys2::service_qos(), validate_domain_callback_group_);
     while (!validate_domain_client_->wait_for_service(std::chrono::seconds(3))) {
       RCLCPP_INFO_STREAM(
         get_logger(),

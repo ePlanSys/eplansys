@@ -21,6 +21,7 @@
 
 #include "behaviortree_cpp/action_node.h"
 #include "behaviortree_cpp/json_export.h"
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_bt_actions/BTUtils.hpp"
 #include "plansys2_bt_actions/JSONUtils.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -121,7 +122,7 @@ public:
       callback_group_executor_->add_callback_group(
         callback_group_, node_->get_node_base_interface());
       service_client_ = node_->create_client<ServiceT>(
-        service_name_, rclcpp::ServicesQoS(), callback_group_);
+        service_name_, plansys2::service_qos(), callback_group_);
     }
   }
 

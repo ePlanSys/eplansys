@@ -14,6 +14,7 @@
 
 #include <memory>
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_domain_expert/DomainExpertNode.hpp"
 #include "rclcpp/rclcpp.hpp"
 
@@ -22,7 +23,7 @@ int main(int argc, char ** argv)
   rclcpp::init(argc, argv);
   auto node = std::make_shared<plansys2::DomainExpertNode>();
 
-  rclcpp::experimental::executors::EventsExecutor executor;
+  plansys2::SpinExecutor executor;
   executor.add_node(node->get_node_base_interface());
   executor.spin();
   executor.remove_node(node->get_node_base_interface());

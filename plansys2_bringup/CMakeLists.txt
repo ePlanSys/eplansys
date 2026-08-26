@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(plansys2_core REQUIRED)
 find_package(plansys2_domain_expert REQUIRED)
 find_package(plansys2_problem_expert REQUIRED)
 find_package(plansys2_planner REQUIRED)
@@ -20,6 +21,7 @@ add_executable(plansys2_node
 target_link_libraries(plansys2_node
   PRIVATE
   rclcpp::rclcpp
+  plansys2_core::plansys2_core
   plansys2_domain_expert::plansys2_domain_expert
   plansys2_problem_expert::plansys2_problem_expert
   plansys2_planner::plansys2_planner
@@ -42,6 +44,7 @@ install(TARGETS plansys2_node
 
 ament_export_dependencies(
   rclcpp
+  plansys2_core
   plansys2_domain_expert
   plansys2_problem_expert
   plansys2_planner

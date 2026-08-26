@@ -12,6 +12,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
+find_package(plansys2_core REQUIRED)
 find_package(plansys2_executor REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
@@ -29,6 +30,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
   behaviortree_cpp::behaviortree_cpp
+  plansys2_core::plansys2_core
   plansys2_executor::plansys2_executor
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
@@ -84,6 +86,7 @@ ament_export_dependencies(
   rclcpp
   rclcpp_action
   rclcpp_lifecycle
+  plansys2_core
   plansys2_executor
   behaviortree_cpp
 )

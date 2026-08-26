@@ -20,7 +20,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "plansys2_lifecycle_manager/executor.hpp"
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_lifecycle_manager/lifecycle_manager.hpp"
 
 int main(int argc, char ** argv)
@@ -48,7 +48,7 @@ int main(int argc, char ** argv)
       std::make_shared<plansys2::LifecycleServiceClient>(name + "_lc_mngr", name);
   }
 
-  plansys2::ManagerExecutor exe;
+  plansys2::SpinExecutor exe;
   exe.add_node(node);
   for (auto & manager_node : manager_nodes) {
     manager_node.second->init();
