@@ -37,12 +37,14 @@ namespace
 void register_plansys2_stubs(BT::BehaviorTreeFactory & factory)
 {
   for (const auto & name : {"WaitAtStartReq", "CheckOverAllReq", "CheckAtEndReq"}) {
-    factory.registerSimpleCondition(name, [](BT::TreeNode &) {
+    factory.registerSimpleCondition(
+      name, [](BT::TreeNode &) {
         return BT::NodeStatus::SUCCESS;
       }, {BT::InputPort<std::string>("action")});
   }
   for (const auto & name : {"ApplyAtStartEffect", "ExecuteAction", "ApplyAtEndEffect"}) {
-    factory.registerSimpleAction(name, [](BT::TreeNode &) {
+    factory.registerSimpleAction(
+      name, [](BT::TreeNode &) {
         return BT::NodeStatus::SUCCESS;
       }, {BT::InputPort<std::string>("action")});
   }

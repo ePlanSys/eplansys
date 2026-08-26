@@ -99,16 +99,16 @@ TEST_F(FormulaTextTest, ConnectivesAndModalitiesParse)
 
   std::string error;
   for (const auto & text : {
-      "tails",
-      "(true)",
-      "(false)",
-      "(not tails)",
-      "(and tails (K A tails))",
-      "(or tails (Kw B tails))",
-      "(K A (not tails))",
-      "(Kw A tails)",
-      "(C (A B) tails)",
-    })
+    "tails",
+    "(true)",
+    "(false)",
+    "(not tails)",
+    "(and tails (K A tails))",
+    "(or tails (Kw B tails))",
+    "(K A (not tails))",
+    "(Kw A tails)",
+    "(C (A B) tails)",
+  })
   {
     EXPECT_NE(parse_formula(task, text, error), nullptr) << text << ": " << error;
   }
@@ -149,16 +149,16 @@ TEST_F(FormulaTextTest, MalformedInputIsRejectedWithAReason)
 
   std::string error;
   for (const auto & text : {
-      "",
-      "(",
-      "(K A tails",        // unclosed
-      "(K A)",             // no operand
-      "(and)",             // no conjuncts
-      "(nope tails)",      // unknown connective
-      "(K tails)",         // an atom where an agent goes
-      "(C () tails)",      // common knowledge among nobody
-      "tails extra",       // trailing text
-    })
+    "",
+    "(",
+    "(K A tails",          // unclosed
+    "(K A)",               // no operand
+    "(and)",               // no conjuncts
+    "(nope tails)",        // unknown connective
+    "(K tails)",           // an atom where an agent goes
+    "(C () tails)",        // common knowledge among nobody
+    "tails extra",         // trailing text
+  })
   {
     EXPECT_EQ(parse_formula(task, text, error), nullptr) << "accepted '" << text << "'";
     EXPECT_FALSE(error.empty()) << "rejected '" << text << "' without saying why";

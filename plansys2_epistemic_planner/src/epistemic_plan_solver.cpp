@@ -14,6 +14,8 @@
 
 #include "plansys2_epistemic_planner/epistemic_plan_solver.hpp"
 
+#include <unistd.h>
+
 #include <algorithm>
 #include <cstdio>
 #include <filesystem>
@@ -23,8 +25,6 @@
 #include <string>
 #include <vector>
 
-#include <unistd.h>
-
 #include <nlohmann/json.hpp>
 
 #include "plansys2_epistemic_planner/action_mapping.hpp"
@@ -33,7 +33,6 @@
 #include "plansys2_epistemic_planner/heuristic.hpp"
 #include "plansys2_epistemic_planner/parser.hpp"
 #include "plansys2_epistemic_planner/policy_plan.hpp"
-#include "plansys2_epistemic_planner/heuristic.hpp"
 #include "plansys2_epistemic_planner/selection_policy.hpp"
 #include "plansys2_epistemic_planner/validator.hpp"
 #include "pluginlib/class_list_macros.hpp"
@@ -360,8 +359,8 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
   SelectionPolicy policy;
   try {
     const std::string policy_file = parameter(policy_file_parameter_name_);
-    policy = policy_file.empty() ? SelectionPolicy::builtin()
-      : SelectionPolicy::load(policy_file);
+    policy = policy_file.empty() ? SelectionPolicy::builtin() :
+      SelectionPolicy::load(policy_file);
   } catch (const std::exception & e) {
     RCLCPP_ERROR(lc_node_->get_logger(), "[epistemic] selection policy: %s", e.what());
     return std::nullopt;
@@ -487,9 +486,9 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
     flatten(result->plan_tree, actions);
 
   } else if (strategy_label == "ehc" || strategy_label == "gbfs") {
-    auto result = strategy_label == "ehc"
-      ? ehc::search(task, *h, 0, deadline)
-      : gbfs::search(task, *h, 0, deadline);
+    auto result = strategy_label == "ehc" ?
+      ehc::search(task, *h, 0, deadline) :
+      gbfs::search(task, *h, 0, deadline);
 
     if (!result && strategy_label == "ehc") {
       RCLCPP_INFO(lc_node_->get_logger(), "[epistemic] EHC failed, falling back to GBFS");
