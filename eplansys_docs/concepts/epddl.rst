@@ -88,8 +88,8 @@ EPDDL toolkit, which ``plansys2_epddl_grounder`` runs as a subprocess:
 plank is listed in ``dependency_repos.repos``, so building the workspace builds
 it and sourcing the workspace puts it on PATH; the ``plank_command`` parameter
 and the ``PLANK`` environment variable name it explicitly for an installation
-outside the workspace. Nothing else in the tree links against it — the epistemic
-packages build and their tests pass without it, and only the EPDDL front end is
+outside the workspace. Nothing else in the tree links against it: the
+epistemic packages build and their tests pass without it, and only the EPDDL front end is
 unavailable, which it reports rather than failing silently.
 
 A domain declares the action-type libraries it uses in its
@@ -105,10 +105,14 @@ of the specification, and it terminates on a signal rather than exiting with a
 status. The grounder therefore judges success by whether the task file was
 written, and passes plank's own output through as the error.
 
-The EPDDL sources for the robotics scenarios are packaged under
-``<share>/plansys2_epddl_grounder/examples`` --- the three fleet domains and
-their problems, described in :doc:`../tutorials/index`. The sources for the
-older puzzle fixtures live in the ``epddl-workspace`` of the
+The EPDDL sources are packaged under
+``<share>/plansys2_epddl_grounder/examples``: the three fleet domains and
+their problems, described in :doc:`../tutorials/index`, and muddy children,
+which is the puzzle the fleet scenarios replaced as the worked example. The
+corridor scenario also ships its PDDL side, ``robot-fleet-domain.pddl``, since
+the executor needs a behavior tree per action and the EPDDL says nothing about
+hardware: the two files describe one mission from two sides. The remaining
+puzzle fixtures live in the ``epddl-workspace`` of the
 `Epistemic-Robotics <https://github.com/HanielUlises/epistemic-robotics>`_
 repository. The EPDDL grammar itself is
 specified in the `EPDDL Official Guideline <https://arxiv.org/abs/2601.20969>`_
@@ -166,8 +170,8 @@ Checked-in tasks
      - Puzzle fixtures that predate the fleet scenarios; they pin the parser
        and the search against tasks with up to thirty-two initial worlds.
 
-The puzzle instances all ground to single-pointed tasks --- one designated
-world --- so sensing has exactly one possible outcome in them and AO* returns a
+The puzzle instances all ground to single-pointed tasks, one designated
+world, so sensing has exactly one possible outcome in them and AO* returns a
 chain. Nothing among them exercises contingent branching, which is precisely
 the path the solver flattens away when ``conditional_plan`` is not ``policy``.
 ``coin-in-the-box-multipointed.json`` was derived by hand to cover that gap,
@@ -180,8 +184,8 @@ unachievable in the world where it is not.
 The fleet problems close that gap properly. They declare
 ``:multi-pointed-models`` and state an initial theory that says nothing about
 whether a corridor is blocked, so the grounder produces a task designating one
-world per combination --- two for the corridor, four for the depot, eight for
-the survey --- and every solution to them branches.
+world per combination (two for the corridor, four for the depot, eight for
+the survey) and every solution to them branches.
 
 Action names
 ------------

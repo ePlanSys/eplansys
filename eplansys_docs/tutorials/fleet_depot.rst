@@ -1,8 +1,8 @@
 Fleet: the two-route depot
 ==========================
 
-The corridor scenario one size up. Three robots, a depot with two ways out ---
-north and south --- and no reason to think the state of one route says anything
+The corridor scenario one size up. Three robots, a depot with two ways out,
+north and south, and no reason to think the state of one route says anything
 about the other. Every robot has to know the state of both before the fleet
 commits to a route.
 
@@ -57,7 +57,7 @@ The precondition is what forbids driving from one junction to the other, and it
 is a depot rule rather than a modelling shortcut: it is what makes this a fleet
 problem instead of one robot's tour.
 
-Sensing and announcing are unchanged, twice over --- ``inspect-north`` and
+Sensing and announcing are unchanged, twice over: ``inspect-north`` and
 ``inspect-south`` are semi-private, the four ``report-*`` actions are public
 announcements guarded by the speaker actually knowing.
 
@@ -124,7 +124,7 @@ The policy
 AO* solves it at depth 6 and returns twelve nodes. Read down the left edge:
 ``r1`` drives north, looks, and broadcasts; then ``r2`` drives south, looks, and
 broadcasts. The whole of that second half appears twice, once inside each
-outcome of the first look --- not because the plan repeats itself, but because
+outcome of the first look, not because the plan repeats itself, but because
 those are different plans: they run against different epistemic states, and the
 announcement that ends each one differs.
 
@@ -244,7 +244,7 @@ what is stored is a bisimulation-contracted model rather than an enumeration of
 histories.
 
 ``plansys2_tests/test_6`` runs this scenario end to end, twice, with the routes
-in opposite states --- which is the case that exercises a switch nested inside
+in opposite states, which is the case that exercises a switch nested inside
 another switch's continuation.
 
 Next
