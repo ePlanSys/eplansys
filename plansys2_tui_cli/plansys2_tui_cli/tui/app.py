@@ -37,6 +37,12 @@ if os.path.isdir(_vendor_dir) and _vendor_dir not in sys.path:
 import rclpy  # noqa: E402
 from rclpy.executors import ExternalShutdownException  # noqa: E402
 
+from ._typing_compat import patch as _patch_typing_extensions  # noqa: E402
+
+# Humble's typing_extensions is older than the vendored textual expects, so the
+# names it imports are backfilled before textual is imported at all.
+_patch_typing_extensions()
+
 from textual.app import App, ComposeResult  # noqa: E402
 from textual.containers import Horizontal, ScrollableContainer, Vertical  # noqa: E402
 from textual.widgets import Footer, Label, Static  # noqa: E402
