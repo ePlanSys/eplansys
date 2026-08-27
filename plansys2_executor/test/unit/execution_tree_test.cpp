@@ -21,6 +21,7 @@
 #include <memory>
 #include <map>
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 #include "gtest/gtest.h"
@@ -69,7 +70,7 @@ TEST(executiotest_noden_tree, bt_builder_factory)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/factory.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/factory.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -170,12 +171,12 @@ TEST(executiotest_noden_tree, bt_builder_factory)
     }
 
     ASSERT_TRUE(
-    problem_client->setGoal(
-      plansys2::Goal(
-        "(and (car_assembled car_1) (car_assembled car_2) (car_assembled car_3))")));
+      problem_client->setGoal(
+        plansys2::Goal(
+          "(and (car_assembled car_1) (car_assembled car_2) (car_assembled car_3))")));
 
     auto plan = planner_client->getPlan(
-    domain_client->getDomain(true), problem_client->getProblem(true));
+      domain_client->getDomain(true), problem_client->getProblem(true));
     ASSERT_TRUE(plan);
 
     // The loader is declared first so that it is destroyed last. Locals are
@@ -200,7 +201,7 @@ TEST(executiotest_noden_tree, bt_builder_factory)
     std::cout << tree_str << std::endl;
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -221,7 +222,7 @@ TEST(executiotest_noden_tree, bt_builder_factory_2)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/factory.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/factory.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -322,13 +323,13 @@ TEST(executiotest_noden_tree, bt_builder_factory_2)
     }
 
     ASSERT_TRUE(
-    problem_client->setGoal(
-      plansys2::Goal(
-        std::string("(and (car_assembled car_1) (piece_at body_car_2 assembly_zone)") +
-        std::string("(piece_at body_car_3 assembly_zone))"))));
+      problem_client->setGoal(
+        plansys2::Goal(
+          std::string("(and (car_assembled car_1) (piece_at body_car_2 assembly_zone)") +
+          std::string("(piece_at body_car_3 assembly_zone))"))));
 
     auto plan = planner_client->getPlan(
-    domain_client->getDomain(true), problem_client->getProblem(true));
+      domain_client->getDomain(true), problem_client->getProblem(true));
     ASSERT_TRUE(plan);
 
     // Loader first, so it outlives the instance it creates. See the note in
@@ -347,7 +348,7 @@ TEST(executiotest_noden_tree, bt_builder_factory_2)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -367,7 +368,7 @@ TEST(executiotest_noden_tree, bt_builder_factory_3)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/domain_charging.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/domain_charging.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -408,10 +409,10 @@ TEST(executiotest_noden_tree, bt_builder_factory_3)
     ASSERT_TRUE(problem_client->addInstance(plansys2::Instance("wp_control", "waypoint")));
     for (unsigned i = 1; i <= 4; i++) {
       ASSERT_TRUE(
-      problem_client->addInstance(
-        plansys2::Instance(
-          "wp" + std::to_string(
-            i), "waypoint")));
+        problem_client->addInstance(
+          plansys2::Instance(
+            "wp" + std::to_string(
+              i), "waypoint")));
     }
 
     std::vector<std::string> predicates = {
@@ -460,12 +461,12 @@ TEST(executiotest_noden_tree, bt_builder_factory_3)
     }
 
     ASSERT_TRUE(
-    problem_client->setGoal(
-      plansys2::Goal(
-        "(and (patrolled wp1) (patrolled wp2) (patrolled wp3) (patrolled wp4))")));
+      problem_client->setGoal(
+        plansys2::Goal(
+          "(and (patrolled wp1) (patrolled wp2) (patrolled wp3) (patrolled wp4))")));
 
     auto plan = planner_client->getPlan(
-    domain_client->getDomain(true), problem_client->getProblem(true));
+      domain_client->getDomain(true), problem_client->getProblem(true));
     ASSERT_TRUE(plan);
 
     // Loader first, so it outlives the instance it creates. See the note in
@@ -484,7 +485,7 @@ TEST(executiotest_noden_tree, bt_builder_factory_3)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 

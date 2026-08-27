@@ -17,6 +17,7 @@
 #include <memory>
 #include <string>
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 #include "gtest/gtest.h"
@@ -56,7 +57,7 @@ TEST(test_2, test_2)
   domain_node->set_parameter({"model_file", pkgpath + "/test_2/pddl/test_2.pddl"});
   problem_node->set_parameter({"model_file", pkgpath + "/test_2/pddl/test_2.pddl"});
 
-  rclcpp::experimental::executors::EventsExecutor exe;
+  plansys2::SpinExecutor exe;
 
   exe.add_node(domain_node->get_node_base_interface());
   exe.add_node(problem_node->get_node_base_interface());

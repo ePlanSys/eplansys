@@ -22,6 +22,7 @@
 #include <fstream>
 #include <map>
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 #include "plansys2_domain_expert/DomainExpertNode.hpp"
@@ -136,7 +137,7 @@ TEST(action_execution, protocol_basic)
     auto test_lf_node = rclcpp_lifecycle::LifecycleNode::make_shared("test_lf_node");
     auto move_action_node = std::make_shared<MoveAction>("move_action");
     auto move_action_executor = plansys2::ActionExecutor::make_shared(
-    "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
+      "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
 
     ASSERT_EQ(move_action_executor->get_action_name(), "move");
     ASSERT_EQ(move_action_executor->get_action_params().size(), 3u);
@@ -146,7 +147,7 @@ TEST(action_execution, protocol_basic)
     move_action_node->set_parameter({"action_name", "move"});
     move_action_node->set_parameter({"rate", 1.0});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(test_node);
     exe.add_node(test_lf_node->get_node_base_interface());
@@ -155,10 +156,10 @@ TEST(action_execution, protocol_basic)
     std::vector<plansys2_msgs::msg::ActionExecution> action_execution_msgs;
 
     auto action_hub_sub = test_node->create_subscription<plansys2_msgs::msg::ActionExecution>(
-    "/actions_hub", rclcpp::QoS(100).reliable(),
+      "/actions_hub", rclcpp::QoS(100).reliable(),
       [&action_execution_msgs](const plansys2_msgs::msg::ActionExecution::SharedPtr msg) {
         action_execution_msgs.push_back(*msg);
-    });
+      });
 
     bool finish = false;
     std::thread t([&]() {
@@ -167,8 +168,8 @@ TEST(action_execution, protocol_basic)
 
     ASSERT_EQ(move_action_executor->get_internal_status(), plansys2::ActionExecutor::Status::IDLE);
     ASSERT_EQ(
-    move_action_node->get_internal_status().state,
-    plansys2_msgs::msg::ActionPerformerStatus::NOT_READY);
+      move_action_node->get_internal_status().state,
+      plansys2_msgs::msg::ActionPerformerStatus::NOT_READY);
 
     test_lf_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
     move_action_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
@@ -182,12 +183,12 @@ TEST(action_execution, protocol_basic)
     }
 
     ASSERT_EQ(
-    move_action_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      move_action_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     ASSERT_EQ(
-    move_action_node->get_internal_status().state,
-    plansys2_msgs::msg::ActionPerformerStatus::READY);
+      move_action_node->get_internal_status().state,
+      plansys2_msgs::msg::ActionPerformerStatus::READY);
     ASSERT_TRUE(action_execution_msgs.empty());
 
     {
@@ -202,13 +203,14 @@ TEST(action_execution, protocol_basic)
     }
 
     ASSERT_EQ(
-    move_action_node->get_current_state().id(), lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      move_action_node->get_current_state().id(), lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 
-    ASSERT_EQ(move_action_executor->get_internal_status(),
+    ASSERT_EQ(
+      move_action_executor->get_internal_status(),
       plansys2::ActionExecutor::Status::RUNNING);
     ASSERT_EQ(
-    move_action_node->get_internal_status().state,
-    plansys2_msgs::msg::ActionPerformerStatus::RUNNING);
+      move_action_node->get_internal_status().state,
+      plansys2_msgs::msg::ActionPerformerStatus::RUNNING);
 
     ASSERT_EQ(action_execution_msgs.size(), 3u);
     ASSERT_EQ(action_execution_msgs[0].type, plansys2_msgs::msg::ActionExecution::REQUEST);
@@ -224,11 +226,12 @@ TEST(action_execution, protocol_basic)
       }
     }
 
-    ASSERT_EQ(move_action_executor->get_internal_status(),
+    ASSERT_EQ(
+      move_action_executor->get_internal_status(),
       plansys2::ActionExecutor::Status::SUCCESS);
     ASSERT_EQ(
-    move_action_node->get_internal_status().state,
-    plansys2_msgs::msg::ActionPerformerStatus::READY);
+      move_action_node->get_internal_status().state,
+      plansys2_msgs::msg::ActionPerformerStatus::READY);
 
 
     ASSERT_EQ(action_execution_msgs.size(), 8u);
@@ -239,11 +242,12 @@ TEST(action_execution, protocol_basic)
     ASSERT_EQ(action_execution_msgs[7].type, plansys2_msgs::msg::ActionExecution::FINISH);
 
 
-    ASSERT_EQ(move_action_executor->get_internal_status(),
+    ASSERT_EQ(
+      move_action_executor->get_internal_status(),
       plansys2::ActionExecutor::Status::SUCCESS);
     ASSERT_EQ(
-    move_action_node->get_internal_status().state,
-    plansys2_msgs::msg::ActionPerformerStatus::READY);
+      move_action_node->get_internal_status().state,
+      plansys2_msgs::msg::ActionPerformerStatus::READY);
 
     finish = true;
     t.join();
@@ -258,7 +262,7 @@ TEST(action_execution, protocol_cancelation)
     auto test_lf_node = rclcpp_lifecycle::LifecycleNode::make_shared("test_lf_node");
     auto move_action_node = std::make_shared<MoveAction>("move_action");
     auto move_action_executor = plansys2::ActionExecutor::make_shared(
-    "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
+      "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
 
     ASSERT_EQ(move_action_executor->get_action_name(), "move");
     ASSERT_EQ(move_action_executor->get_action_params().size(), 3u);
@@ -268,7 +272,7 @@ TEST(action_execution, protocol_cancelation)
     move_action_node->set_parameter({"action_name", "move"});
     move_action_node->set_parameter({"rate", 1.0});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(test_node);
     exe.add_node(test_lf_node->get_node_base_interface());
@@ -277,10 +281,10 @@ TEST(action_execution, protocol_cancelation)
     std::vector<plansys2_msgs::msg::ActionExecution> action_execution_msgs;
 
     auto action_hub_sub = test_node->create_subscription<plansys2_msgs::msg::ActionExecution>(
-    "/actions_hub", rclcpp::QoS(100).reliable(),
+      "/actions_hub", rclcpp::QoS(100).reliable(),
       [&action_execution_msgs](const plansys2_msgs::msg::ActionExecution::SharedPtr msg) {
         action_execution_msgs.push_back(*msg);
-    });
+      });
 
     bool finish = false;
     std::thread t([&]() {
@@ -289,8 +293,8 @@ TEST(action_execution, protocol_cancelation)
 
     ASSERT_EQ(move_action_executor->get_internal_status(), plansys2::ActionExecutor::Status::IDLE);
     ASSERT_EQ(
-    move_action_node->get_internal_status().state,
-    plansys2_msgs::msg::ActionPerformerStatus::NOT_READY);
+      move_action_node->get_internal_status().state,
+      plansys2_msgs::msg::ActionPerformerStatus::NOT_READY);
 
     test_lf_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
     move_action_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
@@ -304,12 +308,12 @@ TEST(action_execution, protocol_cancelation)
     }
 
     ASSERT_EQ(
-    move_action_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      move_action_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     ASSERT_EQ(
-    move_action_node->get_internal_status().state,
-    plansys2_msgs::msg::ActionPerformerStatus::READY);
+      move_action_node->get_internal_status().state,
+      plansys2_msgs::msg::ActionPerformerStatus::READY);
     ASSERT_TRUE(action_execution_msgs.empty());
 
     {
@@ -324,13 +328,13 @@ TEST(action_execution, protocol_cancelation)
     }
 
     ASSERT_EQ(
-    move_action_node->get_current_state().id(), lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      move_action_node->get_current_state().id(), lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 
     ASSERT_EQ(
-    move_action_executor->get_internal_status(), plansys2::ActionExecutor::Status::RUNNING);
+      move_action_executor->get_internal_status(), plansys2::ActionExecutor::Status::RUNNING);
     ASSERT_EQ(
-    move_action_node->get_internal_status().state,
-    plansys2_msgs::msg::ActionPerformerStatus::RUNNING);
+      move_action_node->get_internal_status().state,
+      plansys2_msgs::msg::ActionPerformerStatus::RUNNING);
 
     ASSERT_EQ(action_execution_msgs.size(), 3u);
     ASSERT_EQ(action_execution_msgs[0].type, plansys2_msgs::msg::ActionExecution::REQUEST);
@@ -358,11 +362,11 @@ TEST(action_execution, protocol_cancelation)
     }
 
     ASSERT_EQ(
-    move_action_executor->get_internal_status(),
-    plansys2::ActionExecutor::Status::CANCELLED);
+      move_action_executor->get_internal_status(),
+      plansys2::ActionExecutor::Status::CANCELLED);
     ASSERT_EQ(
-    move_action_node->get_internal_status().state,
-    plansys2_msgs::msg::ActionPerformerStatus::READY);
+      move_action_node->get_internal_status().state,
+      plansys2_msgs::msg::ActionPerformerStatus::READY);
 
 
     ASSERT_EQ(action_execution_msgs.size(), 6u);

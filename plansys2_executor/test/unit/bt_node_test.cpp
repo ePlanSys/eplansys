@@ -22,6 +22,7 @@
 #include <fstream>
 #include <map>
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 #include "plansys2_domain_expert/DomainExpertNode.hpp"
@@ -92,7 +93,7 @@ TEST(problem_expert, wait_overall_req_test)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -129,8 +130,8 @@ TEST(problem_expert, wait_overall_req_test)
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"] = plansys2::ActionExecutionInfo();
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info =
       domain_client->getDurativeAction(
-    plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
-    plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
+      plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
+      plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
 
     ASSERT_FALSE(
       (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info.is_empty());
@@ -188,7 +189,7 @@ TEST(problem_expert, wait_overall_req_test)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -208,7 +209,7 @@ TEST(problem_expert, wait_atstart_req_test)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -245,8 +246,8 @@ TEST(problem_expert, wait_atstart_req_test)
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"] = plansys2::ActionExecutionInfo();
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info =
       domain_client->getDurativeAction(
-    plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
-    plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
+      plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
+      plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
 
     ASSERT_FALSE(
       (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info.is_empty());
@@ -306,7 +307,7 @@ TEST(problem_expert, wait_atstart_req_test)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -326,7 +327,7 @@ TEST(problem_expert, wait_atend_req_test)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -363,8 +364,8 @@ TEST(problem_expert, wait_atend_req_test)
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"] = plansys2::ActionExecutionInfo();
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info =
       domain_client->getDurativeAction(
-    plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
-    plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
+      plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
+      plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
 
     ASSERT_FALSE(
       (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info.is_empty());
@@ -422,7 +423,7 @@ TEST(problem_expert, wait_atend_req_test)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -442,7 +443,7 @@ TEST(problem_expert, at_start_effect_test)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -479,8 +480,8 @@ TEST(problem_expert, at_start_effect_test)
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"] = plansys2::ActionExecutionInfo();
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info =
       domain_client->getDurativeAction(
-    plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
-    plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
+      plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
+      plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
 
     ASSERT_FALSE(
       (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info.is_empty());
@@ -534,16 +535,16 @@ TEST(problem_expert, at_start_effect_test)
         }
       }
       ASSERT_FALSE(
-      problem_client->existPredicate(
-        plansys2::Predicate(
-          "(robot_at robot1 wheels_zone)")));
+        problem_client->existPredicate(
+          plansys2::Predicate(
+            "(robot_at robot1 wheels_zone)")));
     } catch (std::exception & e) {
       std::cerr << e.what() << std::endl;
     }
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -563,7 +564,7 @@ TEST(problem_expert, at_start_effect_retore_test)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -600,8 +601,8 @@ TEST(problem_expert, at_start_effect_retore_test)
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"] = plansys2::ActionExecutionInfo();
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info =
       domain_client->getDurativeAction(
-    plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
-    plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
+      plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
+      plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
 
     ASSERT_FALSE(
       (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info.is_empty());
@@ -657,16 +658,16 @@ TEST(problem_expert, at_start_effect_retore_test)
         }
       }
       ASSERT_TRUE(
-      problem_client->existPredicate(
-        plansys2::Predicate(
-          "(robot_at robot1 wheels_zone)")));
+        problem_client->existPredicate(
+          plansys2::Predicate(
+            "(robot_at robot1 wheels_zone)")));
     } catch (std::exception & e) {
       std::cerr << e.what() << std::endl;
     }
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 
@@ -686,7 +687,7 @@ TEST(problem_expert, at_end_effect_test)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/factory2.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -723,8 +724,8 @@ TEST(problem_expert, at_end_effect_test)
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"] = plansys2::ActionExecutionInfo();
     (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info =
       domain_client->getDurativeAction(
-    plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
-    plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
+      plansys2::get_action_name("(move robot1 wheels_zone assembly_zone)"),
+      plansys2::get_action_params("(move robot1 wheels_zone assembly_zone)"));
 
     ASSERT_FALSE(
       (*action_map)["(move robot1 wheels_zone assembly_zone):5"].action_info.is_empty());
@@ -778,16 +779,16 @@ TEST(problem_expert, at_end_effect_test)
       }
 
       ASSERT_TRUE(
-      problem_client->existPredicate(
-        plansys2::Predicate(
-          "(robot_at robot1 assembly_zone)")));
+        problem_client->existPredicate(
+          plansys2::Predicate(
+            "(robot_at robot1 assembly_zone)")));
     } catch (std::exception & e) {
       std::cerr << e.what() << std::endl;
     }
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 

@@ -20,6 +20,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 #include "gtest/gtest.h"
@@ -67,7 +68,7 @@ TEST(planner_expert, generate_plan_good)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/domain_simple.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/domain_simple.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -121,7 +122,7 @@ TEST(planner_expert, generate_plan_good)
     }
 
     ASSERT_TRUE(
-    problem_client->setGoal(plansys2::Goal("(and (robot_talk leia message1 francisco))")));
+      problem_client->setGoal(plansys2::Goal("(and (robot_talk leia message1 francisco))")));
 
     auto plan = planner_client->getPlan(domain_client->getDomain(), problem_client->getProblem());
     ASSERT_TRUE(plan);
@@ -153,20 +154,20 @@ TEST(planner_expert, generate_plan_with_args)
     planner_node->set_parameter({"plan_solver_plugins", solver_plugins});
 
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF1.plugin",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF1.plugin",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF1.arguments",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF1.arguments",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF1.output_dir",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF1.output_dir",
+      rclcpp::ParameterValue(std::string()));
 
     planner_node->set_parameter({"POPF1.plugin", "plansys2/POPFPlanSolver"});
     planner_node->set_parameter({"POPF1.arguments", "-h -E -A"});
     planner_node->set_parameter({"POPF1.output_dir", "/tmp/POPF1"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -220,7 +221,7 @@ TEST(planner_expert, generate_plan_with_args)
     }
 
     ASSERT_TRUE(
-    problem_client->setGoal(plansys2::Goal("(and (robot_talk leia message1 francisco))")));
+      problem_client->setGoal(plansys2::Goal("(and (robot_talk leia message1 francisco))")));
 
     auto plan = planner_client->getPlan(domain_client->getDomain(), problem_client->getProblem());
     ASSERT_TRUE(plan);
@@ -252,32 +253,32 @@ TEST(planner_expert, generate_plans)
     planner_node->set_parameter({"plan_solver_plugins", solver_plugins});
 
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF1.plugin",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF1.plugin",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF1.arguments",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF1.arguments",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF1.output_dir",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF1.output_dir",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF2.plugin",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF2.plugin",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF2.arguments",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF2.arguments",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF2.output_dir",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF2.output_dir",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF3.plugin",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF3.plugin",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF3.arguments",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF3.arguments",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF3.output_dir",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF3.output_dir",
+      rclcpp::ParameterValue(std::string()));
 
     planner_node->set_parameter({"POPF1.plugin", "plansys2/POPFPlanSolver"});
     planner_node->set_parameter({"POPF1.arguments", "-h -E -A"});
@@ -288,7 +289,7 @@ TEST(planner_expert, generate_plans)
     planner_node->set_parameter({"POPF3.output_dir", "/tmp/POPF3"});
 
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -339,16 +340,16 @@ TEST(planner_expert, generate_plans)
 
     ASSERT_TRUE(problem_client->addPredicate(plansys2::Predicate(predicates[0])));
     ASSERT_TRUE(
-    problem_client->setGoal(plansys2::Goal("(and (robot_talk leia message1 francisco))")));
+      problem_client->setGoal(plansys2::Goal("(and (robot_talk leia message1 francisco))")));
 
     auto plans_bad = planner_client->getPlanArray(
-    domain_client->getDomain(), problem_client->getProblem());
+      domain_client->getDomain(), problem_client->getProblem());
     ASSERT_TRUE(plans_bad.plan_array.empty());
 
     ASSERT_TRUE(problem_client->addPredicate(plansys2::Predicate(predicates[1])));
 
     auto plans_good = planner_client->getPlanArray(
-    domain_client->getDomain(), problem_client->getProblem());
+      domain_client->getDomain(), problem_client->getProblem());
     ASSERT_EQ(3u, plans_good.plan_array.size());
 
     finish = true;
@@ -377,32 +378,32 @@ TEST(planner_expert, generate_plans_stress)
     planner_node->set_parameter({"plan_solver_plugins", solver_plugins});
 
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF1.plugin",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF1.plugin",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF1.arguments",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF1.arguments",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF1.output_dir",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF1.output_dir",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF2.plugin",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF2.plugin",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF2.arguments",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF2.arguments",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF2.output_dir",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF2.output_dir",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF3.plugin",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF3.plugin",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF3.arguments",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF3.arguments",
+      rclcpp::ParameterValue(std::string()));
     plansys2::declare_parameter_if_not_declared(
-    planner_node, "POPF3.output_dir",
-    rclcpp::ParameterValue(std::string()));
+      planner_node, "POPF3.output_dir",
+      rclcpp::ParameterValue(std::string()));
 
     planner_node->set_parameter({"POPF1.plugin", "plansys2/POPFPlanSolver"});
     planner_node->set_parameter({"POPF1.arguments", "-h -E -A"});
@@ -413,7 +414,7 @@ TEST(planner_expert, generate_plans_stress)
     planner_node->set_parameter({"POPF3.output_dir", "/tmp/POPF3"});
 
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -464,31 +465,31 @@ TEST(planner_expert, generate_plans_stress)
 
     ASSERT_TRUE(problem_client->addPredicate(plansys2::Predicate(predicates[0])));
     ASSERT_TRUE(
-    problem_client->setGoal(plansys2::Goal("(and (robot_talk leia message1 francisco))")));
+      problem_client->setGoal(plansys2::Goal("(and (robot_talk leia message1 francisco))")));
     ASSERT_TRUE(problem_client->addPredicate(plansys2::Predicate(predicates[1])));
 
     for (int i = 0; i < 10; i++) {
       planner_node->set_timeout(5s);
 
       auto plans_good = planner_client->getPlanArray(
-      domain_client->getDomain(), problem_client->getProblem());
+        domain_client->getDomain(), problem_client->getProblem());
       ASSERT_EQ(3u, plans_good.plan_array.size());
 
       planner_node->set_timeout(1ms);
 
       plans_good = planner_client->getPlanArray(
-      domain_client->getDomain(), problem_client->getProblem());
+        domain_client->getDomain(), problem_client->getProblem());
       ASSERT_EQ(0u, plans_good.plan_array.size());
     }
 
     planner_node->set_timeout(5s);
 
     auto plans = planner_client->getPlanArray(
-    domain_client->getDomain(), problem_client->getProblem());
+      domain_client->getDomain(), problem_client->getProblem());
     ASSERT_EQ(3u, plans.plan_array.size());
 
     auto plan = planner_client->getPlan(
-    domain_client->getDomain(), problem_client->getProblem());
+      domain_client->getDomain(), problem_client->getProblem());
 
     ASSERT_EQ(plan, plans.plan_array.front());
 
@@ -515,7 +516,7 @@ TEST(planner_expert, generate_plan_with_domain_constants)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/domain_simple_constants.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/domain_simple_constants.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());

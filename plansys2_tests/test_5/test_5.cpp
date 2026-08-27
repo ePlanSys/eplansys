@@ -34,6 +34,7 @@
 #include <thread>
 #include <vector>
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 #include "gtest/gtest.h"
@@ -137,7 +138,7 @@ Mission run_mission(const std::string & observation)
       "default_action_bt_xml_filename",
       pkgpath + "/behavior_trees/observing_action_bt.xml"));
 
-  rclcpp::experimental::executors::EventsExecutor exe;
+  plansys2::SpinExecutor exe;
 
   exe.add_node(domain_node->get_node_base_interface());
   exe.add_node(problem_node->get_node_base_interface());

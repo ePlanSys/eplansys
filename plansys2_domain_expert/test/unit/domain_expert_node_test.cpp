@@ -22,6 +22,7 @@
 #include <atomic>
 #include <thread>
 
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 #include "gtest/gtest.h"
@@ -107,7 +108,7 @@ TEST(domain_expert, lifecycle)
     std::string pkgpath = plansys2::get_package_share_dir("plansys2_domain_expert");
 
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/domain_simple.pddl"});
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
 
@@ -123,8 +124,8 @@ TEST(domain_expert, lifecycle)
       domain_node, test_node, lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     ASSERT_EQ(
-    domain_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      domain_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
@@ -132,8 +133,8 @@ TEST(domain_expert, lifecycle)
       domain_node, test_node, lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 
     ASSERT_EQ(
-    domain_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      domain_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
 
     ASSERT_EQ(domain_client->getDomain(), domain_client->getDomain(true));
     auto domain_str = domain_client->getDomain();
@@ -166,7 +167,7 @@ TEST(domain_expert, lifecycle_error)
     std::string pkgpath = plansys2::get_package_share_dir("plansys2_domain_expert");
 
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/domain_2_error.pddl"});
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
 
@@ -192,8 +193,8 @@ TEST(domain_expert, lifecycle_error)
       domain_node, test_node, lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
 
     ASSERT_EQ(
-    domain_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
+      domain_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED);
   }
   plansys2::drain_ros(200ms);
 }

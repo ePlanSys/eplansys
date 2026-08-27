@@ -258,7 +258,7 @@ TEST(sequential_btbuilder_tests, test_plan_with_derived_existential)
 
     finish = true;
     t.join();
-}
+  }
   plansys2::drain_ros(200ms);
 }
 

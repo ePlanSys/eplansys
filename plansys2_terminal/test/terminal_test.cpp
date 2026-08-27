@@ -23,6 +23,7 @@
 #include <cstdlib>
 
 #include "rclcpp/rclcpp.hpp"
+#include "plansys2_core/Compat.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 
 #include "plansys2_domain_expert/DomainExpertNode.hpp"
@@ -308,7 +309,7 @@ TEST_F(TerminalTestCase, load_popf_plugin)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -336,7 +337,7 @@ TEST_F(TerminalTestCase, load_popf_plugin)
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
     rclcpp_lifecycle::State state = problem_node->trigger_transition(
-    lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
+      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
     std::string stateLabel = state.label();
 
     planner_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
@@ -487,14 +488,14 @@ TEST_F(TerminalTestCase, load_popf_plugin)
       std::ostringstream os;
       std::vector<std::string> command = {"(=(robot_at", "r2d2", "entrance)", "0)"};
       terminal_node->process_set_function(command, os);
-    // ASSERT_TRUE(terminal_node->method_executed_["process_command"]);
-    // ASSERT_TRUE(terminal_node->method_executed_["process_set_goal"]);
-    // ASSERT_TRUE(os.str().empty());
+      // ASSERT_TRUE(terminal_node->method_executed_["process_command"]);
+      // ASSERT_TRUE(terminal_node->method_executed_["process_set_goal"]);
+      // ASSERT_TRUE(os.str().empty());
 
-    // auto ins_1 = problem_client->getInstance("leia");
-    // ASSERT_TRUE(ins_1.has_value());
-    // ASSERT_EQ(ins_1.value().name, "leia");
-    // ASSERT_EQ(ins_1.value().type, "robot");
+      // auto ins_1 = problem_client->getInstance("leia");
+      // ASSERT_TRUE(ins_1.has_value());
+      // ASSERT_EQ(ins_1.value().name, "leia");
+      // ASSERT_EQ(ins_1.value().type, "robot");
 
       terminal_node->reset_executions();
     }
@@ -620,7 +621,7 @@ TEST_F(TerminalTestCase, load_popf_plugin)
 
     exe.cancel();
     t.join();
-}
+  }
 
   plansys2::drain_ros(2s);
 }
@@ -646,7 +647,7 @@ TEST_F(TerminalTestCase, add_problem)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -673,7 +674,7 @@ TEST_F(TerminalTestCase, add_problem)
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
     rclcpp_lifecycle::State state = problem_node->trigger_transition(
-    lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
+      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
     std::string stateLabel = state.label();
 
     planner_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
@@ -762,8 +763,9 @@ TEST_F(TerminalTestCase, add_problem_empty_domain)
     options.arguments({"--ros-args", "--disable-rosout-logs", "--disable-stdout-logs"});
 
 
-    auto test_node = rclcpp::Node::make_shared("terminal_node_test_add_problem_empty_domain",
-    options);
+    auto test_node = rclcpp::Node::make_shared(
+      "terminal_node_test_add_problem_empty_domain",
+      options);
 
     auto domain_node = std::make_shared<plansys2::DomainExpertNode>(options);
     auto problem_node = std::make_shared<plansys2::ProblemExpertNode>(options);
@@ -777,7 +779,7 @@ TEST_F(TerminalTestCase, add_problem_empty_domain)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -804,7 +806,7 @@ TEST_F(TerminalTestCase, add_problem_empty_domain)
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
     rclcpp_lifecycle::State state = problem_node->trigger_transition(
-    lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
+      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
     std::string stateLabel = state.label();
 
     planner_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
@@ -903,7 +905,7 @@ TEST_F(TerminalTestCase, check_actors)
     domain_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
     problem_node->set_parameter({"model_file", pkgpath + "/pddl/simple_example.pddl"});
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -925,7 +927,7 @@ TEST_F(TerminalTestCase, check_actors)
     move_actor_1_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
     move_actor_2_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
     ask_charge_actor_1_node->trigger_transition(
-    lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
+      lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
     charge_actor_1_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
 
     {
@@ -937,34 +939,34 @@ TEST_F(TerminalTestCase, check_actors)
     }
 
     ASSERT_EQ(
-    domain_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      domain_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    problem_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      problem_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    planner_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      planner_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    executor_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      executor_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    move_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      move_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    move_actor_2_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      move_actor_2_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    ask_charge_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      ask_charge_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    charge_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      charge_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
     rclcpp_lifecycle::State state = problem_node->trigger_transition(
-    lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
+      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
     std::string stateLabel = state.label();
 
     planner_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
@@ -979,29 +981,29 @@ TEST_F(TerminalTestCase, check_actors)
     }
 
     ASSERT_EQ(
-    domain_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      domain_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
     ASSERT_EQ(
-    problem_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      problem_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
     ASSERT_EQ(
-    planner_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      planner_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
     ASSERT_EQ(
-    executor_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      executor_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
     ASSERT_EQ(
-    move_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      move_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    move_actor_2_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      move_actor_2_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    ask_charge_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      ask_charge_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    charge_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      charge_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
 
     auto terminal_node = std::make_shared<TerminalTest>(options);
@@ -1012,11 +1014,11 @@ TEST_F(TerminalTestCase, check_actors)
     terminal_node->process_command(command, os);
 
     ASSERT_EQ(
-    os.str(),
-    "\t[askcharge] askcharge\tREADY\n"
-    "\t[charge] charge\tREADY\n"
-    "\t[move_1] move\tREADY\n"
-    "\t[move_2] move\tREADY\n");
+      os.str(),
+      "\t[askcharge] askcharge\tREADY\n"
+      "\t[charge] charge\tREADY\n"
+      "\t[move_1] move\tREADY\n"
+      "\t[move_2] move\tREADY\n");
 
     exe.cancel();
     t.join();
@@ -1074,7 +1076,7 @@ TEST_F(TerminalTestCase, source_run_plan)
     std::string cmd_file = pkgpath + "/pddl/commands";
     std::string plan_file = pkgpath + "/pddl/plan";
 
-    rclcpp::experimental::executors::EventsExecutor exe;
+    plansys2::SpinExecutor exe;
 
     exe.add_node(domain_node->get_node_base_interface());
     exe.add_node(problem_node->get_node_base_interface());
@@ -1096,7 +1098,7 @@ TEST_F(TerminalTestCase, source_run_plan)
 
     move_actor_1_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
     ask_charge_actor_1_node->trigger_transition(
-    lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
+      lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
     charge_actor_1_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
 
     {
@@ -1108,31 +1110,31 @@ TEST_F(TerminalTestCase, source_run_plan)
     }
 
     ASSERT_EQ(
-    domain_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      domain_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    problem_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      problem_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    planner_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      planner_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    executor_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      executor_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    move_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      move_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    ask_charge_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      ask_charge_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    charge_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      charge_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
     rclcpp_lifecycle::State state = problem_node->trigger_transition(
-    lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
+      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
     std::string stateLabel = state.label();
 
     planner_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
@@ -1147,33 +1149,33 @@ TEST_F(TerminalTestCase, source_run_plan)
     }
 
     ASSERT_EQ(
-    domain_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      domain_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
     ASSERT_EQ(
-    problem_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      problem_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
     ASSERT_EQ(
-    planner_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      planner_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
     ASSERT_EQ(
-    executor_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
+      executor_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE);
     ASSERT_EQ(
-    move_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      move_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    ask_charge_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      ask_charge_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
     ASSERT_EQ(
-    charge_actor_1_node->get_current_state().id(),
-    lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
+      charge_actor_1_node->get_current_state().id(),
+      lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE);
 
     auto terminal_node = std::make_shared<TerminalTest>(options);
     terminal_node->init();
 
     {
       std::ostringstream os;
-    // std::vector<std::string> command = {cmd_file, std::string("1")};
+      // std::vector<std::string> command = {cmd_file, std::string("1")};
       std::vector<std::string> command = {cmd_file};
       terminal_node->process_source(command, os);
       ASSERT_TRUE(terminal_node->method_executed_["process_source"]);
