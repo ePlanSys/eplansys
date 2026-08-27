@@ -8,7 +8,7 @@ Both robots route around the corridor, so the mission is not finished until
 both know whether it is passable.
 
 Nothing in this scenario changes the corridor. What changes is who knows about
-it --- which is why a classical planner has nothing to work with here, and why
+it, which is why a classical planner has nothing to work with here, and why
 the solution is a policy rather than a sequence.
 
 The smallest scenario of the fleet family, and the one to read first: one
@@ -22,7 +22,7 @@ The mission
    :widths: 30 70
 
    * - Agents
-     - ``r1``, ``r2`` --- two survey robots, symmetric, either could do the job
+     - ``r1``, ``r2``: two survey robots, symmetric, either could do the job
    * - The unknown
      - whether the corridor is blocked; nobody has looked
    * - Actions
@@ -121,7 +121,7 @@ A camera on one robot is neither: the fleet sees the behaviour, not the image.
 The initial theory
 ~~~~~~~~~~~~~~~~~~
 
-The problem file states what is common knowledge at the depot --- and, just as
+The problem file states what is common knowledge at the depot and, just as
 importantly, what it leaves open:
 
 .. code-block:: text
@@ -138,8 +138,8 @@ importantly, what it leaves open:
 
 It never says whether the corridor is blocked. The theory is therefore
 satisfied by two worlds, both designated: the model is multi-pointed, and the
-corridor genuinely is one way or the other without anyone --- including the
-planner --- knowing which. That is the property that makes the solution branch,
+corridor genuinely is one way or the other without anyone (including the
+planner) knowing which. That is the property that makes the solution branch,
 and the reason this scenario exists.
 
 .. graphviz::
@@ -178,7 +178,7 @@ and the reason this scenario exists.
      b_c -> c_b [ltail=cluster_b, lhead=cluster_c, dir=forward, style=bold, label="report-blocked r1"];
    }
 
-A double circle is a designated world --- one the fleet cannot rule out as the
+A double circle is a designated world, one the fleet cannot rule out as the
 actual one. An edge labelled ``r1`` is r1 being unable to tell the two apart.
 The mission is finished when no agent has an edge left, which is exactly what
 ``Kw`` asks for.
@@ -233,8 +233,8 @@ one announcement per outcome.
 
 Two things in that tree are worth reading carefully.
 
-The **knowledge requirement** on each announcement --- ``(K r1 blocked)`` and
-``(K r1 (not blocked))`` --- is not a PDDL precondition and cannot be checked
+The **knowledge requirement** on each announcement, ``(K r1 blocked)`` and
+``(K r1 (not blocked))``, is not a PDDL precondition and cannot be checked
 against the problem expert, because no predicate records it. It is checked
 against the epistemic state by ``CheckKnowledge``, and it is what stops the
 fleet from broadcasting a guess.
@@ -309,7 +309,7 @@ vocabulary it does not speak:
 ``observed`` port that the packaged action template leaves unbound, because
 what a robot saw is domain-specific and PlanSys2 carries nothing back from an
 action performer. With two designated worlds the epistemic state cannot supply
-it either --- it genuinely does not know --- so the deployment has to bind that
+it either, since it genuinely does not know, so the deployment has to bind that
 port to whatever its ``inspect_corridor`` performer reports. See
 :doc:`../reports/epistemic_end_to_end` for a worked binding.
 

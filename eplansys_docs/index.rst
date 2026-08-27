@@ -32,9 +32,14 @@ Packages
        state representation, DEL product update, bisimulation contraction,
        heuristics, search strategies, and the selection policy that picks
        between them.
+   * - ``plansys2_epddl_grounder``
+     - The EPDDL front end: it runs the ``plank`` toolkit as a subprocess to
+       turn a domain and problem pair into the grounded task the planner and
+       the epistemic state search over, and caches the result.
    * - ``plansys2_epistemic_msgs``
-     - The three service definitions of the epistemic state:
-       ``LoadTask``, ``CheckFormula`` and ``ApplyAction``.
+     - The six service definitions of the epistemic state: ``LoadTask``,
+       ``CheckFormula``, ``ApplyAction``, ``GetGoal``, ``SetGoal`` and
+       ``Announce``.
    * - ``plansys2_epistemic_executor``
      - The policy representation, its rendering as a behavior tree, the four
        epistemic behavior tree nodes, and the ``epistemic_state`` node that
@@ -52,6 +57,13 @@ Packages
      - An alternative plan solver plugin that runs the same planner as an
        external process rather than in process, for deployments where the
        planner binary is built and versioned separately.
+   * - ``plansys2_tui_cli``
+     - The command line front end: the ``ros2 plansys2`` verbs, among them
+       ``epistemic``, which is the terminal for what the agents know, and a
+       four-quadrant Textual dashboard over the running system.
+   * - ``eplansys``
+     - A metapackage that installs PlanSys2 and all of the above as one unit.
+       It builds nothing itself.
 
 Contents
 --------
@@ -62,6 +74,7 @@ Contents
 
    getting_started/installation
    getting_started/first_plan
+   getting_started/command_line
 
 .. toctree::
    :maxdepth: 2

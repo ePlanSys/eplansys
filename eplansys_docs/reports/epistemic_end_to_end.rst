@@ -6,17 +6,17 @@ as a behavior tree, but until this work nothing had ever run one over a live
 ROS graph. Two end-to-end tests now do, and the package that turns a policy
 into a tree has the tests it never had.
 
-:download:`Read the full report (PDF) <../_static/epistemic_end_to_end_test.pdf>`
---- five pages, with the reasoning behind each fix and the execution logs.
+:download:`Read the full report (PDF) <../_static/epistemic_end_to_end_test.pdf>`,
+five pages, with the reasoning behind each fix and the execution logs.
 
 What the tests run
 ------------------
 
-Both missions bring up the whole graph in one process --- domain expert,
+Both missions bring up the whole graph in one process (domain expert,
 problem expert, planner with the ``plansys2/EpistemicPlanSolver`` plugin,
 executor with ``bt_builder_plugin: EpistemicBTBuilder`` and the epistemic node
 library, the ``epistemic_state`` node loaded from the same grounded task, and
-the fake action performers --- and run the same mission twice with the world in
+the fake action performers) and run the same mission twice with the world in
 different states.
 
 .. list-table::
@@ -47,7 +47,7 @@ Where the observation comes from
 --------------------------------
 
 The epistemic state can name a sensing outcome by itself only when its model
-already designates one world. Both fleet fixtures designate several --- which
+already designates one world. Both fleet fixtures designate several, which
 is what makes them worth testing with, and what means the observation has to
 come from whoever did the sensing.
 
@@ -66,7 +66,7 @@ with north blocked and south clear::
     [epistemic_bt] [goal] (and (Kw r1 blocked-north) ... (Kw r3 blocked-south)) holds
 
 Four candidate worlds at the start, two after the first sensing, one after the
-second --- and the goal checked against the state that actually resulted rather
+second, and the goal checked against the state that actually resulted rather
 than the one planning assumed.
 
 Defects the end-to-end path exposed
@@ -94,7 +94,7 @@ All four are fixed; the report has the details.
        undone. Such a template is now refused, with a warning.
      - ``epistemic_bt_builder.cpp``
    * - 3
-     - An empty policy --- a goal that already holds --- rendered a childless
+     - An empty policy, a goal that already holds, rendered a childless
        ``Sequence``, which BehaviorTree.CPP rejects, so "nothing to do" crashed
        tree creation. It now renders ``AlwaysSuccess``.
      - ``policy_bt.cpp``
@@ -134,7 +134,7 @@ workflow builds in.
    * - ``plansys2_epistemic_executor`` (existing)
      - 35
      - pass
-     - ---
+     - none
    * - ``plansys2_tests`` (whole package, lint included)
      - 165
      - pass
@@ -159,7 +159,7 @@ Known gaps
    that reports something the model cannot account for.
 
 * ``ObservedOutcome`` is a test's stand-in for a sensor. A deployment still
-  binds ``observed`` to its own performers --- the one piece of wiring a domain
+  binds ``observed`` to its own performers, the one piece of wiring a domain
   supplies itself.
 * The tests build against ROS 2 rolling only. The Humble job stops before
   ``plansys2_executor``, as it did before this work.

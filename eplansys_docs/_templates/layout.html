@@ -1,0 +1,14 @@
+{% extends "!layout.html" %}
+
+{#- The browser tab title. Sphinx's own layout joins the page title to the
+    project title with an em dash; no prose on this site is set in em dashes,
+    and the tab is prose the reader sees before any page does. A plain hyphen
+    here, and on the front page nothing to join, since its title is already
+    the project's. #}
+{%- block htmltitle %}
+  {%- if pagename == master_doc %}
+<title>{{ docstitle|e }}</title>
+  {%- else %}
+<title>{{ title|striptags|e }} - {{ docstitle|e }}</title>
+  {%- endif %}
+{%- endblock %}

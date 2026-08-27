@@ -1,12 +1,14 @@
 Architecture
 ============
 
-ePlanSys adds five packages to PlanSys2 and changes none of its own. The
-planner is a plan solver plugin, the tree builder is a behavior tree builder
-plugin, the epistemic behavior tree nodes are loaded as a BehaviorTree.CPP
-plugin library, the model of what the agents know is a separate lifecycle
-node, and perception is a second one that watches a map and reports to the
-first. Nothing in ``plansys2_executor`` links against any of it.
+ePlanSys adds packages to PlanSys2 and changes none of its own. The planner is
+a plan solver plugin, the tree builder is a behavior tree builder plugin, the
+epistemic behavior tree nodes are loaded as a BehaviorTree.CPP plugin library,
+the model of what the agents know is a separate lifecycle node, and perception
+is a second one that watches a map and reports to the first. Around them sit a
+front end that grounds EPDDL into the task they all read, a command line that
+asks the model questions, and a metapackage that installs the set. Nothing in
+``plansys2_executor`` links against any of it.
 
 .. graphviz::
    :caption: Where the epistemic packages attach to PlanSys2
@@ -263,7 +265,9 @@ Epistemic state
 
 ``epistemic_state_node`` runs a lifecycle node named ``epistemic_state``. It is
 to knowledge what the problem expert is to facts: it holds one pointed Kripke
-model at a time, for one grounded task, and answers three services.
+model at a time, for one grounded task, and answers six services. Each of them
+is reachable from a terminal through ``ros2 plansys2 epistemic``, described in
+:doc:`../getting_started/command_line`.
 
 .. list-table::
    :header-rows: 1
@@ -303,7 +307,7 @@ and publishes on ``epistemic_state/state`` with transient-local durability. A
 task named at configure time is the common case: one mission, one task, loaded
 before anything asks a question about it. Pointing this node and the planner at
 the same pair of ``.epddl`` files is what keeps the policy and the model it is
-checked against expressed in one vocabulary — the failure the arrangement is
+checked against expressed in one vocabulary. The failure the arrangement is
 there to prevent is a policy naming an action the state has never heard of.
 
 It is a managed node of the system rather than something started alongside it.
@@ -319,7 +323,7 @@ other distribution's workflow builds is unchanged. The same reasoning as
 ``bt_node_plugins`` on the executor, one level up.
 
 The switch is a single launch argument rather than a parameter because it
-decides two things that must agree — whether the process is started, and
+decides two things that must agree: whether the process is started, and
 whether the manager waits for it. A parameters file can set the second but not
 the first, so the argument overrides the parameters file rather than the other
 way round.
@@ -337,7 +341,7 @@ Announcing is the counterpart of the problem expert's ``set predicate``, and it
 is deliberately not the same operation. Setting a predicate changes what is
 true; announcing changes what is *known*. Every agent that could not previously
 tell the surviving worlds apart from the ruled-out ones now can, and knows that
-the others can too — which is why announcing ``muddy_c1`` in the muddy-children
+the others can too, which is why announcing ``muddy_c1`` in the muddy-children
 model makes ``(K c1 muddy_c1)`` hold when it did not before. Knowledge that
 reaches only one agent is not a public announcement and cannot be expressed this
 way; that needs an event model, which is what an action is.
@@ -389,8 +393,8 @@ region, and which quantifier joins them is a modelling decision:
 
 Occupied beats unobserved, since no further looking removes an obstacle;
 unobserved beats free, since a region is clear only when all of it is. A cell
-that has been seen without being settled — the band between the two thresholds
-— counts as unobserved, because calling it free would hand an agent knowledge
+that has been seen without being settled, the band between the two
+thresholds, counts as unobserved, because calling it free would hand an agent knowledge
 it does not have.
 
 The second is the vocabulary. A region is a place on a map; an atom is a name
@@ -420,8 +424,8 @@ How the finding is reported follows from why it is being reported, which is the
 same distinction announcing draws above. A region bound to a sensing action
 reports through ``apply_action``: the observation belongs to an action the
 planner branched on, the state has its event model, and the update is the one
-the plan accounted for. A region without a binding is announced instead —
-information that arrived outside the plan, an operator or two robots
+the plan accounted for. A region without a binding is announced instead, as
+information that arrived outside the plan: an operator or two robots
 reconciling their maps, which is exactly what a public announcement is for.
 
 It reports on change rather than on every grid. A map arrives several times a
@@ -501,6 +505,12 @@ Package boundaries
      - Yes
    * - ``plansys2_aletheia_plan_solver``
      - The subprocess plan solver plugin
+     - No
+   * - ``plansys2_tui_cli``
+     - The ``ros2 plansys2`` verbs and the Textual dashboard
+     - No
+   * - ``eplansys``
+     - Metapackage; dependencies only, no code
      - No
 
 The builder is a separate package because it is the only piece that needs the

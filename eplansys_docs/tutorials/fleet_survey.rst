@@ -6,8 +6,8 @@ depot, any of which may be blocked, and every robot needing to know the state
 of all three.
 
 It is deliberately big rather than clever. The mechanisms are exactly those of
-:doc:`fleet_corridor` and :doc:`fleet_depot` --- drive, look, say what you saw
---- with nothing added, so that what grows between the three scenarios is the
+:doc:`fleet_corridor` and :doc:`fleet_depot` (drive, look, say what you saw)
+with nothing added, so that what grows between the three scenarios is the
 search and not the modelling. That is what makes the family worth having: the
 same domain at three sizes says something about the planner that no single
 instance can.
@@ -26,7 +26,7 @@ The mission
    * - Agents
      - ``r1``, ``r2``, ``r3``, ``r4``
    * - The unknowns
-     - whether each of north, south and east is blocked --- three independent
+     - whether each of north, south and east is blocked: three independent
        questions
    * - Depot rule
      - as before: a robot dispatched down a route stays on it
@@ -56,7 +56,7 @@ states plus three positions per robot) and 48 grounded actions (four drive,
 four look and eight report actions per route).
 
 The initial theory leaves all three routes open, so the model designates eight
-worlds --- one per combination:
+worlds, one per combination:
 
 .. code-block:: text
 
@@ -74,7 +74,7 @@ worlds --- one per combination:
 Grounding
 ---------
 
-This task is not checked in --- ground it when you want to run it:
+This task is not checked in. Ground it when you want to run it:
 
 .. code-block:: bash
 
@@ -93,11 +93,11 @@ The policy
 ----------
 
 AO* solves it at depth 9 and returns 28 nodes with eight leaves. Each survey
-trip is three actions --- drive, look, broadcast --- and the look in the middle
+trip is three actions (drive, look, broadcast) and the look in the middle
 of each is where the policy branches.
 
 .. graphviz::
-   :caption: The sensing skeleton of the survey policy. Each edge also carries the drive that precedes the look and the broadcast that follows it; each leaf is labelled with the three route states it corresponds to (B blocked, C clear) in the order the policy senses them --- east, north, south.
+   :caption: The sensing skeleton of the survey policy. Each edge also carries the drive that precedes the look and the broadcast that follows it; each leaf is labelled with the three route states it corresponds to (B blocked, C clear) in the order the policy senses them: east, north, south.
 
    digraph survey_shape {
      rankdir=TB;
@@ -138,7 +138,7 @@ of each is where the policy branches.
 The order the search settles on is east, then north, then south, with ``r1``,
 ``r2`` and ``r3`` taking one route each. ``r4`` never acts. It is a full member
 of the fleet and four of the twelve goal conjuncts are about what it knows, and
-it satisfies all four by listening --- which is the clearest statement the
+it satisfies all four by listening, which is the clearest statement the
 family makes of why the announcements are in the domain at all.
 
 Running it
@@ -194,7 +194,7 @@ policy chooses (``ks``):
      - one per combination of the three routes
    * - Wall clock
      - 57 s
-     - search, this time --- start-up is noise at this size
+     - search, this time; start-up is noise at this size
    * - Peak resident memory
      - 28 MB
      - the same as the corridor scenario, which finishes in 17 expansions

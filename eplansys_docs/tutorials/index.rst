@@ -8,8 +8,8 @@ one look learns *that* it looked, not *what* it saw. Before the fleet commits
 to a route, every robot has to know which routes are passable.
 
 That is a planning problem no classical planner can state. Nothing an action
-does here changes whether a corridor is blocked --- what changes is who knows
-about it --- and the state of the corridor is not in the initial situation to
+does here changes whether a corridor is blocked. What changes is who knows
+about it, and the state of the corridor is not in the initial situation to
 begin with, so the solution cannot be a sequence. It has to be a policy that
 senses and then branches on what was sensed.
 
@@ -43,7 +43,7 @@ two use; the depot and survey pages describe only what is new, and report what
 grows.
 
 The first two are executed end to end by the test suite, over a live ROS graph
-with the world in each of its possible states --- see
+with the world in each of its possible states; see
 :doc:`../reports/epistemic_end_to_end`. The third is too slow for a suite that
 runs on every push, and is there to be run by hand.
 
@@ -53,8 +53,8 @@ the two smaller ones also checked in already grounded under
 toolchain. They assume a workspace built and sourced as described in
 :doc:`../getting_started/installation`.
 
-The classical PlanSys2 tutorials --- the terminal, the domain and problem
-experts, writing action performers --- are on the `PlanSys2 web page
+The classical PlanSys2 tutorials (the terminal, the domain and problem
+experts, writing action performers) are on the `PlanSys2 web page
 <https://plansys2.github.io>`_ and apply unchanged here.
 
 .. toctree::

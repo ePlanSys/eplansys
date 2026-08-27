@@ -10,7 +10,7 @@ The problem
 
 The problem is stated in EPDDL: a domain and a problem file, the epistemic
 counterparts of a PDDL domain and problem. The smallest robotics example ships
-with ``plansys2_epddl_grounder`` --- two survey robots and a corridor that may
+with ``plansys2_epddl_grounder``: two survey robots and a corridor that may
 be blocked, described in full in :doc:`../tutorials/fleet_corridor`:
 
 .. code-block:: text
@@ -18,9 +18,9 @@ be blocked, described in full in :doc:`../tutorials/fleet_corridor`:
    <share>/plansys2_epddl_grounder/examples/robot-fleet-domain.epddl
    <share>/plansys2_epddl_grounder/examples/robot-fleet-problem.epddl
 
-The solver does not search over EPDDL directly. It grounds the sources first —
+The solver does not search over EPDDL directly. It grounds the sources first,
 building the initial Kripke model from the problem's finitary S5 theory and
-instantiating each action's event model over the agents — into the IePC JSON
+instantiating each action's event model over the agents, into the IePC JSON
 format it does search over. That is ``plank``'s work, run as a subprocess by
 ``plansys2_epddl_grounder``; see :doc:`../concepts/epddl` for the format and
 :doc:`installation` for where the binary comes from.
@@ -133,6 +133,11 @@ without a planner:
    ros2 run plansys2_epistemic_executor epistemic_state_node --ros-args \
      -p epddl_domain:=<the same domain.epddl> \
      -p epddl_problem:=<the same problem.epddl>
+
+Once it is up, ``ros2 plansys2 epistemic`` asks it what it holds, checks a
+formula against it, and advances it by hand. :doc:`command_line` walks the
+corridor scenario through from a terminal that way, which is the shortest path
+to seeing a Kripke model change.
 
 Sensing from a map
 ------------------
