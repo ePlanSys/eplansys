@@ -33,6 +33,11 @@ EpistemicPerceptionNode::EpistemicPerceptionNode(const rclcpp::NodeOptions & opt
   declare_parameter<int>("free_below", Thresholds{}.free_below);
   declare_parameter<int>("occupied_above", Thresholds{}.occupied_above);
   declare_parameter<double>("call_timeout", 5.0);
+  // How long to keep offering an observation the state was not ready for. The
+  // gap it has to cover is the drive that precedes the sensing action, so a
+  // scenario with long approaches needs a larger number than a building of
+  // small rooms does.
+  declare_parameter<int>("applicability_retries", kApplicabilityRetries);
 }
 
 template<typename T>
@@ -196,6 +201,16 @@ EpistemicPerceptionNode::on_configure(const rclcpp_lifecycle::State & state)
       "values and have to be within 0..100.", free_below, occupied_above);
     return CallbackReturnT::FAILURE;
   }
+
+  const auto retries = get_parameter("applicability_retries").as_int();
+  if (retries < 0) {
+    RCLCPP_ERROR(
+      get_logger(),
+      "[epistemic_perception] applicability_retries (%ld) is a number of grids "
+      "and cannot be negative.", retries);
+    return CallbackReturnT::FAILURE;
+  }
+  applicability_retries_ = static_cast<int>(retries);
 
   thresholds_.free_below = static_cast<std::int8_t>(free_below);
   thresholds_.occupied_above = static_cast<std::int8_t>(occupied_above);
@@ -361,14 +376,14 @@ bool EpistemicPerceptionNode::tell(Watched & watched, const Emission & emission)
     const bool premature =
       answer.error.find("not applicable") != std::string::npos;
 
-    if (premature && watched.retries < kApplicabilityRetries) {
+    if (premature && watched.retries < applicability_retries_) {
       ++watched.retries;
       RCLCPP_DEBUG(
         get_logger(),
         "[epistemic_perception] '%s' is %s, and the state is not ready for it yet "
         "(attempt %d of %d)",
         watched.region.name.c_str(), to_string(watched.last),
-        watched.retries, kApplicabilityRetries);
+        watched.retries, applicability_retries_);
       return false;
     }
 
