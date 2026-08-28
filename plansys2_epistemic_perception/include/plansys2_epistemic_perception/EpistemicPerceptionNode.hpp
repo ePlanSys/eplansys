@@ -102,9 +102,20 @@ public:
     int retries{0};
   };
 
+  /// The configured value of `applicability_retries`.
+  int applicability_retries_{kApplicabilityRetries};
+
   /// How many grids to keep offering an observation the state was not yet
-  /// ready for. A few seconds at map rate: long enough for the executor to
-  /// apply the action before it, short enough not to mask a real conflict.
+  /// ready for, as a default. Long enough for the executor to apply the action
+  /// before it, short enough not to mask a real conflict.
+  ///
+  /// The right number is a property of the scenario, not of this node: it has
+  /// to exceed the gap between a region resolving and the model believing the
+  /// robot is where it can resolve it, and that gap is however long the drive
+  /// before the sensing action takes. Forty grids is a few seconds of race in
+  /// a small building; a warehouse aisle a robot needs a minute to reach wants
+  /// more, and would otherwise give up on a reading that was never in dispute.
+  /// Hence a parameter, `applicability_retries`, with this as its default.
   static constexpr int kApplicabilityRetries = 40;
 
   /// The configured regions, for tests and for a node that wants to report
