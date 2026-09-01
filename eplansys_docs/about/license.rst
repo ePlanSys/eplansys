@@ -23,13 +23,25 @@ in this repository belong here, not to the upstream project.
 Provenance of the packages
 --------------------------
 
-The ``plansys2_*`` packages that are not epistemic are reproduced unmodified
-from the original PlanSys2 project and remain subject to their original
-copyright notices and the Apache License, Version 2.0.
+The ``plansys2_*`` packages that are not epistemic come from the original
+PlanSys2 project and remain subject to its copyright notices and the Apache
+License, Version 2.0. This repository preserves their upstream commit history,
+so ``git log`` on any file identifies its origin.
+
+All of them have been modified, in four categories: the extension points the
+epistemic packages attach to were widened, principally in ``plansys2_msgs`` and
+``plansys2_executor``; bring-up and lifecycle management were extended to cover
+the epistemic nodes; compatibility shims were added for building on both Humble
+and Rolling; and defects found while running the system were corrected.
+``plansys2_tui_cli`` and ``plansys2_tests`` are modified more extensively, the
+first adding the ``epistemic`` verb and a Textual dashboard, the second two
+integration missions.
 
 The epistemic packages are original contributions, developed as part of a
 terminal work at the Instituto Politécnico Nacional, Mexico, and are also
-distributed under the Apache License, Version 2.0.
+distributed under the Apache License, Version 2.0. Several carry the
+``plansys2_`` prefix to identify the extension point they attach to. The prefix
+reflects the attachment point, not the authorship. ``NOTICE`` lists them.
 
 Within ``plansys2_epistemic_planner``, the planning core is derived from the
 `Aletheia <https://github.com/HanielUlises/Aletheia>`_ epistemic planner, a

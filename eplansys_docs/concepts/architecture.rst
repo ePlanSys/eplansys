@@ -1,14 +1,23 @@
 Architecture
 ============
 
-ePlanSys adds packages to PlanSys2 and changes none of its own. The planner is
-a plan solver plugin, the tree builder is a behavior tree builder plugin, the
+ePlanSys attaches to PlanSys2 through its extension points. The planner is a
+plan solver plugin, the tree builder is a behavior tree builder plugin, the
 epistemic behavior tree nodes are loaded as a BehaviorTree.CPP plugin library,
 the model of what the agents know is a separate lifecycle node, and perception
 is a second one that watches a map and reports to the first. Around them sit a
 front end that grounds EPDDL into the task they all read, a command line that
 asks the model questions, and a metapackage that installs the set. Nothing in
-``plansys2_executor`` links against any of it.
+``plansys2_executor`` links against any of it. Every attachment is made through
+pluginlib or a parameter, so a classical deployment loads none of it.
+
+Three of these extension points were widened in the upstream packages to carry
+a policy through the system. ``PlanItem`` gained the fields that let a plan
+branch, ``ActionExecution`` gained the field that carries what a performer
+observed, and the executor gained the ability to load behavior tree nodes named
+by parameter. All three are additions that a classical run leaves at their
+defaults, so the classical execution path is unchanged. ``NOTICE`` documents
+these and the remaining differences from upstream.
 
 .. graphviz::
    :caption: Where the epistemic packages attach to PlanSys2

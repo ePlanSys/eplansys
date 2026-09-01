@@ -10,13 +10,53 @@ Francisco J. Rodríguez Lera, and Vicente Matellán Olivera.
   Original reference:  F. Martín et al., "PlanSys2: A Planning System
                        Framework for ROS2", IROS 2021.
 
-The packages plansys2_* included in this repository are reproduced
-unmodified from the original PlanSys2 project and remain subject to
-their original copyright notices and the Apache License, Version 2.0.
+Most of the plansys2_* packages included in this repository come from the
+original PlanSys2 project and remain subject to its copyright notices and
+the Apache License, Version 2.0. This repository preserves their upstream
+commit history, so `git log` on any file identifies its origin. The two
+lists below record which packages come from PlanSys2 and which do not.
 
-The packages eplansys_* are original contributions developed as part
-of a terminal work at the Instituto Politécnico Nacional, Mexico, and
-are also distributed under the Apache License, Version 2.0.
+The packages taken from PlanSys2 have all been modified. The
+modifications fall into four categories:
+
+  Extension points. plansys2_msgs defines the epistemic fields of
+  PlanItem, which allow a Plan to carry a branching policy, and the
+  outcome field of ActionExecution, which allows a performer to report
+  what it observed. plansys2_executor loads behavior tree nodes named by
+  parameter and publishes an observed outcome on a port. All four are
+  additions. A classical planner leaves the fields at their defaults and
+  a classical performer does not set them.
+
+  Bring-up. plansys2_bringup starts the epistemic state and perception
+  nodes under opt-in launch arguments, and plansys2_lifecycle_manager
+  manages them alongside the original four.
+
+  Portability. Compatibility shims for building one source tree on both
+  Humble and Rolling, principally around ament_index_cpp and the ROS
+  executor and QoS APIs, collected in plansys2_core.
+
+  Fixes. Corrections to defects found while running the system.
+
+Two packages are modified more extensively. plansys2_tui_cli adds the
+`ros2 plansys2 epistemic` verb and a Textual dashboard, and vendors the
+Textual library as described below. plansys2_tests adds two integration
+missions, test_5 and test_6, covering the epistemic execution path.
+
+The following packages are original to this repository and contain no
+PlanSys2 code:
+
+  plansys2_epistemic_planner        plansys2_epddl_grounder
+  plansys2_epistemic_executor       plansys2_epistemic_bt_builder
+  plansys2_epistemic_msgs           plansys2_epistemic_perception
+  plansys2_aletheia_plan_solver     eplansys, eplansys_docs
+
+Several carry the plansys2_ prefix to identify the extension point they
+attach to. The prefix reflects the attachment point, not the authorship,
+which is recorded by the two lists above.
+
+These packages were developed as part of a terminal work at the
+Instituto Politécnico Nacional, Mexico, and are distributed under the
+Apache License, Version 2.0.
 
 The package plansys2_epistemic_planner contains, in its planning core,
 code derived from the Aletheia epistemic planner: the Kripke state
