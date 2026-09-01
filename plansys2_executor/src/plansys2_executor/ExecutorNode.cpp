@@ -79,6 +79,12 @@ ExecutorNode::ExecutorNode(const rclcpp::NodeOptions & options)
   this->declare_parameter("bt_node_plugins", std::vector<std::string>{});
   this->declare_parameter<bool>("enable_dotgraph_legend", true);
   this->declare_parameter<bool>("print_graph", false);
+  // How many replans in a row are tolerated with nothing having completed in
+  // between. A plan that fails, is replanned, and fails the same way is asking
+  // the planner the same question and getting the same answer; without a limit
+  // the executor keeps driving the robot into the same failure. Zero means no
+  // limit, for a deployment that would rather keep trying.
+  this->declare_parameter<int>("max_replans_without_progress", 3);
   this->declare_parameter("action_timeouts.actions", std::vector<std::string>{});
   // Declaring individual action parameters so they can be queried on the command line
   auto action_timeouts_actions = this->get_parameter("action_timeouts.actions").as_string_array();
@@ -549,6 +555,11 @@ ExecutorNode::init_plan_for_execution(PlanRuntineInfo & runtime_info)
   cancel_plan_requested_ = false;
   replan_requested_ = false;
 
+  // A new mission, so whatever the last one's replanning was doing is not this
+  // one's business.
+  replans_without_progress_ = 0;
+  completed_at_last_replan_ = 0;
+
   if (runtime_info.action_map != nullptr) {
     for (auto & entry : *runtime_info.action_map) {
       ActionExecutionInfo & action_info = entry.second;
@@ -568,6 +579,56 @@ ExecutorNode::init_plan_for_execution(PlanRuntineInfo & runtime_info)
   }
 
   return true;
+}
+
+std::size_t
+ExecutorNode::completed_actions(
+  const std::shared_ptr<std::map<std::string, ActionExecutionInfo>> & action_map) const
+{
+  if (!action_map) {
+    return 0;
+  }
+
+  std::size_t done = 0;
+  for (const auto & entry : *action_map) {
+    const auto & executor = entry.second.action_executor;
+    if (executor && executor->get_internal_status() == ActionExecutor::SUCCESS) {
+      ++done;
+    }
+  }
+  return done;
+}
+
+bool
+ExecutorNode::replanning_is_making_progress(PlanRuntineInfo & runtime_info)
+{
+  const int limit = this->get_parameter("max_replans_without_progress").as_int();
+  if (limit <= 0) {
+    return true;            // no limit asked for
+  }
+
+  const auto completed = completed_actions(runtime_info.action_map);
+
+  if (completed > completed_at_last_replan_) {
+    // Something ran to completion since the last replan, so this one is
+    // responding to a mission that has moved rather than repeating itself.
+    replans_without_progress_ = 0;
+  } else {
+    ++replans_without_progress_;
+  }
+  completed_at_last_replan_ = completed;
+
+  if (replans_without_progress_ <= limit) {
+    return true;
+  }
+
+  RCLCPP_ERROR(
+    get_logger(),
+    "Replanned %d times with no action completing in between; giving up. The "
+    "planner is being asked the same question and answering it the same way, "
+    "and continuing would drive the same failure again.",
+    replans_without_progress_);
+  return false;
 }
 
 bool
@@ -890,7 +951,11 @@ ExecutorNode::execution_cycle()
           runtime_info_.complete_plan = current_goal_handle_->get_goal()->plan;
           runtime_info_.remaining_plan = current_goal_handle_->get_goal()->plan;
 
-          if (!replan_for_execution(runtime_info_)) {
+          if (!replanning_is_making_progress(runtime_info_)) {
+            // Abort rather than error: the plan failed, and saying so through
+            // the ordinary failure path is what a client is already handling.
+            executor_state_ = STATE_ABORTING;
+          } else if (!replan_for_execution(runtime_info_)) {
             executor_state_ = STATE_ERROR;
           } else {
             executor_state_ = STATE_EXECUTING;

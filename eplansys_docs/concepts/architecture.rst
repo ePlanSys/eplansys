@@ -462,6 +462,29 @@ service call
 from there can deadlock a single-threaded executor. Setting
 ``goal_from_state`` to false plans for the problem exactly as written.
 
+When replanning stops getting anywhere
+--------------------------------------
+
+A plan that fails, is replanned, and fails the same way is a loop. The planner
+is being asked the same question and answering it the same way, and the
+executor would keep driving the robot into the same failure until someone
+stopped it. Epistemic missions reach this more easily than classical ones,
+because ``EpistemicSwitch`` fails on any outcome the policy did not plan for,
+and a domain that cannot express the outcome will not plan for it next time
+either.
+
+The executor counts replans that arrive with no action having completed since
+the last one. Counting replans alone would be wrong: a mission that replans
+often while getting further is healthy, and what marks the loop is replanning
+with nothing having happened in between. Past
+``max_replans_without_progress``, which defaults to three, the plan is aborted
+through the ordinary failure path rather than replanned again. Setting it to
+zero asks the executor to keep trying however long the loop runs.
+
+Recovery and this guard pull in opposite directions on purpose. Repairing the
+model is what lets a contradicted belief be corrected and the next plan be a
+different one; the guard is what stops the case where it is not.
+
 When the world contradicts the model
 ------------------------------------
 

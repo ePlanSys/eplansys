@@ -48,3 +48,11 @@ target_compile_definitions(bt_node_test_charging
 target_link_libraries(bt_node_test_charging
   ${PROJECT_NAME}
 )
+
+# The replan loop guard: replanning with nothing completing in between.
+ament_add_gtest(replan_guard_test replan_guard_test.cpp)
+target_compile_definitions(replan_guard_test
+  PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+target_link_libraries(replan_guard_test
+  ${PROJECT_NAME}
+)
