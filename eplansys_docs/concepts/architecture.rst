@@ -324,6 +324,12 @@ Four node types are registered by the plugin library
    belief nothing supports. The failure reaches the executor, whose answer to a
    failed plan is to replan.
 
+``CheckBeliefUnchanged``
+   A condition node that fails when the belief has changed from outside the
+   plan, which is what makes an announcement interrupt a policy it invalidates.
+   Ports: ``action`` for the message, and ``enabled``, false for a deployment
+   that would rather not be interrupted.
+
 ``CheckEpistemicGoal``
    A condition node that runs once, after the policy, with a single ``goal``
    port, empty for none. A tree with no epistemic goal, which is to say a
@@ -461,6 +467,32 @@ service because planning runs inside the planner's own service callback, and a
 service call
 from there can deadlock a single-threaded executor. Setting
 ``goal_from_state`` to false plans for the problem exactly as written.
+
+When information arrives from outside the plan
+----------------------------------------------
+
+A policy is built against a belief. While it runs, its own actions move that
+belief in ways it has branches for. An announcement is the other case:
+perception resolves a region, an operator says something, two robots reconcile
+their maps when a link comes back, and the model moves for a reason the policy
+never accounted for.
+
+Nothing in a behavior tree can see a service call, so a running policy would
+carry on against a belief that no longer holds until some later action failed
+for what looks like an unrelated reason. The state therefore counts the
+announcements it has taken, publishing the count as ``belief_version``, and
+``CheckBeliefUnchanged`` reads it.
+
+The packaged action template puts that node inside the reactive sequence, so it
+is re-checked while the action runs and the interruption arrives when the
+information does, rather than after the action it invalidated has finished. The
+executor's answer to a failed plan is to replan, and the model it replans from
+is the one the announcement produced.
+
+Only announcements count. A policy that abandoned itself every time one of its
+own actions worked would never finish anything, so ``apply_action`` does not
+touch the version. A deployment that would rather finish what it started sets
+the node's ``enabled`` port to false.
 
 When replanning stops getting anywhere
 --------------------------------------

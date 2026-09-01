@@ -28,6 +28,9 @@
 #include "plansys2_epistemic_executor/EpistemicStateClient.hpp"
 #include "plansys2_epistemic_executor/policy.hpp"
 
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/string.hpp"
+
 namespace plansys2
 {
 
@@ -172,6 +175,62 @@ public:
 
 private:
   int running_child_{-1};
+};
+
+/**
+ * @class plansys2::CheckBeliefUnchanged
+ * @brief Fails when the belief changes from outside the plan.
+ *
+ * A policy is built against a belief. While it runs, the belief is supposed to
+ * change only in the ways the policy accounted for: its own actions, applied
+ * through ``ApplyEpistemicUpdate``, whose outcomes it has branches for.
+ *
+ * An announcement is the other case. Perception resolves a region, an operator
+ * says something, two robots reconcile their maps when a link comes back — and
+ * the model moves for a reason the policy never planned for. Nothing in a
+ * behavior tree can see a service call, so the running policy would carry on
+ * against a belief that no longer holds, until some later action failed for
+ * what looks like an unrelated reason.
+ *
+ * This is the node that notices. It reads the belief version the state
+ * publishes, remembers it, and fails when it changes. Placed inside the
+ * reactive sequence around an action, it is re-checked while the action runs,
+ * so the failure arrives when the information does. The executor's answer to a
+ * failed plan is to replan, and by then the model it replans from is the one
+ * the announcement produced.
+ *
+ * It counts only announcements, not the policy's own updates: a policy that
+ * abandoned itself every time one of its actions worked would never finish.
+ */
+class CheckBeliefUnchanged : public BT::ConditionNode
+{
+public:
+  CheckBeliefUnchanged(const std::string & xml_tag_name, const BT::NodeConfig & conf);
+
+  BT::NodeStatus tick() override;
+
+  static BT::PortsList providedPorts()
+  {
+    return BT::PortsList(
+      {
+        BT::InputPort<std::string>("action", "Action id, for the message"),
+        BT::InputPort<std::string>(
+          "enabled", "true",
+          "Whether an announcement should interrupt the policy at all. False "
+          "for a deployment that would rather finish what it started."),
+      });
+  }
+
+private:
+  rclcpp::Node::SharedPtr node_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
+
+  /// The version seen when this node first ran, and whether it has one yet.
+  /// Latched durability means the first message arrives on subscription, but
+  /// nothing guarantees it has arrived by the first tick.
+  std::uint64_t baseline_{0};
+  bool have_baseline_{false};
+  std::uint64_t latest_{0};
 };
 
 /**

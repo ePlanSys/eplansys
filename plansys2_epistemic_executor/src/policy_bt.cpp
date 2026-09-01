@@ -29,6 +29,7 @@ const char * const kDefaultEpistemicActionBT =
   <ApplyAtStartEffect action="ACTION_ID"/>
   <ReactiveSequence name="ACTION_ID">
     <CheckOverAllReq action="ACTION_ID"/>
+    <CheckBeliefUnchanged action="ACTION_ID"/>
     <ExecuteAction action="ACTION_ID" outcome="{OBSERVED_KEY}"/>
   </ReactiveSequence>
   <CheckAtEndReq action="ACTION_ID"/>

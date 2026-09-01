@@ -193,6 +193,15 @@ private:
   /// configure, since a subscriber that saw a model in one message and none in
   /// the next would have no way to tell that from the model being gone.
   bool publish_model_{true};
+
+  /// How many times the belief has been changed from outside the plan.
+  ///
+  /// Only announcements count. An executing policy advances the model itself
+  /// through apply_action, and a policy reacting to its own updates would
+  /// abandon every plan the moment it started working. What this counts is the
+  /// other case: an operator, a perception node, or another robot reporting
+  /// something the plan never accounted for.
+  std::uint64_t belief_version_{0};
 };
 
 }  // namespace plansys2

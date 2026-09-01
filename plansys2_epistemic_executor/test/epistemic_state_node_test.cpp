@@ -26,6 +26,8 @@
 #include "gtest/gtest.h"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "plansys2_epistemic_executor/EpistemicStateNode.hpp"
+#include "std_msgs/msg/string.hpp"
+
 #include "plansys2_epistemic_msgs/srv/announce.hpp"
 #include "plansys2_epistemic_msgs/srv/check_formula.hpp"
 #include "plansys2_epistemic_msgs/srv/get_agent_perspective.hpp"
@@ -102,6 +104,24 @@ protected:
       return nullptr;
     }
     return future.get();
+  }
+
+  /// The latest state the node published, or empty when none arrived. Latched,
+  /// so a subscription made now still receives the last one.
+  std::string wait_for_state(std::chrono::seconds timeout = 3s)
+  {
+    std::string latest;
+    auto subscription = client_node_->create_subscription<std_msgs::msg::String>(
+      "epistemic_state/state", rclcpp::QoS(1).transient_local(),
+      [&latest](const std_msgs::msg::String::SharedPtr message) {
+        latest = message->data;
+      });
+
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
+    while (latest.empty() && std::chrono::steady_clock::now() < deadline) {
+      std::this_thread::sleep_for(10ms);
+    }
+    return latest;
   }
 
   /// Which task this fixture loads. Overridden by a fixture whose point is a
@@ -589,6 +609,72 @@ TEST_F(StalePriorTest, AnObservationNoWorldCouldProduceIsStillRefused)
     "epistemic_state/apply_action", request);
   ASSERT_NE(response, nullptr);
   EXPECT_FALSE(response->success);
+}
+
+// Information arriving from outside the plan.
+//
+// A policy is built against a belief. Its own actions move that belief in ways
+// it has branches for; an announcement moves it for a reason it never planned
+// for. The state counts the second kind so a running tree can notice, since a
+// behavior tree cannot see a service call.
+
+TEST_F(StalePriorTest, AnAnnouncementIsCountedAsInformationFromOutside)
+{
+  const auto version = [this]() -> std::int64_t {
+      auto message = wait_for_state();
+      if (message.empty()) {
+        return -1;
+      }
+      const auto at = message.find("\"belief_version\":");
+      if (at == std::string::npos) {
+        return -1;
+      }
+      return std::stoll(message.substr(at + 17));
+    };
+
+  const auto before = version();
+  ASSERT_GE(before, 0) << "the state does not publish a belief version";
+
+  // Something the model holds possible, since announcing the impossible is
+  // refused. An operator confirming the map's word is exactly the case: it
+  // arrives from outside the plan whether or not it changes the model.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::Announce::Request>();
+  request->formula = "(not blocked)";
+
+  auto response = call<plansys2_epistemic_msgs::srv::Announce>(
+    "epistemic_state/announce", request);
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  EXPECT_GT(version(), before)
+    << "an announcement did not register as information arriving from outside";
+}
+
+TEST_F(StalePriorTest, ThePolicysOwnUpdatesAreNotCountedAsOutsideInformation)
+{
+  // The distinction the counter exists to make. A policy that abandoned itself
+  // every time one of its own actions worked would never finish anything.
+  const auto version = [this]() -> std::int64_t {
+      auto message = wait_for_state();
+      const auto at = message.find("\"belief_version\":");
+      return at == std::string::npos ? -1 : std::stoll(message.substr(at + 17));
+    };
+
+  const auto before = version();
+  ASSERT_GE(before, 0);
+
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "e-inspect-blocked";
+  request->allow_recovery = true;
+
+  auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  EXPECT_EQ(version(), before)
+    << "the policy's own update was mistaken for information from outside";
 }
 
 // Leave through _exit, so the DDS threads never outlive the process.

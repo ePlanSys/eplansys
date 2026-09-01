@@ -238,7 +238,8 @@ void EpistemicStateNode::publish_state()
     ", \"agents\": " + std::to_string(task_ ? task_->num_agents() : 0) +
     ", \"atoms\": " + std::to_string(task_ ? task_->num_atoms() : 0) +
     ", \"goal\": \"" + goal + "\"" +
-    ", \"goal_from_task\": " + (goal_override_ ? "false" : "true");
+    ", \"goal_from_task\": " + (goal_override_ ? "false" : "true") +
+    ", \"belief_version\": " + std::to_string(belief_version_);
 
   if (!goal.empty()) {
     const auto & formula = goal_override_ ? goal_override_ : task_->goal;
@@ -972,6 +973,12 @@ void EpistemicStateNode::announce_callback(
 
   const auto worlds_before = state_->num_worlds;
   state_ = std::move(restricted);
+
+  // Information that arrived outside the plan. A policy is built against a
+  // belief, and this is the belief changing from somewhere the policy did not
+  // account for, so anything executing one should reconsider it. Counting it
+  // is how that reaches the behavior tree, which cannot see service calls.
+  ++belief_version_;
 
   response->success = true;
   response->num_worlds = state_->num_worlds;

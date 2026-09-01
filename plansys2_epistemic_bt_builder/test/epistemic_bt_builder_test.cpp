@@ -127,6 +127,13 @@ void expect_parses(const std::string & xml)
     }, {BT::InputPort<std::string>("node"), BT::InputPort<std::string>("action"),
         BT::InputPort<std::string>("observed"), BT::OutputPort<std::string>("outcome")});
 
+  // The belief watchdog, which the packaged template puts inside the reactive
+  // sequence so an announcement interrupts the action it arrives during.
+  factory.registerSimpleCondition(
+    "CheckBeliefUnchanged", [](BT::TreeNode &) {
+      return BT::NodeStatus::SUCCESS;
+    }, {BT::InputPort<std::string>("action"), BT::InputPort<std::string>("enabled")});
+
   for (const auto & name : {"WaitAtStartReq", "CheckOverAllReq", "CheckAtEndReq"}) {
     factory.registerSimpleCondition(
       name, [](BT::TreeNode &) {
