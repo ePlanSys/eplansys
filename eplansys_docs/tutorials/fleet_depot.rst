@@ -54,7 +54,7 @@ rule:
      :effects (at-north ?i))
 
 The precondition is what forbids driving from one junction to the other, and it
-is a depot rule rather than a modelling shortcut: it is what makes this a fleet
+is a depot rule, not a modelling shortcut: it is what makes this a fleet
 problem instead of one robot's tour.
 
 Sensing and announcing are unchanged, twice over: ``inspect-north`` and
@@ -168,7 +168,7 @@ announcement that ends each one differs.
 
 The division of labour is the planner's choice, not the domain's. One robot
 walking both routes is impossible here, but ``r1`` and ``r3`` splitting them
-would cost exactly what ``r1`` and ``r2`` splitting them costs; the search has
+would cost the same as ``r1`` and ``r2`` splitting them; the search has
 to consider both and settles on one. Six actions on every path: three per
 route, and never a robot going to see something it has already been told.
 
@@ -240,7 +240,7 @@ Performance
 
 The last row is the interesting one. Between the corridor and the depot the
 search grows by a factor of a hundred and the memory does not move, because
-what is stored is a bisimulation-contracted model rather than an enumeration of
+what is stored is a bisimulation-contracted model, not an enumeration of
 histories.
 
 ``plansys2_tests/test_6`` runs this scenario end to end, twice, with the routes

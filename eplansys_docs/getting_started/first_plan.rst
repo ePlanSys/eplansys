@@ -116,7 +116,7 @@ parameters file:
        epddl_problem: "/abs/path/to/problem.epddl"
 
 Naming the same two files twice is deliberate. The state grounds them itself
-rather than being handed the planner's task, which would make the two nodes
+instead of being handed the planner's task, which would make the two nodes
 depend on each other's start-up order; what has to agree is the problem, and
 that is what the parameters file states.
 
@@ -143,7 +143,7 @@ Sensing from a map
 ------------------
 
 Something has to tell the state what a sensing action saw. When that something
-is an occupancy grid rather than an operator at a terminal, add a sixth node:
+is an occupancy grid instead of an operator at a terminal, add a sixth node:
 
 .. code-block:: bash
 
@@ -154,8 +154,8 @@ is an occupancy grid rather than an operator at a terminal, add a sixth node:
      epistemic_perception:=True
 
 It needs ``epistemic_state:=True``. Perception reports what it reads over that
-node's services, so the pair without it is refused at launch rather than
-started with nowhere to report.
+node's services, so the pair without it is refused at launch instead of
+starting with nowhere to report.
 
 It watches nothing until the parameters file names regions for it. Each region
 is a set of boxes in metres in the map frame, the atom its occupancy decides,
@@ -177,7 +177,7 @@ and how the finding is reported:
 A region bound to a sensing action reports as that action's outcome, which is
 the branch the policy was built around. A region left unbound is announced
 instead, as information that arrived outside the plan. Why each route exists,
-and when a region counts as clear rather than merely unobserved, is in
+and when a region counts as clear and not merely unobserved, is in
 :doc:`../concepts/architecture`.
 
 Requesting a plan
@@ -195,8 +195,8 @@ The solver takes the task from the first of three sources that is available:
 Setting both EPDDL sources and a ``task_file`` grounds the sources and warns:
 two descriptions of one problem drift apart, so name only one.
 
-If none is supplied, the request fails with an explicit message rather than
-attempting a translation from PDDL, which could not express event models or
+If none is supplied, the request fails with an explicit message and does not
+attempt a translation from PDDL, which could not express event models or
 per-agent observability anyway.
 
 .. todo::
@@ -225,8 +225,8 @@ on the ``conditional_plan`` parameter:
    if execution takes that one contingency.
 
 ``reject``
-   A branching solution is refused rather than returned as a plan that is only
-   conditionally valid.
+   A branching solution is refused, since returning it would yield a plan that
+   is only conditionally valid.
 
 A solution that does not branch is returned identically in all three modes, and
 renders as the same flat behavior tree PlanSys2 would have built.
@@ -249,7 +249,7 @@ stating the correspondence:
    }
 
 Duration is in seconds, defaults to 1.0, and must be positive. It is a property
-of the robot's action implementation rather than of the plan, since the
+of the robot's action implementation, not of the plan, since the
 epistemic planner is untimed, and it is what the executor schedules and times
 out against.
 
@@ -261,5 +261,5 @@ neither of which is the PDDL action the fleet's executor drives. The convention
 cannot
 recover the parameter order the PDDL domain declares, so a mapping file should
 be written before dispatching to real actions. An action the map does not cover
-fails the planning request rather than reaching the executor as a name it
+fails the planning request instead of reaching the executor as a name it
 cannot dispatch.

@@ -3,7 +3,7 @@ EPDDL and Grounded Tasks
 
 Classical PlanSys2 takes a PDDL domain and problem. An epistemic domain needs
 more than PDDL can state: event models, per-agent observability, and goals that
-are formulas about knowledge rather than about facts. EPDDL is the language
+are formulas about knowledge, not about facts. EPDDL is the language
 that states them, and the planner in this repository consumes its grounded
 output.
 
@@ -17,7 +17,7 @@ the search runs on, and ``plansys2_epddl_grounder`` is the step between them.
 There is deliberately no translation from the PDDL problem the domain expert
 holds: PDDL cannot express event models or per-agent observability, so no such
 translation exists. A request that supplies no epistemic problem at all fails
-with that explanation rather than with a parse error.
+with that explanation in place of a parse error.
 
 The task arrives by the first of three routes that is available:
 
@@ -90,7 +90,7 @@ it and sourcing the workspace puts it on PATH; the ``plank_command`` parameter
 and the ``PLANK`` environment variable name it explicitly for an installation
 outside the workspace. Nothing else in the tree links against it: the
 epistemic packages build and their tests pass without it, and only the EPDDL front end is
-unavailable, which it reports rather than failing silently.
+unavailable, which it reports explicitly instead of failing silently.
 
 A domain declares the action-type libraries it uses in its
 ``:action-type-libraries`` clause, and plank resolves those names only against
@@ -101,7 +101,7 @@ library must name it.
 
 Two properties of plank's error reporting are worth knowing, because they shape
 what a grounding failure looks like in a ROS log: it prints the offending line
-of the specification, and it terminates on a signal rather than exiting with a
+of the specification, and it terminates on a signal without setting an exit
 status. The grounder therefore judges success by whether the task file was
 written, and passes plank's own output through as the error.
 
@@ -142,7 +142,7 @@ doxastic task would only mean that the goal a policy carries stops parsing the
 moment the frame changes.
 
 Agent and atom names are resolved against the loaded task, so a formula naming
-a symbol the task does not have is an error rather than a fresh symbol: it
+a symbol the task does not have is an error, not a new symbol: it
 means the policy and the state disagree about which problem is being solved.
 
 Checked-in tasks
@@ -161,7 +161,7 @@ Checked-in tasks
      - The two-route depot: four designated worlds, and a policy with a branch
        inside a branch.
    * - ``coin-in-the-box.json``
-     - Sensing domain with a knowledge goal rather than a
+     - Sensing domain with a knowledge goal in place of a
        :math:`\mathit{Kw}` goal.
    * - ``coin-in-the-box-multipointed.json``
      - The hand-derived multi-pointed coin, kept for the parser tests.
@@ -176,8 +176,8 @@ chain. Nothing among them exercises contingent branching, which is precisely
 the path the solver flattens away when ``conditional_plan`` is not ``policy``.
 ``coin-in-the-box-multipointed.json`` was derived by hand to cover that gap,
 from ``coin-in-the-box.json`` with two edits: the initial state designates two
-worlds rather than one, so it is genuinely open whether the coin lies tails;
-and the goal is :math:`\mathit{Kw}_A(\mathit{tails})` rather than
+worlds instead of one, leaving it open whether the coin lies tails; and the
+goal is :math:`\mathit{Kw}_A(\mathit{tails})` in place of
 :math:`K_A(\mathit{tails})`, since knowing that the coin is tails is
 unachievable in the world where it is not.
 

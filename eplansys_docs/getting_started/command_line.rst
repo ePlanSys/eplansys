@@ -55,7 +55,7 @@ Five commands, one per question worth asking of the model:
    * - ``show``
      - The latched state: agents, atoms, how many worlds the model holds and
        how many of them are designated, and the goal with its provenance.
-       This one reads the ``epistemic_state/state`` topic rather than calling
+       This one reads the ``epistemic_state/state`` topic instead of calling
        a service, so it costs the node nothing.
    * - ``check <formula>``
      - Does this hold now? A parse failure and a false answer are reported
@@ -64,8 +64,8 @@ Five commands, one per question worth asking of the model:
    * - ``goal [<formula>]``
      - With no argument, the goal and whether it holds; with one, aim at
        something else. The formula is parsed against the loaded task, so a
-       goal naming an agent or an atom the task does not have is refused here
-       rather than failing later inside a planning request.
+       goal naming an agent or an atom the task does not have is refused
+       here, before it can fail inside a planning request.
    * - ``announce <formula>``
      - Everyone just learned this. The model is restricted to the worlds where
        the formula holds, and the reply says how many survived.
@@ -168,18 +168,18 @@ into the model directly. From the initial two-world model:
    announced: 1 worlds remain, 1 designated
 
 Both robots know it at once, and no one had to drive anywhere. Atoms are
-written bare, as ``blocked`` rather than ``(blocked)``; parentheses introduce
+written bare, as ``blocked`` and not ``(blocked)``; parentheses introduce
 an operator, and ``(blocked)`` is read as one that does not exist.
 
 The two are not interchangeable, and choosing between them is a modelling
-decision rather than a matter of taste: ``apply`` advances the model by an
+decision, not a matter of taste: ``apply`` advances the model by an
 action the planner branched on, and ``announce`` is information that arrived
 outside the plan. That is the same distinction perception draws when it decides
 whether a region reports as a sensing outcome or as an announcement; see
 :doc:`../concepts/architecture`.
 
-An announcement that holds in no world the state considers possible is refused
-rather than emptying the model:
+An announcement that holds in no world the state considers possible is
+refused, since applying it would empty the model:
 
 .. code-block:: console
 
@@ -222,7 +222,7 @@ Textual full-screen application:
 ``q`` or ``Ctrl+C`` quits. Each quadrant scrolls on its own, and the ROS node
 is spun on a thread of its own so a redraw never blocks a subscription.
 
-Textual is vendored inside the package rather than installed with pip, so the
+Textual is vendored inside the package instead of installed with pip, so the
 dashboard runs on a workspace built with nothing but ``rosdep``. Importing
 ``plansys2_tui_cli.tui`` puts the vendored copy on ``sys.path`` and backfills
 the names it expects from ``typing_extensions`` and ``platformdirs``, which
