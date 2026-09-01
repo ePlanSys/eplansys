@@ -153,25 +153,29 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>  <span class="keyword">explicit</span> <a class="code hl_function" href="classplansys2__tests_1_1TestAction.html#a4b2dd8216c4cbe69e7b4ab355f9b212b">TestAction</a>(<span class="keyword">const</span> std::string &amp; action_name, <span class="keywordtype">float</span> increment = 0.4);</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classplansys2_1_1ActionExecutorClient.html#a4b010722b8292df445de8466f76cee81">do_work</a>();</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>  <span class="keyword">static</span> <span class="keywordtype">int</span> node_name_counter_;</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>  <span class="keywordtype">float</span> progress_;</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>  <span class="keywordtype">float</span> increment_;</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>};</div>
-</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>}  <span class="comment">// namespace plansys2_tests</span></div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span></div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno"><a class="line" href="classplansys2__tests_1_1TestAction.html#ad3cc0dff57830b9d8a415e83ac93fbba">   52</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classplansys2__tests_1_1TestAction.html#ad3cc0dff57830b9d8a415e83ac93fbba">set_outcome</a>(<span class="keyword">const</span> std::string &amp; outcome) {outcome_ = outcome;}</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classplansys2_1_1ActionExecutorClient.html#a4b010722b8292df445de8466f76cee81">do_work</a>();</div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="preprocessor">#endif  </span><span class="comment">// PLANSYS2_TESTS__TEST_ACTION_NODE_HPP_</span></div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>  <span class="keyword">static</span> <span class="keywordtype">int</span> node_name_counter_;</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>  <span class="keywordtype">float</span> progress_;</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>  <span class="keywordtype">float</span> increment_;</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>  std::string outcome_;</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>};</div>
+</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>}  <span class="comment">// namespace plansys2_tests</span></div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="preprocessor">#endif  </span><span class="comment">// PLANSYS2_TESTS__TEST_ACTION_NODE_HPP_</span></div>
 <div class="ttc" id="aActionExecutorClient_8hpp_html"><div class="ttname"><a href="ActionExecutorClient_8hpp.html">ActionExecutorClient.hpp</a></div></div>
 <div class="ttc" id="aclassplansys2_1_1ActionExecutorClient_html"><div class="ttname"><a href="classplansys2_1_1ActionExecutorClient.html">plansys2::ActionExecutorClient</a></div><div class="ttdoc">Base class for implementing action executors in the planning system.</div><div class="ttdef"><b>Definition</b> ActionExecutorClient.hpp:47</div></div>
 <div class="ttc" id="aclassplansys2_1_1ActionExecutorClient_html_a4b010722b8292df445de8466f76cee81"><div class="ttname"><a href="classplansys2_1_1ActionExecutorClient.html#a4b010722b8292df445de8466f76cee81">plansys2::ActionExecutorClient::do_work</a></div><div class="ttdeci">virtual void do_work()</div><div class="ttdoc">Main work method that derived classes should implement.</div><div class="ttdef"><b>Definition</b> ActionExecutorClient.hpp:101</div></div>
 <div class="ttc" id="aclassplansys2__tests_1_1TestAction_html_a4b2dd8216c4cbe69e7b4ab355f9b212b"><div class="ttname"><a href="classplansys2__tests_1_1TestAction.html#a4b2dd8216c4cbe69e7b4ab355f9b212b">plansys2_tests::TestAction::TestAction</a></div><div class="ttdeci">TestAction(const std::string &amp;action_name, float increment=0.4)</div><div class="ttdef"><b>Definition</b> test_action_node.cpp:29</div></div>
 <div class="ttc" id="aclassplansys2__tests_1_1TestAction_html_a589a407d854603dc8aff411da5634e31"><div class="ttname"><a href="classplansys2__tests_1_1TestAction.html#a589a407d854603dc8aff411da5634e31">plansys2_tests::TestAction::Ptr</a></div><div class="ttdeci">std::shared_ptr&lt; TestAction &gt; Ptr</div><div class="ttdef"><b>Definition</b> test_action_node.hpp:34</div></div>
 <div class="ttc" id="aclassplansys2__tests_1_1TestAction_html_a7089c17d22145acc7cedf3f4a717ac67"><div class="ttname"><a href="classplansys2__tests_1_1TestAction.html#a7089c17d22145acc7cedf3f4a717ac67">plansys2_tests::TestAction::make_shared</a></div><div class="ttdeci">static Ptr make_shared(const std::string &amp;action, float increment=0.4)</div><div class="ttdef"><b>Definition</b> test_action_node.hpp:35</div></div>
+<div class="ttc" id="aclassplansys2__tests_1_1TestAction_html_ad3cc0dff57830b9d8a415e83ac93fbba"><div class="ttname"><a href="classplansys2__tests_1_1TestAction.html#ad3cc0dff57830b9d8a415e83ac93fbba">plansys2_tests::TestAction::set_outcome</a></div><div class="ttdeci">void set_outcome(const std::string &amp;outcome)</div><div class="ttdoc">What this action reports observing when it finishes.</div><div class="ttdef"><b>Definition</b> test_action_node.hpp:52</div></div>
 <div class="ttc" id="anamespaceplansys2__tests_html"><div class="ttname"><a href="namespaceplansys2__tests.html">plansys2_tests</a></div><div class="ttdef"><b>Definition</b> execution_logger.hpp:29</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

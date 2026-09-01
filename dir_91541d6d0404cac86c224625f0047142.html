@@ -173,6 +173,7 @@ Messages</h1>
 <p><a href="../plansys2_msgs/msg/ActionExecution.msg"><span class="tt">plansys2_msgs::msg::ActionExecution</span></a></p>
 <ul>
 <li>Used to establish a communication protocol between the action executors (implemented as behavior trees) and the action executor clients (user provided lifecyle nodes that perform the actions).</li>
+<li>On <span class="tt">FINISH</span> it also carries <span class="tt">outcome</span>: the result observed by the performer, for actions performed to determine something about the world. The value must name an outcome of the action's model, since an epistemic policy branches on it; <span class="tt">status</span> remains the human-readable log message. Ordinary actions leave it empty, as do all classical performers.</li>
 </ul>
 <p><a href="../plansys2_msgs/msg/ActionExecutionInfo.msg"><span class="tt">plansys2_msgs::msg::ActionExecutionInfo</span></a></p>
 <ul>

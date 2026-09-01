@@ -197,8 +197,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="memdesc:acede23bee4306640bdaeb802ac480a51"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process messages from the actions hub.  <br /></td></tr>
 <tr class="memitem:a4b010722b8292df445de8466f76cee81" id="r_a4b010722b8292df445de8466f76cee81"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#a4b010722b8292df445de8466f76cee81">do_work</a> ()</td></tr>
 <tr class="memdesc:a4b010722b8292df445de8466f76cee81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main work method that derived classes should implement.  <br /></td></tr>
-<tr class="memitem:af5b3c33757c4bb48fde2552c1e4278ca" id="r_af5b3c33757c4bb48fde2552c1e4278ca"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af5b3c33757c4bb48fde2552c1e4278ca">finish</a> (<a class="el" href="classbool.html">bool</a> success, float completion, const std::string &amp;status=&quot;&quot;)</td></tr>
-<tr class="memdesc:af5b3c33757c4bb48fde2552c1e4278ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finish the action execution.  <br /></td></tr>
+<tr class="memitem:a06ce47e6cf126158204a593915e30644" id="r_a06ce47e6cf126158204a593915e30644"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a06ce47e6cf126158204a593915e30644">finish</a> (<a class="el" href="classbool.html">bool</a> success, float completion, const std::string &amp;status=&quot;&quot;, const std::string &amp;outcome=&quot;&quot;)</td></tr>
+<tr class="memdesc:a06ce47e6cf126158204a593915e30644"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finish the action execution.  <br /></td></tr>
 <tr class="memitem:ad2e8d1ad524810f4923f7c73c6913468" id="r_ad2e8d1ad524810f4923f7c73c6913468"><td class="memItemLeft">const std::string&#160;</td><td class="memItemRight"><a class="el" href="#ad2e8d1ad524810f4923f7c73c6913468">get_action_name</a> () const</td></tr>
 <tr class="memdesc:ad2e8d1ad524810f4923f7c73c6913468"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the name of the action this executor manages.  <br /></td></tr>
 <tr class="memitem:aa2d475f94fcc83490f07d833218d8e87" id="r_aa2d475f94fcc83490f07d833218d8e87"><td class="memItemLeft">const std::vector&lt; std::string &gt; &amp;&#160;</td><td class="memItemRight"><a class="el" href="#aa2d475f94fcc83490f07d833218d8e87">get_arguments</a> () const</td></tr>
@@ -378,8 +378,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="af5b3c33757c4bb48fde2552c1e4278ca" name="af5b3c33757c4bb48fde2552c1e4278ca"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5b3c33757c4bb48fde2552c1e4278ca">&#9670;&#160;</a></span>finish()</h2>
+<a id="a06ce47e6cf126158204a593915e30644" name="a06ce47e6cf126158204a593915e30644"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06ce47e6cf126158204a593915e30644">&#9670;&#160;</a></span>finish()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -400,7 +400,12 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::string &amp;</td>          <td class="paramname"><span class="paramname"><em>status</em></span><span class="paramdefsep"> = </span><span class="paramdefval">&quot;&quot;</span>&#160;)</td>
+          <td class="paramtype">const std::string &amp;</td>          <td class="paramname"><span class="paramname"><em>status</em></span><span class="paramdefsep"> = </span><span class="paramdefval">&quot;&quot;</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;</td>          <td class="paramname"><span class="paramname"><em>outcome</em></span><span class="paramdefsep"> = </span><span class="paramdefval">&quot;&quot;</span>&#160;)</td>
         </tr>
       </table>
   </td>
@@ -417,6 +422,7 @@ Protected Attributes</h2></td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">success</td><td>Whether the action was successful. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">completion</td><td>Final completion percentage (typically 1.0 for success). </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">status</td><td>Optional status message describing the final state. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">outcome</td><td>What the performer observed, for an action whose point was to find something out. It has to name an outcome the action's model defines, since that is what a policy branches on; <span class="tt">status</span> is where a message for a human reading the log goes. Empty for an ordinary action, which is what every classical performer leaves it at. </td></tr>
   </table>
   </dd>
 </dl>

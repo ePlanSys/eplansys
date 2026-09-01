@@ -210,7 +210,8 @@ The mission</h1>
 <p>The policy AO* returns has twelve nodes and a switch under a switch. Each run here follows one path through it, and the two runs share nothing after the first observation.</p>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md67"></a>
 What stands in for a sensor</h1>
-<p>As in test_5, the outcome of a sensing action has to come from whoever did the sensing, because the model designates more than one world and cannot choose between them. The observations are reported per action — the depot has two things to find out and they need not agree, which is exactly what a single mission-wide observation could not express. </p>
+<p>As in test_5, the outcome of a sensing action has to come from whoever did the sensing, because the model designates more than one world and cannot choose between them. The observations are reported per action — the depot has two things to find out and they need not agree, which is exactly what a single mission-wide observation could not express.</p>
+<p>Where test_5 has its performers report their results on finishing, this test uses the second route: <span class="tt">../behavior_trees/observing_action_bt.xml</span> binds <span class="tt">ApplyEpistemicUpdate</span>'s <span class="tt">observed</span> port to a topic, and <span class="tt">ObservedOutcome</span> (in this package's node library) reads the entry matching its own action. This is the approach required when the observation originates elsewhere than the acting performer, such as an independently operating perception node. Covering one route in each test keeps both supported. </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

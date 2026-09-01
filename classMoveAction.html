@@ -181,6 +181,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a26f6915d7f6c74f8cf2e766e352ef4a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Activates the node.  <br /></td></tr>
 <tr class="memitem:afc8a8fa2ed2c7efe041cde46ce4c3c9b" id="r_afc8a8fa2ed2c7efe041cde46ce4c3c9b"><td class="memItemLeft">CallbackReturnT&#160;</td><td class="memItemRight"><a class="el" href="#afc8a8fa2ed2c7efe041cde46ce4c3c9b">on_deactivate</a> (const rclcpp_lifecycle::State &amp;state)</td></tr>
 <tr class="memdesc:afc8a8fa2ed2c7efe041cde46ce4c3c9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deactivates the node.  <br /></td></tr>
+<tr class="memitem:ad3cc0dff57830b9d8a415e83ac93fbba" id="r_ad3cc0dff57830b9d8a415e83ac93fbba"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ad3cc0dff57830b9d8a415e83ac93fbba">set_outcome</a> (const std::string &amp;outcome)</td></tr>
+<tr class="memdesc:ad3cc0dff57830b9d8a415e83ac93fbba"><td class="mdescLeft">&#160;</td><td class="mdescRight">What this action reports observing when it finishes.  <br /></td></tr>
 <tr class="memitem:a0f72a41866e3f6288a8b9ec1bb22fe30" id="r_a0f72a41866e3f6288a8b9ec1bb22fe30"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0f72a41866e3f6288a8b9ec1bb22fe30">set_runtime</a> (double runtime)</td></tr>
 <tr class="inherit_header pub_methods_classplansys2_1_1ActionExecutorClient"><td colspan="2">Public Member Functions inherited from <a class="el" href="classplansys2_1_1ActionExecutorClient.html">ActionExecutorClient</a></td></tr>
 <tr class="memitem:a7be06e85b246b70d43440d62332fd6ba pub_methods_classplansys2_1_1ActionExecutorClient" id="r_a7be06e85b246b70d43440d62332fd6ba"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="classplansys2_1_1ActionExecutorClient.html#a7be06e85b246b70d43440d62332fd6ba">ActionExecutorClient</a> (const std::string &amp;node_name)</td></tr>
@@ -214,8 +216,8 @@ Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_methods_classplansys2_1_1ActionExecutorClient"><td colspan="2">Protected Member Functions inherited from <a class="el" href="classplansys2_1_1ActionExecutorClient.html">ActionExecutorClient</a></td></tr>
 <tr class="memitem:acede23bee4306640bdaeb802ac480a51 pro_methods_classplansys2_1_1ActionExecutorClient" id="r_acede23bee4306640bdaeb802ac480a51"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classplansys2_1_1ActionExecutorClient.html#acede23bee4306640bdaeb802ac480a51">action_hub_callback</a> (const plansys2_msgs::msg::ActionExecution::SharedPtr msg)</td></tr>
 <tr class="memdesc:acede23bee4306640bdaeb802ac480a51 pro_methods_classplansys2_1_1ActionExecutorClient"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process messages from the actions hub.  <br /></td></tr>
-<tr class="memitem:af5b3c33757c4bb48fde2552c1e4278ca pro_methods_classplansys2_1_1ActionExecutorClient" id="r_af5b3c33757c4bb48fde2552c1e4278ca"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classplansys2_1_1ActionExecutorClient.html#af5b3c33757c4bb48fde2552c1e4278ca">finish</a> (<a class="el" href="classbool.html">bool</a> success, float completion, const std::string &amp;status=&quot;&quot;)</td></tr>
-<tr class="memdesc:af5b3c33757c4bb48fde2552c1e4278ca pro_methods_classplansys2_1_1ActionExecutorClient"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finish the action execution.  <br /></td></tr>
+<tr class="memitem:a06ce47e6cf126158204a593915e30644 pro_methods_classplansys2_1_1ActionExecutorClient" id="r_a06ce47e6cf126158204a593915e30644"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classplansys2_1_1ActionExecutorClient.html#a06ce47e6cf126158204a593915e30644">finish</a> (<a class="el" href="classbool.html">bool</a> success, float completion, const std::string &amp;status=&quot;&quot;, const std::string &amp;outcome=&quot;&quot;)</td></tr>
+<tr class="memdesc:a06ce47e6cf126158204a593915e30644 pro_methods_classplansys2_1_1ActionExecutorClient"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finish the action execution.  <br /></td></tr>
 <tr class="memitem:ad2e8d1ad524810f4923f7c73c6913468 pro_methods_classplansys2_1_1ActionExecutorClient" id="r_ad2e8d1ad524810f4923f7c73c6913468"><td class="memItemLeft">const std::string&#160;</td><td class="memItemRight"><a class="el" href="classplansys2_1_1ActionExecutorClient.html#ad2e8d1ad524810f4923f7c73c6913468">get_action_name</a> () const</td></tr>
 <tr class="memdesc:ad2e8d1ad524810f4923f7c73c6913468 pro_methods_classplansys2_1_1ActionExecutorClient"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the name of the action this executor manages.  <br /></td></tr>
 <tr class="memitem:aa2d475f94fcc83490f07d833218d8e87 pro_methods_classplansys2_1_1ActionExecutorClient" id="r_aa2d475f94fcc83490f07d833218d8e87"><td class="memItemLeft">const std::vector&lt; std::string &gt; &amp;&#160;</td><td class="memItemRight"><a class="el" href="classplansys2_1_1ActionExecutorClient.html#aa2d475f94fcc83490f07d833218d8e87">get_arguments</a> () const</td></tr>
@@ -588,6 +590,26 @@ Additional Inherited Members</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>SUCCESS if deactivation is successful, FAILURE otherwise. </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classplansys2_1_1ActionExecutorClient.html#afc8a8fa2ed2c7efe041cde46ce4c3c9b">ActionExecutorClient</a>.</p>
+
+</div>
+</div>
+<a id="ad3cc0dff57830b9d8a415e83ac93fbba" name="ad3cc0dff57830b9d8a415e83ac93fbba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3cc0dff57830b9d8a415e83ac93fbba">&#9670;&#160;</a></span>set_outcome()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void set_outcome </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;</td>          <td class="paramname"><span class="paramname"><em>outcome</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>What this action reports observing when it finishes. </p>
+<p>Empty, the default, is an action that observed nothing &mdash; which is what a move is. </p>
 
 </div>
 </div>
