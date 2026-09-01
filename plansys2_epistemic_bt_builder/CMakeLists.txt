@@ -11,6 +11,7 @@ find_package(pluginlib REQUIRED)
 find_package(plansys2_msgs REQUIRED)
 find_package(plansys2_executor REQUIRED)
 find_package(plansys2_epistemic_executor REQUIRED)
+find_package(plansys2_pddl_parser REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED src/epistemic_bt_builder.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -20,6 +21,7 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC
   plansys2_executor::plansys2_executor
   plansys2_epistemic_executor::plansys2_epistemic_executor_policy
+  plansys2_pddl_parser::plansys2_pddl_parser
   ${plansys2_msgs_TARGETS}
   pluginlib::pluginlib
   rclcpp::rclcpp

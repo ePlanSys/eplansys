@@ -130,8 +130,11 @@ Mission run_mission(const std::string & observation)
     rclcpp::Parameter(
       "bt_node_plugins",
       std::vector<std::string>{EPISTEMIC_BT_NODES_LIBRARY, OBSERVATION_BT_NODES_LIBRARY}));
-  // The packaged template leaves `observed` unbound, because what a robot saw
-  // is domain-specific; this one binds it to the topic the performers report on.
+  // Test 5 runs on the packaged template, whose `observed` port is fed by the
+  // performer that acted. This one takes the other route on purpose: an
+  // observation arriving from somewhere else entirely, on a topic, bound into
+  // the tree by a template of the deployment's own. Both have to keep working
+  // --- a robot that acts is not always the one that sees.
   executor_node->set_parameter(
     rclcpp::Parameter(
       "default_action_bt_xml_filename",

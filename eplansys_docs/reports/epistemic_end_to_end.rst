@@ -51,12 +51,21 @@ already designates one world. Both fleet fixtures designate several, which
 is what makes them worth testing with, and what means the observation has to
 come from whoever did the sensing.
 
-``ApplyEpistemicUpdate`` takes it on an ``observed`` port that the packaged
-template leaves unbound, because what a robot saw is domain-specific and
-PlanSys2 carries nothing back from a performer. The tests bind it as a
-deployment would: an action template with the port wired to ``ObservedOutcome``,
-a node that reads ``action=outcome`` entries from a latched topic and reports
-the one matching its own action.
+The observation reaches the tree by one of two routes, and the tests cover one
+each.
+
+``ActionExecution`` carries an ``outcome`` alongside its status, so a performer
+reports what it saw in the same message that reports completion. The packaged
+action template binds ``ExecuteAction``'s outcome port to
+``ApplyEpistemicUpdate``'s ``observed``. ``test_5`` uses this route, running on
+the executor's defaults, with the fake ``inspect_corridor`` performer reporting
+the corridor's state.
+
+``test_6`` binds the port explicitly, the approach required when the
+observation originates elsewhere than the acting performer. It supplies its own
+action template with the port wired to ``ObservedOutcome``, a node that reads
+``action=outcome`` entries from a latched topic and reports the entry matching
+its own action.
 
 What the model then does is the point of the whole stack. From the depot run
 with north blocked and south clear::

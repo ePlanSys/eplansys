@@ -55,3 +55,11 @@ sensing, because the model designates more than one world and cannot choose
 between them. The observations are reported per action — the depot has two
 things to find out and they need not agree, which is exactly what a single
 mission-wide observation could not express.
+
+Where test_5 has its performers report their results on finishing, this test
+uses the second route: `../behavior_trees/observing_action_bt.xml` binds
+`ApplyEpistemicUpdate`'s `observed` port to a topic, and `ObservedOutcome` (in
+this package's node library) reads the entry matching its own action. This is
+the approach required when the observation originates elsewhere than the acting
+performer, such as an independently operating perception node. Covering one
+route in each test keeps both supported.

@@ -53,14 +53,19 @@ which is the thing the epistemic state exists to avoid.
 ## What stands in for a sensor
 
 The epistemic state can name the outcome of a sensing action only when its
-model already designates a single world. Here it designates two, so the
-observation has to come from whoever did the sensing —
-`ApplyEpistemicUpdate` takes it on its `observed` port, which a
-domain-specific tree binds to whatever its performers report.
+model designates a single world. Here it designates two, so the observation
+must come from the agent that performed the sensing: the performer running
+`inspect_corridor`.
 
-`../behavior_trees/observing_action_bt.xml` is this test's version of such a
-tree, and `ObservedOutcome` (in this package's node library) is its version of
-a performer that reports: it reads the corridor's state from a topic the test
-publishes on, once, before the tree exists. Setting it to `e-inspect-clear` or
-`e-inspect-blocked` is the only difference between the two runs, and the two
-runs must execute different actions.
+It reports the result the way any performer reports anything, on finishing, in
+the `outcome` field of `ActionExecution` alongside its status. `ExecuteAction`
+writes it to the blackboard and the packaged action template passes it to
+`ApplyEpistemicUpdate`, so this mission runs on the executor's defaults with no
+action template and no additional node library.
+
+`TestAction::set_outcome` stands in for a sensor reading. Setting it to
+`e-inspect-clear` or `e-inspect-blocked` is the only difference between the two
+runs, which must execute different actions.
+
+Test 6 binds `observed` explicitly, the approach required when the observation
+originates elsewhere than the acting performer.

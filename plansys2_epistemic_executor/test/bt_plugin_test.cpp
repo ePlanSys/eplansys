@@ -42,12 +42,18 @@ void register_plansys2_stubs(BT::BehaviorTreeFactory & factory)
         return BT::NodeStatus::SUCCESS;
       }, {BT::InputPort<std::string>("action")});
   }
-  for (const auto & name : {"ApplyAtStartEffect", "ExecuteAction", "ApplyAtEndEffect"}) {
+  for (const auto & name : {"ApplyAtStartEffect", "ApplyAtEndEffect"}) {
     factory.registerSimpleAction(
       name, [](BT::TreeNode &) {
         return BT::NodeStatus::SUCCESS;
       }, {BT::InputPort<std::string>("action")});
   }
+  // ExecuteAction apart from the others: it carries what the performer
+  // observed out on a port, which the template binds to the update's input.
+  factory.registerSimpleAction(
+    "ExecuteAction", [](BT::TreeNode &) {
+      return BT::NodeStatus::SUCCESS;
+    }, {BT::InputPort<std::string>("action"), BT::OutputPort<std::string>("outcome")});
 }
 
 plansys2_msgs::msg::Plan branching_policy()

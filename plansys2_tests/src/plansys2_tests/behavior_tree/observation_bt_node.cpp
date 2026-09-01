@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// The piece a real deployment has to supply and a test has to stand in for:
-// what the robot actually observed.
+// An observation arriving from somewhere other than the performer that acted.
 //
 // ApplyEpistemicUpdate takes the outcome on its `observed` port, and the
 // epistemic state needs it whenever the model designates more than one world —
 // which is exactly the interesting case, since a model that already knows what
-// happened had nothing to sense. Nothing in PlanSys2 carries an observation
-// back from a performer, so the binding is left to a domain-specific tree; this
-// node is the test's version of one, reading the outcome from a topic the fake
-// performers publish on.
+// happened had nothing to sense. Ordinarily the performer reports it when it
+// finishes and the packaged template carries it across; a deployment whose
+// observation comes from elsewhere binds the port itself instead. This node is
+// the test's version of that second route, reading the outcome from a topic.
 //
 // The topic carries what the world turns out to be, as `action=outcome` pairs
 // separated by ';' — one per sensing action, because a mission with two

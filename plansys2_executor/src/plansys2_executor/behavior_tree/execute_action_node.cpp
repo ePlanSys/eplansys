@@ -54,6 +54,13 @@ ExecuteAction::tick()
 
   auto retval = (*action_map_)[action].action_executor->tick(node_->now());
 
+  // Written on every tick rather than only on the last one: the executor holds
+  // it from the moment the performer reports it, and a caller that reads the
+  // port before the action finishes should see the same empty string the
+  // performer has so far reported, not a stale entry from whoever wrote the
+  // key before.
+  setOutput("outcome", (*action_map_)[action].action_executor->get_outcome());
+
   if (retval == BT::NodeStatus::FAILURE) {
     (*action_map_)[action].execution_error_info = "Error executing the action";
 

@@ -103,16 +103,23 @@ public:
     cycles_++;
 
     if (counter_++ > 3) {
-      finish(true, 1.0, "completed");
+      finish(true, 1.0, "completed", outcome_);
       executions_++;
     } else {
       send_feedback(counter_ * 0.0, "running");
     }
   }
 
+  /// What this action reports observing when it finishes. Empty, the default,
+  /// is an action that observed nothing --- which is what a move is.
+  void set_outcome(const std::string & outcome) {outcome_ = outcome;}
+
   int counter_;
   int executions_;
   int cycles_;
+
+private:
+  std::string outcome_;
 };
 
 class ROS2Environment : public ::testing::Environment
@@ -241,6 +248,10 @@ TEST(action_execution, protocol_basic)
     ASSERT_EQ(action_execution_msgs[6].type, plansys2_msgs::msg::ActionExecution::FEEDBACK);
     ASSERT_EQ(action_execution_msgs[7].type, plansys2_msgs::msg::ActionExecution::FINISH);
 
+    // A move observes nothing, and says so by leaving the field empty. Every
+    // classical performer is in this position, and none of them had to change.
+    ASSERT_EQ(action_execution_msgs[7].outcome, "");
+    ASSERT_EQ(move_action_executor->get_outcome(), "");
 
     ASSERT_EQ(
       move_action_executor->get_internal_status(),
@@ -248,6 +259,89 @@ TEST(action_execution, protocol_basic)
     ASSERT_EQ(
       move_action_node->get_internal_status().state,
       plansys2_msgs::msg::ActionPerformerStatus::READY);
+
+    finish = true;
+    t.join();
+  }
+  plansys2::drain_ros(200ms);
+}
+
+// What a performer saw reaches the executor that requested the action.
+//
+// The protocol carried whether the action succeeded and a message about it,
+// and nothing about what it revealed --- which for an action whose whole point
+// is to find something out is the part that matters. `outcome` carries it, and
+// this is the path it takes: named at `finish`, published on FINISH, and held
+// by the ActionExecutor for whoever ticks it to read.
+TEST(action_execution, protocol_reports_an_outcome)
+{
+  {
+    auto test_node = rclcpp::Node::make_shared("test_node");
+    auto test_lf_node = rclcpp_lifecycle::LifecycleNode::make_shared("test_lf_node");
+    auto move_action_node = std::make_shared<MoveAction>("move_action");
+    auto move_action_executor = plansys2::ActionExecutor::make_shared(
+      "(move r2d2 steering_wheels_zone assembly_zone)", test_lf_node);
+
+    move_action_node->set_parameter({"action_name", "move"});
+    move_action_node->set_parameter({"rate", 1.0});
+    move_action_node->set_outcome("e-arrived-blocked");
+
+    plansys2::SpinExecutor exe;
+
+    exe.add_node(test_node);
+    exe.add_node(test_lf_node->get_node_base_interface());
+    exe.add_node(move_action_node->get_node_base_interface());
+
+    std::vector<plansys2_msgs::msg::ActionExecution> action_execution_msgs;
+
+    auto action_hub_sub = test_node->create_subscription<plansys2_msgs::msg::ActionExecution>(
+      "/actions_hub", rclcpp::QoS(100).reliable(),
+      [&action_execution_msgs](const plansys2_msgs::msg::ActionExecution::SharedPtr msg) {
+        action_execution_msgs.push_back(*msg);
+      });
+
+    bool finish = false;
+    std::thread t([&]() {
+        while (!finish) {exe.spin_some();}
+      });
+
+    test_lf_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
+    move_action_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
+
+    {
+      rclcpp::Rate rate(10);
+      auto start = test_node->now();
+      while ((test_node->now() - start).seconds() < 0.5) {
+        rate.sleep();
+      }
+    }
+
+    // Nothing has been observed before the action runs, and the executor says
+    // so rather than reporting an outcome it has no basis for.
+    ASSERT_EQ(move_action_executor->get_outcome(), "");
+
+    {
+      rclcpp::Rate rate(10);
+      auto start = test_node->now();
+      while ((test_node->now() - start).seconds() < 5.5) {
+        move_action_executor->tick(test_node->now());
+        rate.sleep();
+      }
+    }
+
+    ASSERT_EQ(
+      move_action_executor->get_internal_status(),
+      plansys2::ActionExecutor::Status::SUCCESS);
+
+    ASSERT_FALSE(action_execution_msgs.empty());
+    const auto & last = action_execution_msgs.back();
+    ASSERT_EQ(last.type, plansys2_msgs::msg::ActionExecution::FINISH);
+    ASSERT_EQ(last.outcome, "e-arrived-blocked");
+    // Kept apart from the status message, which is for a human reading the log:
+    // this one is a token the system acts on.
+    ASSERT_EQ(last.status, "completed");
+
+    ASSERT_EQ(move_action_executor->get_outcome(), "e-arrived-blocked");
 
     finish = true;
     t.join();

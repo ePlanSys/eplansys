@@ -47,6 +47,12 @@ namespace plansys2
  *     worlds out. `ApplyEpistemicUpdate` performs the DEL product update, so
  *     that the guard on the next action sees the state the action produced.
  *
+ *     What the robot saw reaches it from the performer: `finish` carries an
+ *     outcome alongside its status, and `ExecuteAction` writes it to the
+ *     blackboard entry this template binds. A performer that reports nothing
+ *     leaves the state to determine the outcome itself, which it can whenever
+ *     its model designates a single world.
+ *
  *  3. A branch on what was observed. This is the part with no counterpart in
  *     PlanSys2, whose plans commit to one future. `EpistemicSwitch` reads the
  *     outcome the update reported and runs the continuation planned for it —
@@ -61,8 +67,9 @@ namespace plansys2
  *
  *     Sequence "node_0"
  *       CheckKnowledge node="0"
- *       ...the PlanSys2 action subtree...
- *       ApplyEpistemicUpdate node="0" outcome="{outcome_0}"
+ *       ...the PlanSys2 action subtree, with ExecuteAction's outcome port
+ *          bound to {observed_0}...
+ *       ApplyEpistemicUpdate node="0" observed="{observed_0}" outcome="{outcome_0}"
  *       EpistemicSwitch node="0" outcome="{outcome_0}"
  *         Sequence "node_1"   <- the continuation for the first outcome
  *         AlwaysSuccess       <- an outcome that completes the policy

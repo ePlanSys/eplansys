@@ -209,14 +209,16 @@ performs, and a branch on what was observed.
 
    Sequence "node_0 (peek A)"
      CheckKnowledge         node="0"
-     WaitAtStartReq         action="(peek A):0"    ┐
-     ApplyAtStartEffect     action="(peek A):0"    │
-     ReactiveSequence                              │ PlanSys2, untouched
-       CheckOverAllReq      action="(peek A):0"    │
-       ExecuteAction        action="(peek A):0"    │
-     CheckAtEndReq          action="(peek A):0"    │
-     ApplyAtEndEffect       action="(peek A):0"    ┘
-     ApplyEpistemicUpdate   node="0" outcome="{epistemic_outcome_0}"
+     WaitAtStartReq         action="(peek A):0"           ┐
+     ApplyAtStartEffect     action="(peek A):0"           │
+     ReactiveSequence                                     │ PlanSys2's own
+       CheckOverAllReq      action="(peek A):0"           │ nodes, driving the
+       ExecuteAction        action="(peek A):0"           │ same performers
+                            outcome="{epistemic_observed_0}"
+     CheckAtEndReq          action="(peek A):0"           │
+     ApplyAtEndEffect       action="(peek A):0"           ┘
+     ApplyEpistemicUpdate   node="0" observed="{epistemic_observed_0}"
+                                     outcome="{epistemic_outcome_0}"
      EpistemicSwitch        node="0" outcome="{epistemic_outcome_0}"
                                      outcomes="e_tails;e_heads"
        Sequence "node_1 (shout-tails A)"
@@ -225,6 +227,44 @@ performs, and a branch on what was observed.
 
 A node with a single continuation renders without a switch, so a classical plan
 comes out as the same flat sequence PlanSys2 would have built.
+
+Reporting an observation
+------------------------
+
+Which outcome a sensing action produced is a question about the world, and the
+epistemic state can answer it alone only when its model designates a single
+world. With several designated the model is undetermined, and the answer must
+come from the agent that performed the sensing.
+
+The observation travels on the protocol that carries every other execution
+report. ``plansys2_msgs/ActionExecution`` defines an ``outcome`` field
+alongside ``status``, meaningful on ``FINISH``, which a performer sets when it
+finishes:
+
+.. code-block:: cpp
+
+   // in the performer's do_work, once the sensor has answered
+   finish(true, 1.0, "Corridor inspected", clear ? "e-inspect-clear"
+                                                 : "e-inspect-blocked");
+
+The token must name an event of the action's model, since the policy branches
+on it. ``status`` remains the human-readable message for the log. An ordinary
+action leaves the field empty, which is the default for every classical
+performer and the reason none of them required changes.
+
+The value then reaches the tree without further configuration.
+``ExecuteAction`` provides an ``outcome`` output port, the packaged action
+template binds it to ``ApplyEpistemicUpdate``'s ``observed`` input, and each
+policy node receives its own blackboard entry, so two sensing actions on
+different branches cannot overwrite each other.
+``plansys2_msgs/ActionExecutionInfo`` also carries the field, allowing a
+monitor subscribed to ``action_execution_info`` to observe which branch a
+policy took without subscribing to the actions hub.
+
+An observation originating elsewhere, such as a perception node operating
+independently of the acting robot, is supplied by binding ``observed`` in a
+deployment-specific action template. Both routes are covered by the
+integration tests; see :doc:`../reports/epistemic_end_to_end`.
 
 Epistemic nodes
 ---------------
@@ -246,10 +286,12 @@ Four node types are registered by the plugin library
    everyone listening, and an observation that finds nothing still rules worlds
    out. This performs the DEL product update, so the next action's guard is
    checked against the state this action produced. Input ports: ``node``,
-   ``action``, and ``observed``, the outcome the performer observed, which a
-   domain-specific tree binds to whatever its performer reports and which is
-   left empty to let the state decide. Output port: ``outcome``, the outcome
-   that occurred, which the following ``EpistemicSwitch`` reads.
+   ``action``, and ``observed``, the outcome the performer observed, which the
+   packaged action template binds to ``ExecuteAction``'s outcome port and which
+   is left empty to let the state decide. Output port: ``outcome``, the outcome
+   that occurred, which the following ``EpistemicSwitch`` reads. The two are
+   separate blackboard entries: ``observed`` holds the performer's report and
+   ``outcome`` holds the state's reading of it.
 
 ``EpistemicSwitch``
    A control node with no PlanSys2 counterpart. It reads the outcome the update

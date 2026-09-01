@@ -189,6 +189,19 @@ public:
   float get_completion() const {return completion_;}
 
   /**
+   * @brief Get what the performer observed while doing the action.
+   *
+   * Empty until the performer reports one on FINISH, and empty afterwards for
+   * every action that observed nothing --- which is every classical one. It is
+   * the answer to what a sensing action was run to find out, and the thing a
+   * policy branches on, so it is kept apart from the feedback message rather
+   * than parsed back out of it.
+   *
+   * @return std::string The outcome the performer reported, empty for none.
+   */
+  std::string get_outcome() const {return outcome_;}
+
+  /**
    * @brief Clean up resources used by the executor.
    */
   void clean_up();
@@ -273,6 +286,7 @@ protected:
 
   std::string feedback_;
   float completion_;
+  std::string outcome_;
 
   rclcpp_lifecycle::LifecyclePublisher<plansys2_msgs::msg::ActionExecution>::SharedPtr
     action_hub_pub_;

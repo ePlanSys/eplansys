@@ -276,10 +276,16 @@ class PlanMonitorProcessor:
                 pct = int(ainfo.completion * 100)
                 filled = int(bar_len * ainfo.completion)
                 bar = '█' * filled + '░' * (bar_len - filled)
+                # What the performer observed, for an action that observed
+                # anything. It is what a policy branches on, so a monitor that
+                # showed only the status would leave the reader unable to say
+                # why execution went one way rather than the other.
+                observed = getattr(ainfo, 'outcome', '')
+                seen = f'  [cyan]→ {observed}[/cyan]' if observed else ''
                 lines.append(
                     f'[{color}]{status_label:12}[/{color}] '
                     f'[{bar}] {pct:3d}%  '
-                    f'[bold]{action_str}[/bold]'
+                    f'[bold]{action_str}[/bold]{seen}'
                 )
             else:
                 empty_bar = '░' * bar_len

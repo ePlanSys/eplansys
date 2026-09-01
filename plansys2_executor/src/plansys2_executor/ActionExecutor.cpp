@@ -102,6 +102,7 @@ ActionExecutor::action_hub_callback(plansys2_msgs::msg::ActionExecution::SharedP
       {
         feedback_ = last_msg_->status;
         completion_ = last_msg_->completion;
+        outcome_ = last_msg_->outcome;
         state_time_ = node_->now();
 
         if (last_msg_->success) {
@@ -118,6 +119,10 @@ ActionExecutor::action_hub_callback(plansys2_msgs::msg::ActionExecution::SharedP
           state_time_ = node_->now();
           completion_ = 0.0;
           feedback_ = "";
+          // Nothing was observed, because nothing was done: keeping an outcome
+          // from the attempt that never started would have the next performer's
+          // silence read as the first one's report.
+          outcome_ = "";
           request_for_performers();
           waiting_timer_ = node_->create_wall_timer(
             1s, std::bind(&ActionExecutor::wait_timeout, this));

@@ -305,12 +305,26 @@ vocabulary it does not speak:
    ros2 run plansys2_epistemic_executor epistemic_state_node --ros-args \
      -p task_file:=<repo>/plansys2_epistemic_planner/test/tasks/robot-fleet.json
 
-**The observation.** ``ApplyEpistemicUpdate`` takes the sensed outcome on an
-``observed`` port that the packaged action template leaves unbound, because
-what a robot saw is domain-specific and PlanSys2 carries nothing back from an
-action performer. With two designated worlds the epistemic state cannot supply
-it either, since it genuinely does not know, so the deployment has to bind that
-port to whatever its ``inspect_corridor`` performer reports. See
+**The observation.** With two designated worlds the epistemic state cannot
+determine which outcome the sensing produced, so the answer must come from the
+robot that performed it. The ``inspect_corridor`` performer supplies it on
+finishing, in the ``outcome`` field of ``ActionExecution``:
+
+.. code-block:: cpp
+
+   // in the performer's do_work, once the sensor has answered
+   finish(true, 1.0, "Corridor inspected", clear ? "e-inspect-clear"
+                                                 : "e-inspect-blocked");
+
+The token must name an outcome of the action's event model, since the policy
+branches on it. ``status`` remains the human-readable message. The packaged
+action template then carries the value across without further configuration:
+``ExecuteAction`` writes it to the blackboard and ``ApplyEpistemicUpdate``
+reads it.
+
+An observation originating elsewhere, such as an independently operating
+perception node, is supplied by binding ``ApplyEpistemicUpdate``'s ``observed``
+port in your own action template. See
 :doc:`../reports/epistemic_end_to_end` for a worked binding.
 
 Performance

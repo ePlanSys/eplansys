@@ -237,7 +237,8 @@ ActionExecutorClient::send_feedback(float completion, const std::string & status
 }
 
 void
-ActionExecutorClient::finish(bool success, float completion, const std::string & status)
+ActionExecutorClient::finish(
+  bool success, float completion, const std::string & status, const std::string & outcome)
 {
   if (get_current_state().id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
     trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE);
@@ -251,6 +252,7 @@ ActionExecutorClient::finish(bool success, float completion, const std::string &
   msg_resp.completion = completion;
   msg_resp.status = status;
   msg_resp.success = success;
+  msg_resp.outcome = outcome;
 
   action_hub_pub_->publish(msg_resp);
 }

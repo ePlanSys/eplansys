@@ -40,7 +40,7 @@ TestAction::do_work()
     progress_ += increment_;
     send_feedback(progress_, "Action running");
   } else {
-    finish(true, 1.0, "Action completed");
+    finish(true, 1.0, "Action completed", outcome_);
     progress_ = 0.0;
   }
 }

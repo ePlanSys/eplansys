@@ -48,8 +48,6 @@
 #include "plansys2_executor/ExecutorClient.hpp"
 #include "plansys2_epistemic_executor/EpistemicStateNode.hpp"
 
-#include "std_msgs/msg/string.hpp"
-
 #include "plansys2_tests/test_action_node.hpp"
 #include "plansys2_tests/execution_logger.hpp"
 
@@ -76,11 +74,12 @@ struct Mission
 
 /// Run the corridor mission with the corridor in a given state.
 ///
-/// @param observation What the corridor turns out to be, as the `action=outcome`
-///   entry the performers report — the ground truth the model cannot supply,
-///   since the task designates both a blocked and a clear world and neither is
-///   the model's to choose.
-Mission run_mission(const std::string & observation)
+/// @param observed What the inspecting robot turns out to see, named as an
+///   outcome of the inspect action's model. This is the ground truth the model
+///   cannot supply, since the task designates both a blocked and a clear world
+///   and neither is the model's to choose; the performer reports it on finish,
+///   the way a real one would report what its sensor returned.
+Mission run_mission(const std::string & observed)
 {
   Mission mission;
 
@@ -101,6 +100,9 @@ Mission run_mission(const std::string & observation)
   // something the hardware side has to be aware of.
   auto goto_junction_node = plansys2_tests::TestAction::make_shared("goto_junction");
   auto inspect_node = plansys2_tests::TestAction::make_shared("inspect_corridor");
+  // The only performer with anything to report: the others act rather than
+  // look, and leave the outcome empty as any classical performer does.
+  inspect_node->set_outcome(observed);
   auto report_clear_node = plansys2_tests::TestAction::make_shared("report_clear");
   auto report_blocked_node = plansys2_tests::TestAction::make_shared("report_blocked");
 
@@ -129,14 +131,11 @@ Mission run_mission(const std::string & observation)
     rclcpp::Parameter("bt_builder_plugin", "EpistemicBTBuilder"));
   executor_node->set_parameter(
     rclcpp::Parameter(
-      "bt_node_plugins",
-      std::vector<std::string>{EPISTEMIC_BT_NODES_LIBRARY, OBSERVATION_BT_NODES_LIBRARY}));
-  // The packaged template leaves `observed` unbound, because what a robot saw
-  // is domain-specific; this one binds it to the topic the performers report on.
-  executor_node->set_parameter(
-    rclcpp::Parameter(
-      "default_action_bt_xml_filename",
-      pkgpath + "/behavior_trees/observing_action_bt.xml"));
+      "bt_node_plugins", std::vector<std::string>{EPISTEMIC_BT_NODES_LIBRARY}));
+  // No action template of its own. The packaged one already carries the
+  // observation from the performer to the epistemic update, which is the point
+  // of running this mission on the defaults: a sensing action needs no wiring
+  // beyond a performer that says what it saw.
 
   plansys2::SpinExecutor exe;
 
@@ -198,15 +197,6 @@ Mission run_mission(const std::string & observation)
     }
   }
 
-  // What the corridor turns out to be. Published before the tree exists and
-  // kept available to whoever subscribes afterwards, which is how a sensor
-  // reading that predates the behavior tree reaches it.
-  auto observation_pub = test_node->create_publisher<std_msgs::msg::String>(
-    "/epistemic_observation", rclcpp::QoS(1).transient_local());
-  std_msgs::msg::String observation_msg;
-  observation_msg.data = observation;
-  observation_pub->publish(observation_msg);
-
   problem_client->addInstance(plansys2::Instance("r1", "robot"));
   problem_client->addInstance(plansys2::Instance("r2", "robot"));
   problem_client->addPredicate(plansys2::Predicate("(at_base r1)"));
@@ -254,7 +244,7 @@ Mission run_mission(const std::string & observation)
 
 TEST(test_5, a_clear_corridor_is_reported_clear)
 {
-  const auto mission = run_mission("(inspect_corridor r1)=e-inspect-clear");
+  const auto mission = run_mission("e-inspect-clear");
 
   // The policy has to branch at all: a mission whose plan committed to one
   // corridor state would make the rest of this test vacuous.
@@ -273,7 +263,7 @@ TEST(test_5, a_clear_corridor_is_reported_clear)
 
 TEST(test_5, a_blocked_corridor_is_reported_blocked)
 {
-  const auto mission = run_mission("(inspect_corridor r1)=e-inspect-blocked");
+  const auto mission = run_mission("e-inspect-blocked");
 
   ASSERT_TRUE(mission.plan_branches);
 

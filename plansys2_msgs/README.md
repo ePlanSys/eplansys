@@ -108,6 +108,10 @@ have a `negate` value opposite that of the `NOT` node's value.
 
 * Used to establish a communication protocol between the action executors (implemented as behavior
 trees) and the action executor clients (user provided lifecyle nodes that perform the actions).
+* On `FINISH` it also carries `outcome`: the result observed by the performer, for actions
+performed to determine something about the world. The value must name an outcome of the action's
+model, since an epistemic policy branches on it; `status` remains the human-readable log message.
+Ordinary actions leave it empty, as do all classical performers.
 
 [`plansys2_msgs::msg::ActionExecutionInfo`](../plansys2_msgs/msg/ActionExecutionInfo.msg)
 
