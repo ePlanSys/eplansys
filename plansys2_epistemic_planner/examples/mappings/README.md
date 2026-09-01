@@ -48,6 +48,31 @@ back to the convention below: a guessed name the domain does not declare would
 reach the executor as a plan it cannot dispatch, and the reason would surface
 far from the mapping that caused it.
 
+## Drafting one
+
+Hand-writing every entry meant doing all of the work for the sake of the one
+part that cannot be automated. `draft_epistemic_mapping` does the rest:
+
+```bash
+ros2 run plansys2_epistemic_planner draft_epistemic_mapping \
+  -t task.json -e domain.epddl -p domain.pddl -o mapping.json
+```
+
+It writes one entry per grounded action, so the file is the complete list of
+what the task will ask for. `-e` supplies the EPDDL schemas, which say where a
+grounded name stops and its bound arguments begin; without them the split falls
+back to the convention below and says so. `-p` supplies the PDDL domain, against
+which each name and its arity are resolved.
+
+An entry it cannot settle is still written, carrying a `_check` note saying why,
+and is listed on standard error. The exit status is 0 when nothing is left to
+decide and 3 otherwise, which is what a build script branches on.
+
+For the corridor scenario six of the eight entries resolve on their own;
+`inspect` is `inspect_corridor` in the PDDL domain and nothing in either file
+says so, so those two are left for a person. That is the modelling decision,
+and it is the only part of the file that is really hand-written.
+
 ## The fallback convention
 
 With `action_mapping` unset, the solver splits the grounded name at its first
