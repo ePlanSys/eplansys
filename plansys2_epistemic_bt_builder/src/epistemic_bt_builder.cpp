@@ -18,7 +18,11 @@
 #include <memory>
 #include <string>
 
+#include <fstream>
+#include <sstream>
+
 #include "plansys2_epistemic_executor/policy.hpp"
+#include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace plansys2
@@ -30,6 +34,39 @@ namespace
 rclcpp::Logger logger()
 {
   return rclcpp::get_logger("epistemic_bt_builder");
+}
+
+/// Whether a template is one of PlanSys2's own packaged ones.
+///
+/// The executor hands every builder a template whether or not the deployment
+/// chose one: with the parameter unset it loads its classical default. So "has
+/// no place for a policy" says nothing on its own about whether anyone made a
+/// mistake, and the two cases deserve different messages --- a deployment that
+/// wrote its own template needs to hear loudly that it was not used, and one
+/// that simply never set the parameter needs to hear nothing alarming at all.
+bool is_a_packaged_plansys2_template(const std::string & content)
+{
+  std::string share;
+  try {
+    share = plansys2::get_package_share_dir("plansys2_executor");
+  } catch (const std::exception &) {
+    return false;   // cannot tell, so assume the deployment meant it
+  }
+
+  for (const auto * name : {"plansys2_action_bt.xml", "plansys2_action_bt_with_undo.xml",
+      "plansys2_start_action_bt.xml", "plansys2_end_action_bt.xml"})
+  {
+    std::ifstream file(share + "/behavior_trees/" + name);
+    if (!file) {
+      continue;
+    }
+    std::ostringstream packaged;
+    packaged << file.rdbuf();
+    if (packaged.str() == content) {
+      return true;
+    }
+  }
+  return false;
 }
 
 std::string dot_escape(const std::string & text)
@@ -53,17 +90,28 @@ void EpistemicBTBuilder::initialize(
   precision_ = precision;
 
   // The executor hands every builder the action template it is configured
-  // with, and its default is PlanSys2's — which has no CONTINUATIONS placeholder
-  // and so no place for the rest of the policy to go. Rendering it would
-  // produce a tree containing only the root action, which runs, succeeds, and
-  // leaves the mission undone. A template that cannot hold a policy is
-  // therefore refused in favour of the packaged one, loudly, because a
-  // deployment that meant to supply its own needs to know it was not used.
+  // with, and with the parameter unset that is PlanSys2's classical default —
+  // which has no CONTINUATIONS placeholder and so no place for the rest of the
+  // policy to go. Rendering it would produce a tree containing only the root
+  // action, which runs, succeeds, and leaves the mission undone. A template
+  // that cannot hold a policy is therefore refused in favour of the packaged
+  // epistemic one.
+  //
+  // Which of the two happened decides how loudly to say so. A deployment that
+  // wrote its own template needs to know it was not used; one that only never
+  // set the parameter did nothing wrong, and is on the ordinary path.
   if (!bt_action_1.empty() && bt_action_1.find("CONTINUATIONS") == std::string::npos) {
-    RCLCPP_WARN(
-      logger(),
-      "the action template has no CONTINUATIONS placeholder, so a policy could "
-      "not be rendered into it; using the packaged epistemic template instead");
+    if (is_a_packaged_plansys2_template(bt_action_1)) {
+      RCLCPP_INFO(
+        logger(),
+        "rendering with the packaged epistemic action template, which carries "
+        "the observation from the performer to the epistemic update");
+    } else {
+      RCLCPP_WARN(
+        logger(),
+        "the action template has no CONTINUATIONS placeholder, so a policy could "
+        "not be rendered into it; using the packaged epistemic template instead");
+    }
     bt_action_.clear();
     return;
   }

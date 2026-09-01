@@ -186,8 +186,15 @@ protected:
    * @param[in] success Whether the action was successful.
    * @param[in] completion Final completion percentage (typically 1.0 for success).
    * @param[in] status Optional status message describing the final state.
+   * @param[in] outcome What the performer observed, for an action whose point
+   *   was to find something out. It has to name an outcome the action's model
+   *   defines, since that is what a policy branches on; `status` is where a
+   *   message for a human reading the log goes. Empty for an ordinary action,
+   *   which is what every classical performer leaves it at.
    */
-  void finish(bool success, float completion, const std::string & status = "");
+  void finish(
+    bool success, float completion, const std::string & status = "",
+    const std::string & outcome = "");
 
   // Period for the timer to call do_work
   std::chrono::nanoseconds period_;

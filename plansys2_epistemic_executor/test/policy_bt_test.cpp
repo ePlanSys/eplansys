@@ -107,12 +107,18 @@ void expect_parses(const std::string & xml)
         return BT::NodeStatus::SUCCESS;
       }, {BT::InputPort<std::string>("action")});
   }
-  for (const auto & name : {"ApplyAtStartEffect", "ExecuteAction", "ApplyAtEndEffect"}) {
+  for (const auto & name : {"ApplyAtStartEffect", "ApplyAtEndEffect"}) {
     factory.registerSimpleAction(
       name, [](BT::TreeNode &) {
         return BT::NodeStatus::SUCCESS;
       }, {BT::InputPort<std::string>("action")});
   }
+  // ExecuteAction apart from the others: it carries what the performer
+  // observed out on a port, which the template binds to the update's input.
+  factory.registerSimpleAction(
+    "ExecuteAction", [](BT::TreeNode &) {
+      return BT::NodeStatus::SUCCESS;
+    }, {BT::InputPort<std::string>("action"), BT::OutputPort<std::string>("outcome")});
 
   factory.registerNodeType<SwitchStub>("EpistemicSwitch");
 
@@ -169,6 +175,41 @@ TEST(PolicyBtTest, EveryActionKeepsThePlanSys2Guards)
   // And the two it adds around them.
   EXPECT_EQ(count_of(xml, "<CheckKnowledge"), 1u);
   EXPECT_EQ(count_of(xml, "<ApplyEpistemicUpdate"), 1u);
+  expect_parses(xml);
+}
+
+TEST(PolicyBtTest, TheObservationTravelsFromThePerformerToTheUpdate)
+{
+  plansys2_msgs::msg::Plan plan;
+  plan.items = {
+    action("(peek A)", 0.0f, {1, 2}, {"e_tails", "e_heads"}),
+    action("(shout-tails A)", 1.0f),
+    action("(open A)", 1.0f),
+  };
+  ASSERT_EQ(Policy::validate(plan), "");
+
+  const auto xml = policy_to_bt(Policy(plan));
+
+  // The performer reports what it saw when it finishes; ExecuteAction puts it
+  // on the blackboard and the update reads it from there. Without the binding
+  // the update is left asking a model that designates several worlds which one
+  // is the case, and it rightly refuses to guess --- so this is the wire that
+  // makes a sensing action work on the packaged template alone.
+  EXPECT_NE(
+    xml.find("<ExecuteAction action=\"(peek A):0\" outcome=\"{epistemic_observed_0}\""),
+    std::string::npos) << "ExecuteAction does not publish what the performer observed";
+  EXPECT_NE(xml.find("observed=\"{epistemic_observed_0}\""), std::string::npos)
+    << "ApplyEpistemicUpdate is not reading it";
+
+  // One entry per policy node: two sensing actions on different branches must
+  // not overwrite each other's observation.
+  EXPECT_EQ(count_of(xml, "{epistemic_observed_1}"), 2u);
+  EXPECT_EQ(count_of(xml, "{epistemic_observed_2}"), 2u);
+
+  // And it stays distinct from what the state made of it: the robot's report
+  // and the model's reading of it are two different things, and the switch
+  // branches on the second.
+  EXPECT_NE(xml.find("outcome=\"{epistemic_outcome_0}\""), std::string::npos);
   expect_parses(xml);
 }
 

@@ -29,11 +29,12 @@ const char * const kDefaultEpistemicActionBT =
   <ApplyAtStartEffect action="ACTION_ID"/>
   <ReactiveSequence name="ACTION_ID">
     <CheckOverAllReq action="ACTION_ID"/>
-    <ExecuteAction action="ACTION_ID"/>
+    <ExecuteAction action="ACTION_ID" outcome="{OBSERVED_KEY}"/>
   </ReactiveSequence>
   <CheckAtEndReq action="ACTION_ID"/>
   <ApplyAtEndEffect action="ACTION_ID"/>
-  <ApplyEpistemicUpdate node="NODE_ID" action="ACTION_ID" outcome="{OUTCOME_KEY}"/>
+  <ApplyEpistemicUpdate node="NODE_ID" action="ACTION_ID" observed="{OBSERVED_KEY}"
+    outcome="{OUTCOME_KEY}"/>
 CONTINUATIONS
 </Sequence>)bt";
 
@@ -114,6 +115,12 @@ std::string policy_to_bt(const Policy & policy, const std::string & action_bt, i
       // different branches never share a key, and the name says which node
       // wrote it when reading a Groot trace.
       const std::string outcome_key = "epistemic_outcome_" + node_id;
+      // Where the performer's report lands on its way from ExecuteAction to
+      // the update. Distinct from outcome_key: this is what the robot says it
+      // saw, and that one is what the epistemic state made of it. They agree
+      // whenever the report names an outcome the action defines, and keeping
+      // them apart is what lets the state disagree.
+      const std::string observed_key = "epistemic_observed_" + node_id;
 
       std::string continuations;
 
@@ -154,6 +161,7 @@ std::string policy_to_bt(const Policy & policy, const std::string & action_bt, i
       replace_all(block, "ACTION_ID", escape(action_id));
       replace_all(block, "NODE_ID", node_id);
       replace_all(block, "OUTCOME_KEY", outcome_key);
+      replace_all(block, "OBSERVED_KEY", observed_key);
       replace_all(block, "CONTINUATIONS", shift(continuations, 1));
       return block + "\n";
     };

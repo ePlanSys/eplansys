@@ -44,12 +44,20 @@ public:
 
   explicit TestAction(const std::string & action_name, float increment = 0.4);
 
+  /// What this action reports observing when it finishes.
+  ///
+  /// A fake action does no sensing, so what it "saw" is whatever the test says
+  /// the world turned out to be. Empty, the default, is an action that observed
+  /// nothing --- which is what every classical performer reports.
+  void set_outcome(const std::string & outcome) {outcome_ = outcome;}
+
 private:
   void do_work();
 
   static int node_name_counter_;
   float progress_;
   float increment_;
+  std::string outcome_;
 };
 
 }  // namespace plansys2_tests

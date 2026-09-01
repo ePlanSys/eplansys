@@ -37,14 +37,16 @@ three things a sequence cannot express:
 ```
 Sequence "node_0 (peek A)"
   CheckKnowledge         node="0"          <- what must be known before acting
-  WaitAtStartReq         action="(peek A):0"    ┐
-  ApplyAtStartEffect     action="(peek A):0"    │
-  ReactiveSequence                              │ PlanSys2, untouched
-    CheckOverAllReq      action="(peek A):0"    │
-    ExecuteAction        action="(peek A):0"    │
-  CheckAtEndReq          action="(peek A):0"    │
-  ApplyAtEndEffect       action="(peek A):0"    ┘
-  ApplyEpistemicUpdate   node="0" outcome="{epistemic_outcome_0}"
+  WaitAtStartReq         action="(peek A):0"           ┐
+  ApplyAtStartEffect     action="(peek A):0"           │
+  ReactiveSequence                                     │ PlanSys2's own
+    CheckOverAllReq      action="(peek A):0"           │ nodes, driving the
+    ExecuteAction        action="(peek A):0"           │ same performers
+                         outcome="{epistemic_observed_0}"
+  CheckAtEndReq          action="(peek A):0"           │
+  ApplyAtEndEffect       action="(peek A):0"           ┘
+  ApplyEpistemicUpdate   node="0" observed="{epistemic_observed_0}"
+                                  outcome="{epistemic_outcome_0}"
   EpistemicSwitch        node="0" outcome="{epistemic_outcome_0}"
                                   outcomes="e_tails;e_heads"
     Sequence "node_1 (shout-tails A)"     <- observed e_tails
@@ -119,11 +121,29 @@ robot observed, the disagreement surfaces at `apply_action` as an outcome the
 model cannot account for — a reason to replan, not to overwrite the model
 quietly.
 
-Which outcome occurred is a question about the world, not the model. When the
-state designates a single world it already answers it. When it designates
-several it genuinely does not know, and the observation has to come from
-whoever did the sensing: `ApplyEpistemicUpdate` takes it on its `observed`
-port, which a domain-specific tree can bind to whatever its performer reports.
+Which outcome occurred is a question about the world, and the state can answer
+it alone only when it designates a single world. With several designated the
+model is undetermined, and the observation must come from the agent that
+performed the sensing.
+
+It arrives from the performer along the path every other execution report
+takes. `ActionExecution` carries an `outcome` alongside `status`, which a
+performer sets on finishing:
+
+```cpp
+finish(true, 1.0, "Corridor inspected", "e_clear");
+```
+
+The tree then forwards it: `ExecuteAction` writes it to the blackboard and the
+packaged template binds that entry to `ApplyEpistemicUpdate`'s `observed` port.
+A sensing action therefore requires no configuration beyond a performer that
+reports its result. The token must name an outcome of the action's model, since
+the following switch branches on it; `status` remains the human-readable log
+message, and a classical performer that reports nothing is unaffected.
+
+Binding `observed` explicitly remains the way to supply an observation that
+originates elsewhere than the acting performer, such as an independent
+perception node or a test fixture.
 
 ## How it plugs in
 

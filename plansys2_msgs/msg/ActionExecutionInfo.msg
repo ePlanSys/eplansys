@@ -19,3 +19,9 @@ builtin_interfaces/Duration duration
 
 float32 completion
 string message_status
+
+# What the performer observed, as reported on ActionExecution FINISH. Empty for
+# an action that observed nothing, which is every classical one. Carried here so
+# that a monitor watching execution can see which way a policy branched without
+# subscribing to the actions hub itself.
+string outcome

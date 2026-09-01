@@ -691,6 +691,7 @@ ExecutorNode::get_feedback_info(
     info.duration = rclcpp::Duration::from_seconds(action.second.duration);
     info.completion = action.second.action_executor->get_completion();
     info.message_status = action.second.action_executor->get_feedback();
+    info.outcome = action.second.action_executor->get_outcome();
 
     ret.push_back(info);
   }

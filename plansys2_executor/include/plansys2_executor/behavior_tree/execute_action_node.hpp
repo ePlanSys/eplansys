@@ -66,6 +66,11 @@ public:
     return BT::PortsList(
       {
         BT::InputPort<std::string>("action", "Action to be executed"),
+        // What the performer reported observing, for a tree that has something
+        // to do with it. Empty for an action that observed nothing, which is
+        // every classical one, and harmless to leave unbound.
+        BT::OutputPort<std::string>(
+          "outcome", "What the performer observed, empty for none"),
       });
   }
 

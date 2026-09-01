@@ -95,6 +95,13 @@ private:
  * following EpistemicSwitch reads. The outcome comes from the observation the
  * performer reported when there is one, and otherwise from the model, which
  * can determine it whenever it designates a single world.
+ *
+ * The observation reaches this node through the tree: the performer names it
+ * on ActionExecution FINISH, ExecuteAction puts it on the blackboard, and the
+ * packaged template binds that entry to `observed` here. So a sensing action
+ * needs no wiring of its own beyond a performer that calls `finish` with what
+ * it saw. Binding the port elsewhere is still how a deployment supplies an
+ * observation from somewhere other than the performer that acted.
  */
 class ApplyEpistemicUpdate : public BT::ActionNodeBase
 {
@@ -111,7 +118,9 @@ public:
         BT::InputPort<std::string>("node", "Index of the policy node that ran"),
         BT::InputPort<std::string>("action", "Action id, for the error message"),
         BT::InputPort<std::string>(
-          "observed", "", "Outcome the performer observed; empty to let the state decide"),
+          "observed", "",
+          "Outcome the performer observed, normally bound to ExecuteAction's "
+          "outcome port; empty to let the state decide"),
         BT::OutputPort<std::string>("outcome", "The outcome that occurred"),
       });
   }
