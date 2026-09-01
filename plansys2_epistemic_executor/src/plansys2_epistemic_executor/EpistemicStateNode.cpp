@@ -32,6 +32,7 @@
 #include "plansys2_epistemic_planner/policy_plan.hpp"
 #include "plansys2_epistemic_planner/product_update.hpp"
 #include "plansys2_epistemic_planner/state.hpp"
+#include "plansys2_epistemic_planner/state_json.hpp"
 
 namespace plansys2
 {
@@ -73,6 +74,11 @@ EpistemicStateNode::EpistemicStateNode()
 : rclcpp_lifecycle::LifecycleNode("epistemic_state")
 {
   declare_parameter<std::string>("task_file", "");
+  // Whether the published state carries the model as well as its shape. On by
+  // default, since replanning from where a mission got to depends on it; worth
+  // turning off only when nothing replans and the model is large enough for
+  // the message to matter.
+  declare_parameter<bool>("publish_model", true);
   declare_epddl_parameters(this, epddl_parameter_names_);
 }
 
@@ -80,6 +86,8 @@ EpistemicStateNode::CallbackReturnT
 EpistemicStateNode::on_configure(const rclcpp_lifecycle::State & state)
 {
   (void)state;
+
+  publish_model_ = get_parameter("publish_model").as_bool();
 
   load_task_service_ = create_service<plansys2_epistemic_msgs::srv::LoadTask>(
     "epistemic_state/load_task",
@@ -217,6 +225,22 @@ void EpistemicStateNode::publish_state()
     data += ", \"goal_holds\": ";
     data += state_->satisfies(*formula) ? "true" : "false";
   }
+
+  // The model itself, in the shape the task format gives an initial state.
+  //
+  // The summary above says how big the model is; this says what it is, which
+  // is what a planner needs to replan from where a mission actually got to.
+  // Without it a replan starts from the state grounding produced, which is the
+  // one the divergence already disproved.
+  //
+  // It travels on this topic for the same reason the goal does: planning
+  // happens inside the planner's own service callback, and a service call from
+  // there can deadlock. Deployments that never replan can turn it off, since
+  // for a large model it is the bulk of the message.
+  if (publish_model_ && task_) {
+    data += ", \"model\": " + state_to_json(*task_, *state_);
+  }
+
   data += "}";
 
   std_msgs::msg::String msg;

@@ -405,6 +405,34 @@ service call
 from there can deadlock a single-threaded executor. Setting
 ``goal_from_state`` to false plans for the problem exactly as written.
 
+Replanning from the current belief
+----------------------------------
+
+The same topic carries the model itself, under ``model``, in the shape the task
+format gives an initial state. The solver reads it and plans from it, which is
+controlled by ``initial_from_state`` and on by default.
+
+This is what makes a replan start from where the mission got to. The executor's
+answer to a failed plan is to replan, and an epistemic policy usually fails
+because ``EpistemicSwitch`` saw an outcome the policy did not plan for. Planning
+again from the model grounding produced would begin at a belief that divergence
+has already disproved: the robot would be sent to find out what it has just
+found out, or told to act on a possibility it has ruled out.
+
+The model is resolved against the task before it is used. Every atom, agent and
+designated world it names must exist there; a name the task lacks is an error
+and not a new symbol, since it means the state and the planner hold different
+problems and a policy built from one could not be executed against the other. A
+model designating no world is refused for the same reason an empty announcement
+is: every formula holds vacuously in it, so the goal check would report success
+from a model that says nothing.
+
+Two parameters turn it off, at either end. ``initial_from_state`` false on the
+solver plans from the task's own initial state. ``publish_model`` false on the
+state node omits the model from the published message, which for a large model
+is most of it; the solver then falls back to the task's initial state on its
+own.
+
 The state advances by executed actions, not by observing the world, which is
 what distinguishes a belief state from a log. When it disagrees with what
 the robot observed, the disagreement surfaces at ``apply_action`` as an outcome

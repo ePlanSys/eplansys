@@ -157,6 +157,11 @@ private:
   /// than copying the pointer is what lets get_goal say which of the two it is
   /// reporting.
   FormulaPtr goal_override_;
+
+  /// Whether the published state carries the model itself. Read once at
+  /// configure, since a subscriber that saw a model in one message and none in
+  /// the next would have no way to tell that from the model being gone.
+  bool publish_model_{true};
 };
 
 }  // namespace plansys2

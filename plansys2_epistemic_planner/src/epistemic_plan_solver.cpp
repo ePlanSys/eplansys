@@ -34,6 +34,7 @@
 #include "plansys2_epistemic_planner/parser.hpp"
 #include "plansys2_epistemic_planner/policy_plan.hpp"
 #include "plansys2_epistemic_planner/selection_policy.hpp"
+#include "plansys2_epistemic_planner/state_json.hpp"
 #include "plansys2_epistemic_planner/validator.hpp"
 #include "pluginlib/class_list_macros.hpp"
 
@@ -189,6 +190,7 @@ void EpistemicPlanSolver::configure(
   action_mapping_parameter_name_ = plugin_name + ".action_mapping";
   epddl_parameter_names_ = EpddlParameterNames(plugin_name);
   goal_from_state_parameter_name_ = plugin_name + ".goal_from_state";
+  initial_from_state_parameter_name_ = plugin_name + ".initial_from_state";
 
   const auto declare = [&](const std::string & name, const std::string & def) {
       if (!lc_node_->has_parameter(name)) {
@@ -206,6 +208,9 @@ void EpistemicPlanSolver::configure(
   if (!lc_node_->has_parameter(goal_from_state_parameter_name_)) {
     lc_node_->declare_parameter<bool>(goal_from_state_parameter_name_, true);
   }
+  if (!lc_node_->has_parameter(initial_from_state_parameter_name_)) {
+    lc_node_->declare_parameter<bool>(initial_from_state_parameter_name_, true);
+  }
 
   declare_epddl_parameters(lc_node_, epddl_parameter_names_);
 
@@ -219,15 +224,30 @@ void EpistemicPlanSolver::configure(
   // set later arrives the same way. Nothing is asked of the state: getPlan
   // runs inside the planner's own service callback, and a service call from
   // there can deadlock on a single-threaded executor.
-  if (lc_node_->get_parameter(goal_from_state_parameter_name_).as_bool()) {
+  const bool want_goal = lc_node_->get_parameter(goal_from_state_parameter_name_).as_bool();
+  const bool want_initial =
+    lc_node_->get_parameter(initial_from_state_parameter_name_).as_bool();
+
+  if (want_goal || want_initial) {
     state_sub_ = lc_node_->create_subscription<std_msgs::msg::String>(
       "epistemic_state/state", rclcpp::QoS(1).transient_local(),
-      [this](const std_msgs::msg::String::SharedPtr msg) {
+      [this, want_goal, want_initial](const std_msgs::msg::String::SharedPtr msg) {
         try {
           const auto j = nlohmann::json::parse(msg->data);
-          state_goal_ = j.value("goal", "");
+          if (want_goal) {
+            state_goal_ = j.value("goal", "");
+          }
+          if (want_initial) {
+            // Kept as text and resolved later. A model can only be read
+            // against a task, and which task this is answering for is not
+            // known until a planning request names one.
+            state_model_ = j.contains("model") ? j.at("model").dump() : std::string();
+          }
         } catch (const nlohmann::json::exception &) {
-          state_goal_.clear();   // an unreadable state is no goal, not a stale one
+          // An unreadable state is no state at all. Keeping the last good one
+          // would plan from a belief the robot has since moved on from.
+          state_goal_.clear();
+          state_model_.clear();
         }
       });
   }
@@ -327,6 +347,39 @@ bool EpistemicPlanSolver::apply_state_goal(PlanningTask & task, std::string & er
   return true;
 }
 
+bool EpistemicPlanSolver::apply_state_initial(PlanningTask & task, std::string & error) const
+{
+  if (state_model_.empty()) {
+    return true;      // no state, or one not publishing its model: plan from
+                      // the task's own initial state
+  }
+
+  EpistemicState current;
+  if (!state_from_json(task, state_model_, current, error)) {
+    error =
+      "the epistemic state's model does not read against this task: " + error +
+      ". The state and the planner are holding different problems.";
+    return false;
+  }
+
+  const bool moved =
+    current.num_worlds != task.init.num_worlds ||
+    current.num_designated() != task.init.num_designated();
+
+  task.init = std::move(current);
+
+  if (moved) {
+    // Worth saying, because it is the difference between replanning from where
+    // the robot is and replanning from where it started. A mission that has
+    // sensed anything has fewer worlds designated than it began with.
+    RCLCPP_INFO(
+      lc_node_->get_logger(),
+      "[epistemic] planning from the state the mission reached: %u worlds, %zu designated",
+      task.init.num_worlds, task.init.num_designated());
+  }
+  return true;
+}
+
 std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
   const std::string & domain, const std::string & problem,
   const std::string & node_namespace, const rclcpp::Duration solver_timeout)
@@ -348,6 +401,15 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
     RCLCPP_ERROR(lc_node_->get_logger(), "[epistemic] %s", error.c_str());
     return std::nullopt;
   }
+  // The model first, then the goal: the goal is parsed against the task, and
+  // swapping the initial state does not change the vocabulary it is parsed in,
+  // but reporting a model failure before a goal failure gives the more
+  // fundamental disagreement first.
+  if (!apply_state_initial(*task_opt, error)) {
+    RCLCPP_ERROR(lc_node_->get_logger(), "[epistemic] %s", error.c_str());
+    return {};
+  }
+
   if (!apply_state_goal(*task_opt, error)) {
     RCLCPP_ERROR(lc_node_->get_logger(), "[epistemic] %s", error.c_str());
     return std::nullopt;

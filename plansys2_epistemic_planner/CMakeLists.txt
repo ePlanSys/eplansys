@@ -25,6 +25,7 @@ set(EPISTEMIC_SOURCES
   src/heuristic.cpp
   src/search.cpp
   src/parser.cpp
+  src/state_json.cpp
   src/policy_plan.cpp
   src/validator.cpp
   src/selection_policy.cpp
