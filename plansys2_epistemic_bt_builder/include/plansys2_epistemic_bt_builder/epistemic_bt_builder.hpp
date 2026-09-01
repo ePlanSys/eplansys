@@ -56,8 +56,18 @@ public:
 
   std::string get_tree(const plansys2_msgs::msg::Plan & current_plan) override;
 
-  Graph::Ptr get_graph() override {return nullptr;}
-  bool propagate(Graph::Ptr) override {return true;}
+  /// The policy as a temporal graph: one node per policy node, an arc from
+  /// each node to every continuation it can be followed by.
+  ///
+  /// SimpleBTBuilder's graph orders actions by which of them establish each
+  /// other's preconditions, because a sequential plan leaves that to be
+  /// worked out. A policy has the ordering already: the planner fixed it, and
+  /// the branches say which orderings are alternatives to each other. So this
+  /// records the structure instead of deriving one.
+  Graph::Ptr get_graph() override;
+
+  /// Compute the time bounds on each arc, from the durations the plan carries.
+  bool propagate(Graph::Ptr graph) override;
 
   /// The policy as a graph, for the dotgraph the executor publishes. Drawn
   /// from the policy rather than from a temporal graph, so branches show as
@@ -71,6 +81,14 @@ private:
   std::string bt_action_;
   int precision_{3};
   plansys2_msgs::msg::Plan plan_;
+
+  /// Built by get_tree and handed out by get_graph, so that the two describe
+  /// the same policy. A graph built independently could disagree with the tree
+  /// the executor is running.
+  Graph::Ptr graph_;
+
+  /// The graph for a policy, wired from its branches.
+  Graph::Ptr build_graph(const Policy & policy);
 };
 
 }  // namespace plansys2

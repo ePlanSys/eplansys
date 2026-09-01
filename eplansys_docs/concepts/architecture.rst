@@ -228,6 +228,27 @@ performs, and a branch on what was observed.
 A node with a single continuation renders without a switch, so a classical plan
 comes out as the same flat sequence PlanSys2 would have built.
 
+``get_graph`` reports the policy as a temporal graph: one node per policy node,
+an arc to each continuation. SimpleBTBuilder derives its graph by working out
+which actions establish each other's preconditions, because a sequential plan
+leaves the ordering open. A policy has it already, so this records the
+structure instead of deriving one, and ``propagate`` fills in the bounds from
+the durations the plan carries.
+
+The lower bound on every arc is the parent's whole duration, so a continuation
+cannot begin before the action it follows has finished. That is stricter than a
+classical plan needs, and it is a requirement of the epistemic layer rather
+than a scheduling choice: ``CheckKnowledge`` on a continuation is evaluated
+against the state that ``ApplyEpistemicUpdate`` produced for its parent, so the
+two overlapping would check a guard against a model that does not exist yet.
+
+The consequence is that the epistemic builder runs one action at a time, where
+SimpleBTBuilder can run independent actions concurrently. Recovering that would
+mean proving, for each pair, both that their PDDL effects do not interfere and
+that neither one's knowledge guard depends on the other's epistemic update. The
+second condition has no counterpart in classical planning and is not checked
+anywhere today, so the builder sequences rather than assume it.
+
 Reporting an observation
 ------------------------
 

@@ -290,17 +290,78 @@ TEST(EpistemicBTBuilderTest, RefusesATemplateThatCannotHoldAPolicy)
   EXPECT_EQ(count_of(xml, "<ApplyEpistemicUpdate"), 4u) << xml;
 }
 
-TEST(EpistemicBTBuilderTest, BuildsNoTemporalGraph)
+TEST(EpistemicBTBuilderTest, ThePolicyIsReportedAsAGraph)
 {
   EpistemicBTBuilder builder;
   builder.initialize();
-  builder.get_tree(corridor_policy());
 
-  // The tree already fixes the order, so there is nothing for a graph to
-  // decide. The executor tolerates a null one — SequentialBTBuilder returns
-  // one too — and propagate() has nothing to propagate through.
-  EXPECT_EQ(builder.get_graph(), nullptr);
-  EXPECT_TRUE(builder.propagate(nullptr));
+  const auto plan = corridor_policy();
+  ASSERT_FALSE(builder.get_tree(plan).empty());
+
+  // The graph does not decide the order — the planner already did — but it
+  // records it, which is what CheckAction reads bounds from and what a monitor
+  // draws. Returning none left both with nothing.
+  const auto graph = builder.get_graph();
+  ASSERT_NE(graph, nullptr);
+  EXPECT_EQ(graph->nodes.size(), plan.items.size())
+    << "every policy node belongs in the graph, branches included";
+
+  EXPECT_FALSE(builder.propagate(nullptr)) << "there is nothing to propagate through";
+  EXPECT_TRUE(builder.propagate(graph));
+}
+
+TEST(EpistemicBTBuilderTest, TheBranchIsInTheGraph)
+{
+  EpistemicBTBuilder builder;
+  builder.initialize();
+  ASSERT_FALSE(builder.get_tree(corridor_policy()).empty());
+
+  const auto graph = builder.get_graph();
+  ASSERT_NE(graph, nullptr);
+  ASSERT_FALSE(graph->nodes.empty());
+
+  // The corridor mission drives out first and only branches once it looks, so
+  // the branching node is the sensing one and not the root.
+  EXPECT_TRUE(graph->nodes.front()->input_arcs.empty()) << "the root follows nothing";
+
+  std::size_t branching = 0;
+  for (const auto & node : graph->nodes) {
+    if (node->output_arcs.size() > 1u) {
+      ++branching;
+    }
+  }
+  EXPECT_EQ(branching, 1u)
+    << "the policy branches exactly once, and the graph should say where";
+}
+
+TEST(EpistemicBTBuilderTest, AContinuationCannotStartBeforeItsParentIsDone)
+{
+  EpistemicBTBuilder builder;
+  builder.initialize();
+
+  auto plan = corridor_policy();
+  ASSERT_FALSE(plan.items.empty());
+  plan.items[0].duration = 7.0f;
+
+  ASSERT_FALSE(builder.get_tree(plan).empty());
+  const auto graph = builder.get_graph();
+  ASSERT_NE(graph, nullptr);
+
+  // The knowledge guard on a continuation is checked against the state its
+  // parent's update produced, so the two cannot overlap at all. That is a
+  // requirement of the epistemic layer and not a scheduling choice, and the
+  // lower bound on the arc is where it is written down.
+  std::size_t checked = 0;
+  for (const auto & node : graph->nodes) {
+    for (const auto & arc : node->input_arcs) {
+      if (std::get<0>(arc) == graph->nodes.front()) {
+        EXPECT_DOUBLE_EQ(std::get<1>(arc), 7.0)
+          << "a continuation may start before its parent finished";
+        ++checked;
+      }
+    }
+  }
+  EXPECT_GT(checked, 0u) << "no arc leaves the root";
 }
 
 TEST(EpistemicBTBuilderTest, DrawsTheBranchesAndTheGoalInTheDotgraph)
