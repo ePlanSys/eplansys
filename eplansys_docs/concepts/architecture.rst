@@ -480,6 +480,31 @@ the state designates a single world it already answers it, and the response
 reports it. When it designates several the model is undetermined, and the
 observation has to come from whoever did the sensing.
 
+One agent's point of view
+-------------------------
+
+The state holds one model for the whole system, and that is what makes a
+group's knowledge expressible at all: "r1 knows that r2 does not know" is a
+statement about one structure, not about two. A deployment often needs the
+other reading, though — what would this robot act on, given only what it has
+seen — and that is a different model.
+
+``epistemic_state/get_agent_perspective`` returns it: the same worlds and
+relations, designating what the agent considers possible from the worlds that
+are actually the case. It comes back in the task format's initial-state shape,
+so it can be handed to a planner the same way a replan's starting model is.
+
+``check_formula`` takes the same view through its ``agent`` field. The two
+readings answer different questions. Asked of the model, ``blocked`` is about
+the corridor; asked of ``r1``, it is about ``r1``, which has no opinion either
+way until it has looked.
+
+The response also reports whether the agent holds the actual world possible.
+Under S5 it always does, so an agent can be uninformed but never mistaken.
+Under KD45 it need not, and that is the difference between an agent that does
+not know and one that is wrong. The terminal reaches both through ``ros2
+plansys2 epistemic view <agent>`` and ``--agent`` on ``check``.
+
 Perception
 ----------
 

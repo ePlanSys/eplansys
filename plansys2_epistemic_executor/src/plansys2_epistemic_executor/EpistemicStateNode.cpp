@@ -138,6 +138,13 @@ EpistemicStateNode::on_configure(const rclcpp_lifecycle::State & state)
       &EpistemicStateNode::get_action_details_callback, this,
       std::placeholders::_1, std::placeholders::_2));
 
+  get_perspective_service_ =
+    create_service<plansys2_epistemic_msgs::srv::GetAgentPerspective>(
+    "epistemic_state/get_agent_perspective",
+    std::bind(
+      &EpistemicStateNode::get_perspective_callback, this,
+      std::placeholders::_1, std::placeholders::_2));
+
   state_pub_ = create_publisher<std_msgs::msg::String>(
     "epistemic_state/state", rclcpp::QoS(10).transient_local());
 
@@ -319,6 +326,43 @@ std::string describe_observability(const Action & action, const ObsCase & obs_ca
 }
 
 }  // namespace
+
+void EpistemicStateNode::get_perspective_callback(
+  const std::shared_ptr<plansys2_epistemic_msgs::srv::GetAgentPerspective::Request> request,
+  std::shared_ptr<plansys2_epistemic_msgs::srv::GetAgentPerspective::Response> response)
+{
+  if (!task_ || !state_) {
+    response->success = false;
+    response->error = "no task is loaded, so there is no model to take a view of";
+    return;
+  }
+
+  const auto agent = task_->agent_index.find(request->agent);
+  if (agent == task_->agent_index.end()) {
+    response->success = false;
+    response->error = "the domain declares no agent '" + request->agent + "'";
+    return;
+  }
+
+  const auto perspective = agent_perspective(*state_, agent->second);
+
+  response->worlds = perspective.num_worlds;
+  response->designated = static_cast<std::uint32_t>(perspective.num_designated());
+  response->model = state_to_json(*task_, perspective);
+
+  // Whether the agent holds the actual world possible. Under S5 it always
+  // does; under KD45 it need not, and that is the difference between an agent
+  // that does not know and one that is wrong.
+  response->includes_actual = false;
+  for (std::uint32_t w = 0; w < state_->num_worlds; ++w) {
+    if (state_->is_designated(w) && perspective.is_designated(w)) {
+      response->includes_actual = true;
+      break;
+    }
+  }
+
+  response->success = true;
+}
 
 void EpistemicStateNode::get_domain_callback(
   const std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Request> request,
@@ -530,8 +574,26 @@ void EpistemicStateNode::check_formula_callback(
     return;
   }
 
+  if (request->agent.empty()) {
+    response->success = true;
+    response->holds = state_->satisfies(*formula);
+    return;
+  }
+
+  // Asked from an agent's point of view instead. This is a different question:
+  // "is the corridor blocked" is about the world, and "would r2 say so" is
+  // about r2, which has no opinion at all until it has looked.
+  const auto agent = task_->agent_index.find(request->agent);
+  if (agent == task_->agent_index.end()) {
+    response->success = false;
+    response->error =
+      "the domain declares no agent '" + request->agent + "'";
+    return;
+  }
+
+  const auto perspective = agent_perspective(*state_, agent->second);
   response->success = true;
-  response->holds = state_->satisfies(*formula);
+  response->holds = perspective.satisfies(*formula);
 }
 
 void EpistemicStateNode::apply_action_callback(

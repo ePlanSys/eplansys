@@ -23,6 +23,7 @@
 #include "plansys2_epistemic_msgs/srv/announce.hpp"
 #include "plansys2_epistemic_msgs/srv/apply_action.hpp"
 #include "plansys2_epistemic_msgs/srv/check_formula.hpp"
+#include "plansys2_epistemic_msgs/srv/get_agent_perspective.hpp"
 #include "plansys2_epistemic_msgs/srv/get_epistemic_action_details.hpp"
 #include "plansys2_epistemic_msgs/srv/get_epistemic_domain.hpp"
 #include "plansys2_epistemic_msgs/srv/get_goal.hpp"
@@ -118,6 +119,10 @@ private:
     const std::shared_ptr<plansys2_epistemic_msgs::srv::Announce::Request> request,
     std::shared_ptr<plansys2_epistemic_msgs::srv::Announce::Response> response);
 
+  void get_perspective_callback(
+    const std::shared_ptr<plansys2_epistemic_msgs::srv::GetAgentPerspective::Request> request,
+    std::shared_ptr<plansys2_epistemic_msgs::srv::GetAgentPerspective::Response> response);
+
   void get_domain_callback(
     const std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Request> request,
     std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Response> response);
@@ -151,6 +156,8 @@ private:
   /// model together, and a separate node answering about the first would have
   /// to ground the same sources a second time to do it. They are named apart
   /// so that what is being asked about stays clear.
+  rclcpp::Service<plansys2_epistemic_msgs::srv::GetAgentPerspective>::SharedPtr
+    get_perspective_service_;
   rclcpp::Service<plansys2_epistemic_msgs::srv::GetEpistemicDomain>::SharedPtr
     get_domain_service_;
   rclcpp::Service<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails>::SharedPtr

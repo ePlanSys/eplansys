@@ -28,6 +28,7 @@
 #include "plansys2_epistemic_executor/EpistemicStateNode.hpp"
 #include "plansys2_epistemic_msgs/srv/announce.hpp"
 #include "plansys2_epistemic_msgs/srv/check_formula.hpp"
+#include "plansys2_epistemic_msgs/srv/get_agent_perspective.hpp"
 #include "plansys2_epistemic_msgs/srv/get_epistemic_action_details.hpp"
 #include "plansys2_epistemic_msgs/srv/get_epistemic_domain.hpp"
 #include "plansys2_epistemic_msgs/srv/get_goal.hpp"
@@ -355,6 +356,105 @@ TEST_F(EpistemicStateNodeTest, AnActionTheDomainDoesNotHaveIsRefused)
   ASSERT_NE(response, nullptr);
   EXPECT_FALSE(response->success);
   EXPECT_NE(response->error.find("no-such-action"), std::string::npos) << response->error;
+}
+
+// One agent's point of view.
+//
+// The state holds one model for the whole system, which is what makes "r1
+// knows that r2 does not" expressible at all. A deployment often needs the
+// other reading: what would this robot act on, given only what it has seen.
+
+TEST_F(EpistemicFleetDomainTest, AnAgentsViewIsWhatItConsidersPossible)
+{
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetAgentPerspective::Request>();
+  request->agent = "r1";
+
+  auto response = call<plansys2_epistemic_msgs::srv::GetAgentPerspective>(
+    "epistemic_state/get_agent_perspective", request);
+
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  EXPECT_GT(response->worlds, 0u);
+  EXPECT_GT(response->designated, 0u);
+  EXPECT_FALSE(response->model.empty());
+
+  // The fleet task is S5, so an agent can be ignorant but never wrong: what it
+  // holds possible always includes what is actually the case.
+  EXPECT_TRUE(response->includes_actual)
+    << "an S5 agent that has ruled out the actual world is a contradiction";
+}
+
+TEST_F(EpistemicFleetDomainTest, AnAgentTheDomainDoesNotHaveIsRefused)
+{
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetAgentPerspective::Request>();
+  request->agent = "r99";
+
+  auto response = call<plansys2_epistemic_msgs::srv::GetAgentPerspective>(
+    "epistemic_state/get_agent_perspective", request);
+
+  ASSERT_NE(response, nullptr);
+  EXPECT_FALSE(response->success);
+  EXPECT_NE(response->error.find("r99"), std::string::npos) << response->error;
+}
+
+TEST_F(EpistemicFleetDomainTest, AFormulaCanBeAskedFromAnAgentsPointOfView)
+{
+  // Nobody has looked yet, so nobody knows whether the corridor is blocked.
+  // Asked of the model, "blocked" is a question about the world; asked of r1,
+  // it is a question about r1, which has no opinion either way.
+  auto from_agent =
+    std::make_shared<plansys2_epistemic_msgs::srv::CheckFormula::Request>();
+  from_agent->formula = "blocked";
+  from_agent->agent = "r1";
+
+  auto response = call<plansys2_epistemic_msgs::srv::CheckFormula>(
+    "epistemic_state/check_formula", from_agent);
+
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+  EXPECT_FALSE(response->holds)
+    << "r1 has not looked, so it cannot hold that the corridor is blocked";
+
+  // And the same question of an agent that does not exist is refused, not
+  // answered against the model by accident.
+  auto unknown =
+    std::make_shared<plansys2_epistemic_msgs::srv::CheckFormula::Request>();
+  unknown->formula = "blocked";
+  unknown->agent = "nobody";
+
+  auto refused = call<plansys2_epistemic_msgs::srv::CheckFormula>(
+    "epistemic_state/check_formula", unknown);
+
+  ASSERT_NE(refused, nullptr);
+  EXPECT_FALSE(refused->success);
+}
+
+TEST_F(EpistemicFleetDomainTest, TheModelItselfIsUnchangedByAskingForAView)
+{
+  // Taking a view is a query. A state that moved when it was asked a question
+  // would make every monitor a participant.
+  auto before = call<plansys2_epistemic_msgs::srv::GetGoal>(
+    "epistemic_state/get_goal",
+    std::make_shared<plansys2_epistemic_msgs::srv::GetGoal::Request>());
+  ASSERT_NE(before, nullptr);
+
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetAgentPerspective::Request>();
+  request->agent = "r2";
+  ASSERT_NE(
+    call<plansys2_epistemic_msgs::srv::GetAgentPerspective>(
+      "epistemic_state/get_agent_perspective", request), nullptr);
+
+  auto after = call<plansys2_epistemic_msgs::srv::GetGoal>(
+    "epistemic_state/get_goal",
+    std::make_shared<plansys2_epistemic_msgs::srv::GetGoal::Request>());
+  ASSERT_NE(after, nullptr);
+
+  EXPECT_EQ(before->goal, after->goal);
+  EXPECT_EQ(before->holds, after->holds);
 }
 
 // Leave through _exit, so the DDS threads never outlive the process.

@@ -192,4 +192,44 @@ bool state_from_json(
   return true;
 }
 
+EpistemicState agent_perspective(const EpistemicState & state, AgentIdx agent)
+{
+  if (agent >= state.num_agents) {
+    return state;
+  }
+
+  EpistemicState out = state;
+
+  // Everything the agent holds possible from a world that is actually the
+  // case. Accumulated before it is written back, since the designated set is
+  // what is being read while it is being replaced.
+  std::vector<bits::Word> reachable(state.rel_words, 0);
+  for (std::uint32_t w = 0; w < state.num_worlds; ++w) {
+    if (!state.is_designated(static_cast<WorldIdx>(w))) {
+      continue;
+    }
+    const auto row = state.succ(agent, static_cast<WorldIdx>(w));
+    for (std::uint32_t i = 0; i < state.rel_words; ++i) {
+      reachable[i] |= row[i];
+    }
+  }
+
+  bool any = false;
+  for (const auto word : reachable) {
+    if (word != 0) {
+      any = true;
+      break;
+    }
+  }
+  if (!any) {
+    // An agent with no accessible world at all. Every formula would hold in
+    // the result, so the model as it stands is the more honest answer.
+    return state;
+  }
+
+  out.designated.assign(reachable.begin(), reachable.end());
+  out.invalidate();
+  return out;
+}
+
 }  // namespace plansys2

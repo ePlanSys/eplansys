@@ -60,6 +60,31 @@ bool state_from_json(
   const PlanningTask & task, const std::string & json,
   EpistemicState & out, std::string & error);
 
+/**
+ * @brief The model as one agent sees it.
+ *
+ * The state holds one model for the whole system, and that is what makes a
+ * group's knowledge expressible: "r1 knows that r2 does not know" is a
+ * statement about one structure. An agent's own point of view is a different
+ * model, and it is the one that answers what that agent would act on.
+ *
+ * It is the same worlds and the same relations, designating what the agent
+ * considers possible from the worlds that are actually the case: the union of
+ * R_i(w) over the designated w. Nothing else changes, so a formula evaluated
+ * in it is evaluated against the same vocabulary.
+ *
+ * Under S5 the relation is reflexive, so the result always includes the worlds
+ * it came from and the agent can be ignorant but never wrong. Under KD45 it
+ * need not, which is what makes a false belief expressible.
+ *
+ * @param[in] state The model as it stands.
+ * @param[in] agent Whose point of view.
+ * @return The perspective, or the state unchanged when the agent is out of
+ *   range, since a model with nothing designated answers every question
+ *   vacuously and would be worse than no answer.
+ */
+EpistemicState agent_perspective(const EpistemicState & state, AgentIdx agent);
+
 }  // namespace plansys2
 
 #endif  // PLANSYS2_EPISTEMIC_PLANNER__STATE_JSON_HPP_
