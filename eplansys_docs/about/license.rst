@@ -25,24 +25,23 @@ Provenance of the packages
 
 The ``plansys2_*`` packages that are not epistemic come from the original
 PlanSys2 project and remain subject to its copyright notices and the Apache
-License, Version 2.0. They are carried with their upstream history rather than
-copied, so ``git log`` on any file shows what came from PlanSys2 and what did
-not.
+License, Version 2.0. This repository preserves their upstream commit history,
+so ``git log`` on any file identifies its origin.
 
-They are not reproduced unmodified. Every one of them has been changed here, in
-four kinds of way: the extension points the epistemic packages attach through
-were widened, chiefly in ``plansys2_msgs`` and ``plansys2_executor``; bring-up
-and lifecycle management learned about the epistemic nodes; portability shims
-let one source tree build on both Humble and Rolling; and defects found while
-running the system were repaired in place. ``plansys2_tui_cli`` is extended
-further than the rest, with the ``epistemic`` verb and a Textual dashboard, and
-``plansys2_tests`` carries two missions of its own.
+All of them have been modified, in four categories: the extension points the
+epistemic packages attach to were widened, principally in ``plansys2_msgs`` and
+``plansys2_executor``; bring-up and lifecycle management were extended to cover
+the epistemic nodes; compatibility shims were added for building on both Humble
+and Rolling; and defects found while running the system were corrected.
+``plansys2_tui_cli`` and ``plansys2_tests`` are modified more extensively, the
+first adding the ``epistemic`` verb and a Textual dashboard, the second two
+integration missions.
 
 The epistemic packages are original contributions, developed as part of a
 terminal work at the Instituto Politécnico Nacional, Mexico, and are also
-distributed under the Apache License, Version 2.0. Several are named
-``plansys2_*`` because that is what they attach to; the name does not indicate
-origin. ``NOTICE`` lists them.
+distributed under the Apache License, Version 2.0. Several carry the
+``plansys2_`` prefix to identify the extension point they attach to. The prefix
+reflects the attachment point, not the authorship. ``NOTICE`` lists them.
 
 Within ``plansys2_epistemic_planner``, the planning core is derived from the
 `Aletheia <https://github.com/HanielUlises/Aletheia>`_ epistemic planner, a

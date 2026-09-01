@@ -15,13 +15,13 @@ problem is a policy: a tree whose branches are the possible observations. The
 packages documented here add the pieces that produce such a policy, execute it,
 and keep a model of what the agents know while it runs.
 
-The classical PlanSys2 packages are carried in this repository with their
-upstream history, and their documentation is the `PlanSys2 web page
-<https://plansys2.github.io>`_. They are not untouched: each has been extended
-where the epistemic packages attach to it, made to build on both Humble and
-Rolling, and repaired where running the system exposed a defect. ``NOTICE``
-records which packages come from PlanSys2, which are original here, and what
-kinds of change were made.
+The classical PlanSys2 packages are included here with their upstream commit
+history, and their documentation is the `PlanSys2 web page
+<https://plansys2.github.io>`_. All of them have been modified: the extension
+points the epistemic packages attach to were widened, compatibility shims were
+added for Humble and Rolling, and defects found while running the system were
+corrected. ``NOTICE`` records the package origins and the categories of
+modification.
 
 Packages
 --------
