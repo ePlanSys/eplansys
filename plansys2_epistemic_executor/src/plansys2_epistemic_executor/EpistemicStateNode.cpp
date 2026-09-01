@@ -596,6 +596,59 @@ void EpistemicStateNode::check_formula_callback(
   response->holds = perspective.satisfies(*formula);
 }
 
+
+namespace
+{
+
+/// Re-designate a model to the worlds where an event could have fired.
+///
+/// This is the repair. The model said the actual world was among W*, the robot
+/// observed something no world in W* could have produced, and one of the two
+/// is wrong. The observation wins: it came from the world, and the model is a
+/// belief about it.
+///
+/// The worlds considered are every world in the model, not just the designated
+/// ones, because the designated set is exactly what is being corrected. A
+/// world already ruled out is the most likely place for the truth to be.
+///
+/// Returns false when no world in the model satisfies the event's
+/// precondition. Then the model cannot represent what happened at all, and
+/// there is nothing to repair it to.
+bool redesignate_for_event(
+  EpistemicState & state, const Event & event, std::string & gave_up)
+{
+  std::vector<WorldIdx> candidates;
+  for (std::uint32_t w = 0; w < state.num_worlds; ++w) {
+    if (!event.precondition || state.holds_at(*event.precondition, w)) {
+      candidates.push_back(static_cast<WorldIdx>(w));
+    }
+  }
+
+  if (candidates.empty()) {
+    return false;
+  }
+
+  std::size_t was_designated = 0;
+  for (const auto w : candidates) {
+    if (state.is_designated(w)) {
+      ++was_designated;
+    }
+  }
+
+  gave_up =
+    "re-designated to the " + std::to_string(candidates.size()) +
+    " world(s) where the observed event could fire, of which " +
+    std::to_string(was_designated) + " had been held possible";
+
+  state.designated.assign(state.rel_words, 0);
+  for (const auto w : candidates) {
+    state.set_designated(w);
+  }
+  return true;
+}
+
+}  // namespace
+
 void EpistemicStateNode::apply_action_callback(
   const std::shared_ptr<plansys2_epistemic_msgs::srv::ApplyAction::Request> request,
   std::shared_ptr<plansys2_epistemic_msgs::srv::ApplyAction::Response> response)
@@ -643,12 +696,60 @@ void EpistemicStateNode::apply_action_callback(
       return;
     }
 
-    response->success = false;
-    response->error =
-      "'" + request->epistemic_action + "' is not applicable in the current "
-      "epistemic state; the model and the world disagree";
-    RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", response->error.c_str());
-    return;
+    // The model and the world disagree. Refusing keeps the model honest about
+    // never having represented what happened, but it also freezes it, and a
+    // replan from a frozen model plans for a world the robot has ruled out.
+    if (!request->allow_recovery) {
+      response->success = false;
+      response->error =
+        "'" + request->epistemic_action + "' is not applicable in the current "
+        "epistemic state; the model and the world disagree";
+      RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", response->error.c_str());
+      return;
+    }
+
+    // Trust the world. Which event to repair towards is the observed one when
+    // there is one, and otherwise any event of the action that some world
+    // could have produced.
+    const Event * target = nullptr;
+    for (const auto & event : action.events) {
+      if (!request->observed_outcome.empty() && event.name != request->observed_outcome) {
+        continue;
+      }
+      if (action.designated_events.count(event.id) == 0) {
+        continue;         // an event that cannot occur is not an explanation
+      }
+      target = &event;
+      break;
+    }
+
+    std::string gave_up;
+    if (!target || !redesignate_for_event(*state_, *target, gave_up)) {
+      response->success = false;
+      response->error =
+        "'" + request->epistemic_action + "' is not applicable and the model "
+        "has no world that could have produced what was observed; it cannot "
+        "represent what happened";
+      RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", response->error.c_str());
+      return;
+    }
+
+    response->recovered = true;
+    response->recovery = gave_up;
+    RCLCPP_WARN(
+      get_logger(),
+      "[epistemic_state] the model could not account for '%s'; trusting the "
+      "observation over the belief: %s",
+      request->epistemic_action.c_str(), gave_up.c_str());
+
+    if (!action.applicable(*state_)) {
+      response->success = false;
+      response->error =
+        "'" + request->epistemic_action + "' is still not applicable after "
+        "repairing the model";
+      RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", response->error.c_str());
+      return;
+    }
   }
 
   if (action.is_ontic()) {
@@ -686,6 +787,41 @@ void EpistemicStateNode::apply_action_callback(
           break;
         }
       }
+      if (chosen == outcomes.size() && request->allow_recovery) {
+        // The robot saw an outcome this model says could not happen. Repair
+        // towards it and split again, so the update proceeds from a model that
+        // can represent what was seen.
+        const Event * target = nullptr;
+        for (const auto & event : action.events) {
+          if (event.name == request->observed_outcome) {
+            target = &event;
+            break;
+          }
+        }
+
+        std::string gave_up;
+        if (target && redesignate_for_event(*state_, *target, gave_up)) {
+          outcomes = product_update_split(*state_, action, task_->kd45);
+          for (std::size_t i = 0; i < outcomes.size(); ++i) {
+            if (outcomes[i].first < action.events.size() &&
+              action.events[outcomes[i].first].name == request->observed_outcome)
+            {
+              chosen = i;
+              break;
+            }
+          }
+          if (chosen < outcomes.size()) {
+            response->recovered = true;
+            response->recovery = gave_up;
+            RCLCPP_WARN(
+              get_logger(),
+              "[epistemic_state] '%s' was observed but the model held it "
+              "impossible; trusting the observation: %s",
+              request->observed_outcome.c_str(), gave_up.c_str());
+          }
+        }
+      }
+
       if (chosen == outcomes.size()) {
         response->success = false;
         response->error =

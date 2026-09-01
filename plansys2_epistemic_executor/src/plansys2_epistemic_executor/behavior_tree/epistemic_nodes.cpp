@@ -215,7 +215,24 @@ BT::NodeStatus ApplyEpistemicUpdate::tick()
   std::string observed;
   getInput("observed", observed);
 
-  const auto answer = client_->apply_action(item.epistemic_action, observed);
+  // A robot whose belief has been contradicted is better off correcting the
+  // belief than refusing to move. Refusing leaves the model as it was, and the
+  // replan that follows a failure would then plan from the very state the
+  // observation ruled out.
+  std::string recover_text = "true";
+  getInput("recover", recover_text);
+  const bool recover = recover_text != "false" && recover_text != "0";
+
+  const auto answer = client_->apply_action(item.epistemic_action, observed, recover);
+
+  if (answer.recovered) {
+    // Loud, because this is a change of belief and not a detail of the update.
+    // Whoever reads the log after a mission needs to see where the model and
+    // the world parted company.
+    RCLCPP_WARN(
+      logger(), "[%s] the model was repaired to accept what was observed: %s",
+      action.c_str(), answer.recovery.c_str());
+  }
   if (!answer.answered || !answer.success) {
     RCLCPP_ERROR(
       logger(), "[%s] the epistemic update failed: %s", action.c_str(),

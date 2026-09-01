@@ -121,6 +121,11 @@ public:
           "observed", "",
           "Outcome the performer observed, normally bound to ExecuteAction's "
           "outcome port; empty to let the state decide"),
+        BT::InputPort<std::string>(
+          "recover", "true",
+          "Whether to repair the model when the observation contradicts it, "
+          "rather than refuse the update and leave a belief the world has "
+          "already ruled out"),
         BT::OutputPort<std::string>("outcome", "The outcome that occurred"),
       });
   }

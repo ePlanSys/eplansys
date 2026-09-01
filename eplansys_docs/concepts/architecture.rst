@@ -462,6 +462,38 @@ service call
 from there can deadlock a single-threaded executor. Setting
 ``goal_from_state`` to false plans for the problem exactly as written.
 
+When the world contradicts the model
+------------------------------------
+
+The model is a belief about the world, and the world can contradict it. A robot
+drives out carrying the map's word that a corridor is clear, looks, and sees
+that it is blocked. ``apply_action`` is then handed an outcome the model holds
+impossible.
+
+Refusing the update keeps the model honest about never having represented what
+happened, but it freezes it, and a frozen model is worse than a corrected one:
+the replan that follows plans from the belief the sensor just contradicted, and
+routes the robot down the corridor it has looked at.
+
+So ``allow_recovery`` on the request repairs the model instead, by trusting the
+observation over the belief. The model is re-designated to the worlds where the
+observed event could have fired, and the update proceeds from there. The
+response reports ``recovered`` and what the repair gave up, and the state logs
+it at warning level, because this is a change of belief rather than a detail of
+an update.
+
+``ApplyEpistemicUpdate`` asks for recovery by default, on the grounds that a
+robot which corrects a wrong belief is in better shape than one which stops.
+Its ``recover`` port turns that off for a deployment that would rather fail.
+
+Recovery has a limit worth stating plainly. Re-designation corrects which world
+is believed actual; it cannot add a world the model never contained. Observing
+something no world in the model could have produced means the model cannot
+represent what happened at all, and that is refused whatever ``allow_recovery``
+says. In the corridor domain, inspecting before driving out is such a case:
+every world has the robot away from the junction, so there is nothing to
+re-designate to.
+
 Replanning from the current belief
 ----------------------------------
 

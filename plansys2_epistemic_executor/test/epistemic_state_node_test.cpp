@@ -316,6 +316,21 @@ protected:
   }
 };
 
+/// The same corridor, with a prior the robot arrived carrying: the map says
+/// the corridor is clear, so only the clear world is held actual, though the
+/// blocked one is still in the model. Both robots are already at the junction.
+///
+/// This is where a belief and a sensor reading can disagree in the ordinary
+/// way, which is what recovery is for.
+class StalePriorTest : public EpistemicStateNodeTest
+{
+protected:
+  std::string task_for_test() const override
+  {
+    return std::string(EPISTEMIC_TASK_DIR) + "/robot-fleet-stale-prior.json";
+  }
+};
+
 TEST_F(EpistemicFleetDomainTest, AnActionCanTellOneAgentMoreThanAnother)
 {
   auto domain = call<plansys2_epistemic_msgs::srv::GetEpistemicDomain>(
@@ -455,6 +470,125 @@ TEST_F(EpistemicFleetDomainTest, TheModelItselfIsUnchangedByAskingForAView)
 
   EXPECT_EQ(before->goal, after->goal);
   EXPECT_EQ(before->holds, after->holds);
+}
+
+// Recovery.
+//
+// The model is a belief about the world, and the world can contradict it. What
+// the state used to do was refuse the update and keep the belief, which is
+// honest about never having represented what happened but leaves the model
+// frozen: the replan that follows then plans from the very state the
+// observation ruled out.
+
+TEST_F(StalePriorTest, AnImpossibleObservationIsRefusedWhenRecoveryIsOff)
+{
+  // The same reading as the test below, and the old behaviour: the model keeps
+  // the map's belief and the update does not happen. Honest, but it leaves a
+  // replan planning for a corridor the robot has just seen is blocked.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "e-inspect-blocked";
+  request->allow_recovery = false;
+
+  auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(response, nullptr);
+
+  EXPECT_FALSE(response->success);
+  EXPECT_FALSE(response->recovered);
+}
+
+TEST_F(StalePriorTest, TheModelIsRepairedRatherThanFrozen)
+{
+  // The robot drives out carrying the map's word that the corridor is clear,
+  // looks, and sees that it is blocked. The model held that impossible, and a
+  // world for it is right there in the model, never having been believed.
+  // Trusting the map over the sensor is the wrong way round.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "e-inspect-blocked";
+  request->allow_recovery = true;
+
+  auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(response, nullptr);
+
+  EXPECT_TRUE(response->success) << response->error;
+  EXPECT_TRUE(response->recovered)
+    << "the update went through without the model admitting it was wrong";
+  EXPECT_FALSE(response->recovery.empty())
+    << "a change of belief has to say what it gave up";
+  EXPECT_EQ(response->outcome, "e-inspect-blocked");
+}
+
+TEST_F(StalePriorTest, ARepairedModelIsTheOneAReplanStartsFrom)
+{
+  // The point of repairing at all: what a replan plans from afterwards has to
+  // be the corrected belief, not the one the sensor contradicted. A robot that
+  // replanned from the map's version would route itself down a blocked
+  // corridor it had just looked at.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "e-inspect-blocked";
+  request->allow_recovery = true;
+
+  auto applied = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(applied, nullptr);
+  ASSERT_TRUE(applied->success) << applied->error;
+
+  // The corridor is blocked, and r1 now knows it. Both have to hold: the fact
+  // the sensor reported, and the knowledge the looking produced.
+  for (const auto & formula : {"blocked", "(Kw r1 blocked)"}) {
+    auto check = std::make_shared<plansys2_epistemic_msgs::srv::CheckFormula::Request>();
+    check->formula = formula;
+
+    auto holds = call<plansys2_epistemic_msgs::srv::CheckFormula>(
+      "epistemic_state/check_formula", check);
+    ASSERT_NE(holds, nullptr);
+    ASSERT_TRUE(holds->success) << holds->error;
+    EXPECT_TRUE(holds->holds)
+      << "the repaired model does not record what the robot just saw: " << formula;
+  }
+}
+
+TEST_F(EpistemicFleetDomainTest, AWorldTheModelNeverHadCannotBeRecoveredTo)
+{
+  // The limit of the repair, stated as a test so it is not mistaken for a bug.
+  // Re-designation corrects which world is believed actual; it cannot add a
+  // world the model never contained. Inspecting before driving out needs
+  // at-junction_r1, which is false in every world here, so there is nothing to
+  // re-designate to.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "e-inspect-clear";
+  request->allow_recovery = true;
+
+  auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(response, nullptr);
+
+  EXPECT_FALSE(response->success);
+  EXPECT_FALSE(response->recovered);
+  EXPECT_NE(response->error.find("cannot represent"), std::string::npos)
+    << response->error;
+}
+
+TEST_F(StalePriorTest, AnObservationNoWorldCouldProduceIsStillRefused)
+{
+  // Recovery trusts the world over the belief, but it cannot invent a world.
+  // An outcome no world in the model could have produced means the model
+  // cannot represent what happened at all, and saying so is the only honest
+  // answer left.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "no-such-event";
+  request->allow_recovery = true;
+
+  auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(response, nullptr);
+  EXPECT_FALSE(response->success);
 }
 
 // Leave through _exit, so the DDS threads never outlive the process.
