@@ -1,0 +1,35 @@
+# The event model of one grounded action.
+#
+# This is what a PDDL action's preconditions and effects cannot express, and so
+# what `get domain action details` on the classical terminal cannot show: an
+# action here is a set of events, each with its own precondition and effects,
+# plus a statement per agent of which events that agent can tell apart. That
+# last part is what makes an action informative rather than merely effective.
+
+# The grounded action name, as `get_epistemic_domain` lists it.
+string action
+---
+bool success
+string error
+
+# Every event of the model, by name.
+string[] events
+
+# The designated events: the ones that can actually occur. One means the action
+# is ontic and its outcome is settled by the action alone. More than one means
+# it is sensing, and which occurred has to be observed.
+string[] designated_events
+
+# The precondition of each event, as a formula in the domain's vocabulary, in
+# the same order as `events`. Empty means the event has none.
+string[] preconditions
+
+# The effects of each event, in the same order: a rendering of which atoms it
+# makes true and which false, and under what condition.
+string[] effects
+
+# One line per agent, in the order `get_epistemic_domain` lists them, saying
+# what that agent observes of this action. This is the part with no PDDL
+# counterpart: two agents can be equally affected by an action and learn
+# entirely different things from it.
+string[] observability

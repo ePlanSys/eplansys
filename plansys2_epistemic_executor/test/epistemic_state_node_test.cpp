@@ -28,6 +28,8 @@
 #include "plansys2_epistemic_executor/EpistemicStateNode.hpp"
 #include "plansys2_epistemic_msgs/srv/announce.hpp"
 #include "plansys2_epistemic_msgs/srv/check_formula.hpp"
+#include "plansys2_epistemic_msgs/srv/get_epistemic_action_details.hpp"
+#include "plansys2_epistemic_msgs/srv/get_epistemic_domain.hpp"
 #include "plansys2_epistemic_msgs/srv/get_goal.hpp"
 #include "plansys2_epistemic_msgs/srv/set_goal.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -53,7 +55,7 @@ protected:
   void SetUp() override
   {
     node_ = std::make_shared<plansys2::EpistemicStateNode>();
-    node_->set_parameter(rclcpp::Parameter("task_file", task_file()));
+    node_->set_parameter(rclcpp::Parameter("task_file", task_for_test()));
 
     ASSERT_EQ(
       node_->configure().id(),
@@ -100,6 +102,10 @@ protected:
     }
     return future.get();
   }
+
+  /// Which task this fixture loads. Overridden by a fixture whose point is a
+  /// different domain.
+  virtual std::string task_for_test() const {return task_file();}
 
   std::shared_ptr<plansys2::EpistemicStateNode> node_;
   rclcpp::Node::SharedPtr client_node_;
@@ -226,6 +232,129 @@ TEST_F(EpistemicStateNodeTest, AnnouncingSomethingImpossibleIsRefused)
   EXPECT_FALSE(response->success);
   EXPECT_NE(response->error.find("no possible world"), std::string::npos)
     << response->error;
+}
+
+// The domain side.
+//
+// The problem expert answers what is true and the state answers what is known.
+// Neither says what the domain declares can be done, and for EPDDL that is a
+// different question from the PDDL one: an action is an event model with
+// per-agent observability, and no part of that has a PDDL surface to be read
+// off. These are the queries that make it visible.
+
+TEST_F(EpistemicStateNodeTest, TheDomainListsWhatItDeclares)
+{
+  auto response = call<plansys2_epistemic_msgs::srv::GetEpistemicDomain>(
+    "epistemic_domain/get_domain",
+    std::make_shared<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Request>());
+
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  EXPECT_EQ(response->agents.size(), 2u);
+  EXPECT_NE(
+    std::find(response->agents.begin(), response->agents.end(), "c1"),
+    response->agents.end());
+
+  EXPECT_NE(
+    std::find(response->atoms.begin(), response->atoms.end(), "muddy_c1"),
+    response->atoms.end());
+
+  ASSERT_FALSE(response->actions.empty());
+  ASSERT_EQ(response->actions.size(), response->sensing.size())
+    << "every action has to say whether it senses";
+
+  // Muddy children is asking and being answered, so every action senses. A
+  // domain where nothing did would have no policy to build.
+  EXPECT_NE(
+    std::find(response->sensing.begin(), response->sensing.end(), true),
+    response->sensing.end());
+
+  EXPECT_FALSE(response->kd45) << "muddy children is S5";
+}
+
+TEST_F(EpistemicStateNodeTest, AnActionShowsItsEventsAndWhoSeesWhat)
+{
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Request>();
+  request->action = "ask_c1";
+
+  auto response = call<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails>(
+    "epistemic_domain/get_action_details", request);
+
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  // Sensing, so more than one event can occur: asking whether c1 is muddy has
+  // a positive answer and a negative one, and which occurs is what the asking
+  // is for.
+  EXPECT_EQ(response->events.size(), 2u);
+  EXPECT_EQ(response->designated_events.size(), 2u);
+
+  ASSERT_EQ(response->preconditions.size(), response->events.size());
+  ASSERT_EQ(response->effects.size(), response->events.size());
+
+  // One line per agent. `ask` is public sensing, so both children learn the
+  // answer, and the point of asking is that they learn it together.
+  ASSERT_EQ(response->observability.size(), 2u);
+  for (const auto & line : response->observability) {
+    EXPECT_NE(line.find("sees which event occurred"), std::string::npos)
+      << "a public announcement that someone missed is not public: " << line;
+  }
+}
+
+/// The corridor mission instead, where the two robots do not learn the same
+/// thing. Its own fixture because the fixture above is bound to one task, and
+/// what makes this worth asserting is the task.
+class EpistemicFleetDomainTest : public EpistemicStateNodeTest
+{
+protected:
+  std::string task_for_test() const override
+  {
+    return std::string(EPISTEMIC_TASK_DIR) + "/robot-fleet.json";
+  }
+};
+
+TEST_F(EpistemicFleetDomainTest, AnActionCanTellOneAgentMoreThanAnother)
+{
+  auto domain = call<plansys2_epistemic_msgs::srv::GetEpistemicDomain>(
+    "epistemic_domain/get_domain",
+    std::make_shared<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Request>());
+
+  ASSERT_NE(domain, nullptr);
+  ASSERT_TRUE(domain->success) << domain->error;
+
+  EXPECT_TRUE(domain->partial_obs)
+    << "inspect tells r1 more than it tells r2, which is what partial means here";
+
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Request>();
+  request->action = "inspect_r1";
+
+  auto response = call<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails>(
+    "epistemic_domain/get_action_details", request);
+
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  ASSERT_EQ(response->observability.size(), 2u);
+  EXPECT_NE(response->observability[0], response->observability[1])
+    << "r1 looks and r2 only sees that it looked; an action reporting the same "
+    "to both is not semi-private at all";
+}
+
+TEST_F(EpistemicStateNodeTest, AnActionTheDomainDoesNotHaveIsRefused)
+{
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Request>();
+  request->action = "no-such-action";
+
+  auto response = call<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails>(
+    "epistemic_domain/get_action_details", request);
+
+  ASSERT_NE(response, nullptr);
+  EXPECT_FALSE(response->success);
+  EXPECT_NE(response->error.find("no-such-action"), std::string::npos) << response->error;
 }
 
 // Leave through _exit, so the DDS threads never outlive the process.

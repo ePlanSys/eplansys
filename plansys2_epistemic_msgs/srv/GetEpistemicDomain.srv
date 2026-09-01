@@ -1,0 +1,45 @@
+# What the loaded EPDDL domain declares.
+#
+# The problem expert answers what is true; the epistemic state answers what is
+# known. Neither answers what the domain says can be done, and for an epistemic
+# domain that is a different question from the PDDL one: an action is an event
+# model with per-agent observability, and none of that has a PDDL surface to be
+# read off. `get domain actions` on the classical terminal is blind to all of
+# it.
+#
+# This is the domain-side counterpart, and it answers about EPDDL because EPDDL
+# is what the system plans over.
+---
+bool success
+string error
+
+# The problem and domain names the task was ground from, empty when the
+# grounding recorded none.
+string domain_name
+string problem_name
+
+# The agents the domain declares. These are the ones a knowledge formula may
+# name, and asking about any other is an error and not a fresh symbol.
+string[] agents
+
+# The atoms, which are the propositional vocabulary every formula is written
+# in.
+string[] atoms
+
+# The grounded actions, by the name the planner searches over. This is the
+# vocabulary an action mapping is keyed by.
+string[] actions
+
+# Which of those are sensing actions, in the same order as `actions`. A sensing
+# action has more than one designated event, so which one occurred has to be
+# observed before a policy can continue.
+bool[] sensing
+
+# The frame the model is interpreted in: true for KD45 (belief), false for S5
+# (knowledge). It decides whether an agent's accessibility must be serial, and
+# so whether believing something falsely is expressible at all.
+bool kd45
+
+# True when some action gives different agents different observability, which
+# is what makes a domain partially observable in the epistemic sense.
+bool partial_obs

@@ -125,6 +125,19 @@ EpistemicStateNode::on_configure(const rclcpp_lifecycle::State & state)
       &EpistemicStateNode::announce_callback, this,
       std::placeholders::_1, std::placeholders::_2));
 
+  get_domain_service_ = create_service<plansys2_epistemic_msgs::srv::GetEpistemicDomain>(
+    "epistemic_domain/get_domain",
+    std::bind(
+      &EpistemicStateNode::get_domain_callback, this,
+      std::placeholders::_1, std::placeholders::_2));
+
+  get_action_details_service_ =
+    create_service<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails>(
+    "epistemic_domain/get_action_details",
+    std::bind(
+      &EpistemicStateNode::get_action_details_callback, this,
+      std::placeholders::_1, std::placeholders::_2));
+
   state_pub_ = create_publisher<std_msgs::msg::String>(
     "epistemic_state/state", rclcpp::QoS(10).transient_local());
 
@@ -246,6 +259,186 @@ void EpistemicStateNode::publish_state()
   std_msgs::msg::String msg;
   msg.data = std::move(data);
   state_pub_->publish(msg);
+}
+
+namespace
+{
+
+/// Whether a rendered formula is the trivial one. The renderer parenthesises,
+/// so the constant arrives as `(true)` as often as `true`, and an
+/// unconditional case should not be printed as if it had a condition.
+bool is_trivially_true(const std::string & rendered)
+{
+  return rendered.empty() || rendered == "true" || rendered == "(true)";
+}
+
+/// What an agent's observability of an action amounts to, in a sentence.
+///
+/// The relation is per event: which other events this agent could confuse this
+/// one with. Two extremes account for most declarations, and naming them is
+/// more use to a reader than printing the relation.
+std::string describe_observability(const Action & action, const ObsCase & obs_case)
+{
+  const std::size_t events = action.events.size();
+
+  bool identity = true;      // tells every event apart
+  bool total = true;         // tells none apart
+
+  for (std::size_t e = 0; e < events && e < obs_case.relation.size(); ++e) {
+    const auto & reachable = obs_case.relation[e];
+    if (reachable.size() != 1 || !reachable.count(static_cast<EventIdx>(e))) {
+      identity = false;
+    }
+    if (reachable.size() != events) {
+      total = false;
+    }
+  }
+
+  if (identity) {
+    return "sees which event occurred";
+  }
+  if (total) {
+    return "sees nothing of which event occurred";
+  }
+
+  std::string out = "tells some events apart: ";
+  for (std::size_t e = 0; e < events && e < obs_case.relation.size(); ++e) {
+    out += (e ? ", " : "");
+    out += action.events[e].name + " ~ {";
+    bool first = true;
+    for (const auto other : obs_case.relation[e]) {
+      if (other < events) {
+        out += (first ? "" : " ");
+        out += action.events[other].name;
+        first = false;
+      }
+    }
+    out += "}";
+  }
+  return out;
+}
+
+}  // namespace
+
+void EpistemicStateNode::get_domain_callback(
+  const std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Request> request,
+  std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Response> response)
+{
+  (void)request;
+
+  if (!task_) {
+    response->success = false;
+    response->error = "no task is loaded, so there is no domain to describe";
+    return;
+  }
+
+  response->agents = task_->agent_names;
+  response->atoms = task_->atom_names;
+
+  for (const auto & action : task_->actions) {
+    response->actions.push_back(action.name);
+    // Sensing is not a flag the domain sets; it is what having more than one
+    // event that can occur amounts to.
+    response->sensing.push_back(!action.is_ontic());
+  }
+
+  response->kd45 = task_->kd45;
+  response->partial_obs = task_->partial_obs;
+  response->success = true;
+}
+
+void EpistemicStateNode::get_action_details_callback(
+  const std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Request> request,
+  std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Response> response)
+{
+  if (!task_) {
+    response->success = false;
+    response->error = "no task is loaded, so there is no domain to describe";
+    return;
+  }
+
+  const auto it = task_->action_index.find(request->action);
+  if (it == task_->action_index.end()) {
+    // Named and not found is a disagreement about which problem is being
+    // solved, so it is reported as one instead of answered emptily.
+    response->success = false;
+    response->error =
+      "the domain declares no action '" + request->action +
+      "'; get_domain lists the ones it does";
+    return;
+  }
+
+  const auto & action = task_->actions[it->second];
+
+  for (const auto & event : action.events) {
+    response->events.push_back(event.name);
+
+    response->preconditions.push_back(
+      event.precondition ? render_formula(*task_, *event.precondition) : std::string());
+
+    std::string effects;
+    const auto append = [&](const std::string & atom, const std::string & value,
+        const FormulaPtr & when) {
+        if (!effects.empty()) {
+          effects += ", ";
+        }
+        effects += atom + " := " + value;
+        // A postcondition is conditional in general; an unconditional one is
+        // the special case where the condition is just true.
+        if (when) {
+          const auto text = render_formula(*task_, *when);
+          if (!is_trivially_true(text)) {
+            effects += " when " + text;
+          }
+        }
+      };
+
+    for (const auto & [atom, when] : event.post_true) {
+      if (atom < task_->atom_names.size()) {
+        append(task_->atom_names[atom], "true", when);
+      }
+    }
+    for (const auto & [atom, when] : event.post_false) {
+      if (atom < task_->atom_names.size()) {
+        append(task_->atom_names[atom], "false", when);
+      }
+    }
+    response->effects.push_back(effects);
+  }
+
+  for (const auto designated : action.designated_events) {
+    if (designated < action.events.size()) {
+      response->designated_events.push_back(action.events[designated].name);
+    }
+  }
+
+  for (std::size_t agent = 0; agent < task_->agent_names.size(); ++agent) {
+    const auto & name = task_->agent_names[agent];
+
+    if (agent >= action.obs_cases.size() || action.obs_cases[agent].empty()) {
+      // The product update treats an agent with no case as fully observant, so
+      // that is what the domain says about it.
+      response->observability.push_back(name + ": sees which event occurred");
+      continue;
+    }
+
+    std::string line = name + ": ";
+    const auto & cases = action.obs_cases[agent];
+    for (std::size_t c = 0; c < cases.size(); ++c) {
+      if (c) {
+        line += "; otherwise ";
+      }
+      const auto condition =
+        cases[c].condition ? render_formula(*task_, *cases[c].condition) : std::string("true");
+      if (!is_trivially_true(condition)) {
+        line += "when " + condition + ", ";
+      }
+      line += describe_observability(action, cases[c]);
+    }
+    response->observability.push_back(line);
+  }
+
+  response->success = true;
 }
 
 std::string EpistemicStateNode::goal_text() const

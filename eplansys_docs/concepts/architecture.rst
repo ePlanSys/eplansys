@@ -311,6 +311,42 @@ Four node types are registered by the plugin library
    every leaf was believed to reach it, but that belief was formed against the
    model at planning time.
 
+The domain side
+---------------
+
+The problem expert answers what is true and the epistemic state answers what is
+known. Neither says what the domain declares can be done, and for EPDDL that is
+a different question from the PDDL one: an action here is an event model with
+per-agent observability, and no part of that has a PDDL surface. ``get domain
+action details`` on the classical terminal is blind to all of it.
+
+Two services on the same node answer it, named ``epistemic_domain`` to keep
+what is being asked about clear. They live on the node that holds the task
+because in EPDDL the domain and the problem are one grounded artefact: the
+event models and the initial model arrive together, and a separate node
+answering about the first would have to ground the same sources again.
+
+``epistemic_domain/get_domain``
+   The agents, the atoms, the grounded actions, and which of those are sensing.
+   Sensing is not a flag a domain sets; it is what having more than one event
+   that can occur amounts to. It also reports the frame, S5 or KD45, and
+   whether any action gives two agents different observability.
+
+``epistemic_domain/get_action_details``
+   One action's event model: every event with its precondition and effects,
+   which of them can actually occur, and a line per agent saying what that
+   agent observes of it.
+
+That last line is the part with no PDDL counterpart. For the corridor mission's
+``inspect_r1``::
+
+   r1: sees which event occurred
+   r2: sees nothing of which event occurred
+
+Two agents equally affected by an action, learning entirely different things
+from it. The terminal reaches both services through ``ros2 plansys2 epistemic
+domain`` and ``ros2 plansys2 epistemic action <name>``.
+
 Epistemic state
 ---------------
 

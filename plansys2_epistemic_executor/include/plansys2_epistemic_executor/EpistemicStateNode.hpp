@@ -23,6 +23,8 @@
 #include "plansys2_epistemic_msgs/srv/announce.hpp"
 #include "plansys2_epistemic_msgs/srv/apply_action.hpp"
 #include "plansys2_epistemic_msgs/srv/check_formula.hpp"
+#include "plansys2_epistemic_msgs/srv/get_epistemic_action_details.hpp"
+#include "plansys2_epistemic_msgs/srv/get_epistemic_domain.hpp"
 #include "plansys2_epistemic_msgs/srv/get_goal.hpp"
 #include "plansys2_epistemic_msgs/srv/load_task.hpp"
 #include "plansys2_epistemic_msgs/srv/set_goal.hpp"
@@ -116,6 +118,16 @@ private:
     const std::shared_ptr<plansys2_epistemic_msgs::srv::Announce::Request> request,
     std::shared_ptr<plansys2_epistemic_msgs::srv::Announce::Response> response);
 
+  void get_domain_callback(
+    const std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Request> request,
+    std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Response> response);
+
+  void get_action_details_callback(
+    const std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Request>
+    request,
+    std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Response>
+    response);
+
   /// The goal as text, or empty when there is none. Rendered rather than
   /// stored as text so that a goal that came from the task and one that was
   /// set through the service read identically.
@@ -131,6 +143,18 @@ private:
   rclcpp::Service<plansys2_epistemic_msgs::srv::GetGoal>::SharedPtr get_goal_service_;
   rclcpp::Service<plansys2_epistemic_msgs::srv::SetGoal>::SharedPtr set_goal_service_;
   rclcpp::Service<plansys2_epistemic_msgs::srv::Announce>::SharedPtr announce_service_;
+
+  /// The domain-side services.
+  ///
+  /// They live on this node because in EPDDL the domain and the problem are
+  /// one grounded artefact: the task carries the event models and the initial
+  /// model together, and a separate node answering about the first would have
+  /// to ground the same sources a second time to do it. They are named apart
+  /// so that what is being asked about stays clear.
+  rclcpp::Service<plansys2_epistemic_msgs::srv::GetEpistemicDomain>::SharedPtr
+    get_domain_service_;
+  rclcpp::Service<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails>::SharedPtr
+    get_action_details_service_;
   rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::String>::SharedPtr state_pub_;
 
   /// The loaded task and the model as it now stands. Absent until a task is
