@@ -103,7 +103,7 @@ int main(int argc, char ** argv)
   const auto actions =
     pddl_domain.empty() ?
     std::vector<std::pair<std::string, std::size_t>>{} :
-    plansys2::read_pddl_actions(pddl_domain);
+  plansys2::read_pddl_actions(pddl_domain);
 
   if (!epddl_domain.empty() && schemas.empty()) {
     std::cerr << program << ": " << epddl_domain << " declares no actions\n";

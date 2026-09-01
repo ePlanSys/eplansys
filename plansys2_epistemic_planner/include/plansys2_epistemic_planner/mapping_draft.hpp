@@ -16,6 +16,7 @@
 #define PLANSYS2_EPISTEMIC_PLANNER__MAPPING_DRAFT_HPP_
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "plansys2_epistemic_planner/task.hpp"
