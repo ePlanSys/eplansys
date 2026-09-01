@@ -60,7 +60,7 @@ Packages
        announcement.
    * - ``plansys2_aletheia_plan_solver``
      - An alternative plan solver plugin that runs the same planner as an
-       external process rather than in process, for deployments where the
+       external process instead of in process, for deployments where the
        planner binary is built and versioned separately.
    * - ``plansys2_tui_cli``
      - The command line front end: the ``ros2 plansys2`` verbs, among them

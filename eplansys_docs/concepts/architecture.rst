@@ -136,7 +136,7 @@ Running the planner as a subprocess
 
 ``plansys2_aletheia_plan_solver`` provides a second plan solver plugin,
 ``plansys2/AletheiaPlanSolver``, which reaches the same planner by running its
-binary rather than by linking it. It is to the epistemic planner what
+binary instead of linking it. It is to the epistemic planner what
 ``plansys2_popf_plan_solver`` is to POPF: an adapter that writes the input to a
 file, runs a process under the solver timeout, and reads its output back.
 
@@ -158,7 +158,7 @@ moves between the two plugins by changing ``plugin`` alone.
 
 The plan file names actions and event indices only. What a branch is taken on,
 what an action requires to be known, and what the goal is are properties of the
-task rather than of the plan, so the task is parsed on this side as well and
+task, not of the plan, so the task is parsed on this side as well and
 the conversion is performed by ``plansys2_epistemic_planner``'s own policy
 serialisation. The returned plan is also validated against the task as parsed
 here, in addition to the planner's own validation: the two can disagree only if
@@ -256,7 +256,7 @@ Four node types are registered by the plugin library
    reported and runs the continuation planned for it. Ports: ``node``,
    ``outcome``, the observed outcome, and ``outcomes``, the outcomes in child
    order, separated by semicolons. An outcome the policy does not list fails
-   the node rather than defaulting to a branch: every branch was built for a
+   the node instead of defaulting to a branch: every branch was built for a
    different belief, and running one anyway is a robot acting confidently on a
    belief nothing supports. The failure reaches the executor, whose answer to a
    failed plan is to replan.
@@ -304,12 +304,13 @@ is reachable from a terminal through ``ros2 plansys2 epistemic``, described in
    * - ``epistemic_state/set_goal``
      - Aim at something else, without re-grounding the problem. The formula is
        parsed against the loaded task, so a goal naming an agent or atom the
-       task does not have is refused here rather than failing later inside a
+       task does not have is refused here, before it can fail inside a
        planning request. An empty goal restores the task's own.
    * - ``epistemic_state/announce``
      - Everyone just learned that this is true. The model is restricted to the
        worlds where the formula holds. An announcement that holds nowhere the
-       state considers possible is refused rather than emptying the model.
+       state considers possible is refused, since applying it would empty
+       the model.
 
 It declares the same four EPDDL parameters as the solver, plus ``task_file``,
 and publishes on ``epistemic_state/state`` with transient-local durability. A
@@ -319,7 +320,7 @@ the same pair of ``.epddl`` files is what keeps the policy and the model it is
 checked against expressed in one vocabulary. The failure the arrangement is
 there to prevent is a policy naming an action the state has never heard of.
 
-It is a managed node of the system rather than something started alongside it.
+It is a managed node of the system, not a process started alongside it.
 Both launch files start it on ``epistemic_state:=True``, and the lifecycle
 manager configures and activates it with the other four and takes it down with
 them. It is off by default, since a classical system has no use for it.
@@ -331,14 +332,13 @@ four share one. That is not an oversight: ``plansys2_node`` manages it through
 other distribution's workflow builds is unchanged. The same reasoning as
 ``bt_node_plugins`` on the executor, one level up.
 
-The switch is a single launch argument rather than a parameter because it
-decides two things that must agree: whether the process is started, and
-whether the manager waits for it. A parameters file can set the second but not
-the first, so the argument overrides the parameters file rather than the other
-way round.
+The switch is a launch argument, not a parameter, because it decides two
+things that must agree: whether the process is started, and whether the manager
+waits for it. A parameters file can set the second but not the first, so the
+argument takes precedence over the parameters file.
 
 ``startup_function`` in ``plansys2_lifecycle_manager`` brings up whatever map
-it is given, skipping a name it does not find, which is what lets one function
+it is given, skipping a name it does not find, so one function
 serve a four-node classical bringup, a five-node epistemic one, and the
 six-node system that adds perception. The standalone
 ``lifecycle_manager_node`` the distributed launch runs takes the set as its
@@ -350,27 +350,28 @@ Announcing is the counterpart of the problem expert's ``set predicate``, and it
 is deliberately not the same operation. Setting a predicate changes what is
 true; announcing changes what is *known*. Every agent that could not previously
 tell the surviving worlds apart from the ruled-out ones now can, and knows that
-the others can too, which is why announcing ``muddy_c1`` in the muddy-children
+the others can too, so announcing ``muddy_c1`` in the muddy-children
 model makes ``(K c1 muddy_c1)`` hold when it did not before. Knowledge that
 reaches only one agent is not a public announcement and cannot be expressed this
-way; that needs an event model, which is what an action is.
+way; that needs an event model, which an action supplies.
 
 The goal it holds is what the plan solver plans for. The solver subscribes to
 ``epistemic_state/state``, where the goal travels latched, and replaces the
-task's goal with it when the two differ. It listens rather than asks because
-planning runs inside the planner's own service callback, and a service call
+task's goal with it when the two differ. It subscribes instead of calling a
+service because planning runs inside the planner's own service callback, and a
+service call
 from there can deadlock a single-threaded executor. Setting
 ``goal_from_state`` to false plans for the problem exactly as written.
 
-The state advances by executed actions rather than by watching the world, which
-is what makes it a belief state rather than a log. When it disagrees with what
+The state advances by executed actions, not by observing the world, which is
+what distinguishes a belief state from a log. When it disagrees with what
 the robot observed, the disagreement surfaces at ``apply_action`` as an outcome
 the model cannot account for: a reason to replan, not to overwrite the model
 quietly.
 
 Which outcome occurred is a question about the world, not about the model. When
 the state designates a single world it already answers it, and the response
-reports it. When it designates several it genuinely does not know, and the
+reports it. When it designates several the model is undetermined, and the
 observation has to come from whoever did the sensing.
 
 Perception
@@ -409,8 +410,8 @@ it does not have.
 The second is the vocabulary. A region is a place on a map; an atom is a name
 in a grounded task, and those names are flat: ``blocked``, ``at-junction_r1``.
 Each region therefore names the atom its occupancy decides and says which way
-that atom points, which is what lets the corridor of the fleet tutorial be
-``blocked`` rather than ``clear_corridor``:
+that atom points, so the corridor of the fleet tutorial can be
+``blocked`` instead of ``clear_corridor``:
 
 .. code-block:: yaml
 
@@ -425,7 +426,7 @@ that atom points, which is what lets the corridor of the fleet tutorial be
          outcome_when_clear: "e-inspect-clear"
          outcome_when_blocked: "e-inspect-blocked"
 
-Regions are given in metres in the map frame rather than in cells because a map
+Regions are given in metres in the map frame, not in cells, because a map
 is re-gridded as it grows: the origin moves and the width changes, and a region
 written in cell indices would come to mean somewhere else without saying so.
 
@@ -435,9 +436,9 @@ reports through ``apply_action``: the observation belongs to an action the
 planner branched on, the state has its event model, and the update is the one
 the plan accounted for. A region without a binding is announced instead, as
 information that arrived outside the plan: an operator or two robots
-reconciling their maps, which is exactly what a public announcement is for.
+reconciling their maps, which is the purpose of a public announcement.
 
-It reports on change rather than on every grid. A map arrives several times a
+It reports only on change. A map arrives several times a
 second and says the same thing each time; a repeated announcement is harmless
 in the model, since restricting to worlds where a formula already holds changes
 nothing, but a sensing action applied twice is not, and both routes follow the
@@ -450,14 +451,14 @@ manager configures and activates it with the others. It is off by default, and
 it starts watching nothing until the parameters file names regions under
 ``epistemic_perception:``.
 
-Asking for it without ``epistemic_state:=True`` is refused rather than
-started. Every route perception has for reporting is a call on the state, so
+Asking for it without ``epistemic_state:=True`` is refused. Every route
+perception has for reporting is a call on the state, so
 the pair is not a degraded system but one that cannot work at all, and both the
 distributed launch and ``plansys2_node`` say so instead of bringing up a node
 with nowhere to report. As with the state, ``plansys2_bringup`` manages it by
 name over services and links against none of it.
 
-Regions are declared at configure time rather than at construction, since there
+Regions are declared at configure time, not at construction, since there
 is no list of regions before the parameters are read. Configure is reachable
 more than once, so the node declares each region's settings only if they are
 not already declared, and ``on_cleanup`` releases the subscription and the
@@ -524,7 +525,7 @@ Package boundaries
 
 The builder is a separate package because it is the only piece that needs the
 executor's plugin API. Keeping it apart lets everything else build and be
-tested against a released distribution rather than only against this fork.
+tested against a released distribution as well as against this fork.
 
 Within ``plansys2_epistemic_executor`` the same boundary is drawn once more.
 The policy and its rendering as a behavior tree are built as a separate

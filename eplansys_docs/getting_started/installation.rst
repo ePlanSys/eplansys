@@ -32,8 +32,8 @@ Supported distributions
        ``plansys2_executor``.
 
 Two differences between the distributions are what the list above turns on,
-and both are asked about as questions about the API rather than about the
-distribution's name, in ``plansys2_core/Compat.hpp``:
+and both are posed as questions about the API, not about the distribution's
+name, in ``plansys2_core/Compat.hpp``:
 
 ``plansys2::SpinExecutor``
    ``rclcpp::experimental::executors::EventsExecutor`` where the header
@@ -70,12 +70,12 @@ are older than it wants.
 
 ``plansys2_epddl_grounder`` needs the ``plank`` EPDDL toolkit at run time,
 which is the third source dependency in ``dependency_repos.repos``. It is a
-plain CMake project rather than a ROS package, so colcon builds it as one and
+plain CMake project, not a ROS package, so colcon builds it as one and
 installs its binary into ``<prefix>/bin``, which puts ``plank`` on PATH once
 the workspace is sourced; building it requires ``libboost-filesystem-dev``.
 Nothing links against it, so a workspace built without it still builds and
 still passes its tests. Only the EPDDL front end is unavailable, and the
-grounder says so rather than failing obscurely.
+grounder reports it explicitly instead of failing obscurely.
 
 The classical PlanSys2 packages additionally need two source dependencies,
 listed in the same file: ``popf`` and ``cascade_lifecycle``. Building ``popf``
@@ -118,7 +118,7 @@ so ``--packages-up-to`` would never reach it.
 
 Note that ``plansys2_epistemic_bt_builder`` is deliberately excluded from that
 chain: it is the only epistemic package that depends on ``plansys2_executor``,
-which is what keeps the rest buildable against a released distribution.
+which keeps the rest buildable against a released distribution.
 
 Language standard
 -----------------
@@ -142,8 +142,8 @@ reading, and the
 rendering of a policy into a behavior tree that the real BehaviorTree.CPP
 factory accepts. ``plansys2_epistemic_perception`` additionally brings up a
 real ``epistemic_state`` node and checks that what it reads off a grid arrives
-there as the outcome or announcement it was configured to send, rather than
-against a stand-in for that node. ``plansys2_tui_cli``'s tests are the three
+there as the outcome or announcement it was configured to send, with no
+stand-in for that node. ``plansys2_tui_cli``'s tests are the three
 ament linters and a check that every declared entry point imports, which is
 what catches a verb that would only fail when a user typed it. The grounder's own tests run against a stand-in for plank, so
 they pass whether or not it is built; the one test that grounds the packaged

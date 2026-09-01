@@ -49,13 +49,13 @@ work of the same author, also under the Apache License, Version 2.0: the
 Kripke state representation, the DEL product update, bisimulation contraction,
 formula representation and model checking, the heuristics, the search
 strategies, the selection policy, the parser and the validator. It is
-incorporated in process here, rather than invoked as a binary, which is what
-``plansys2_aletheia_plan_solver`` does instead. The rest of that package, the
+incorporated in process here; ``plansys2_aletheia_plan_solver`` invokes the
+binary instead. The rest of that package, the
 plan solver plugin, the policy plan serialisation, the action mapping and the
 formula text front end, is original to this repository.
 
 ``plansys2_epddl_grounder`` includes three files reproduced verbatim from other
-projects, used at run time rather than compiled. ``NOTICE`` names them and
+projects, used at run time and not compiled. ``NOTICE`` names them and
 their licences.
 
 Copyright

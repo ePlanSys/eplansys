@@ -97,7 +97,7 @@ An action is an event model, and applying it is the DEL product update
    what makes an action's outcomes distinguishable, and therefore what a policy
    branches on.
 
-Each takes a flag selecting KD45 rather than S5 semantics, and a world cap
+Each takes a flag selecting KD45 or S5 semantics, and a world cap
 policy.
 
 Bisimulation contraction
@@ -110,7 +110,7 @@ therefore come back byte-identical.
 
 That canonical labelling is what makes the closed list cheap. A contracted
 state costs kilobytes; the search stores a 128-bit structural fingerprint
-instead, and comparison is two integer tests rather than a graph walk.
+instead, reducing comparison to two integer tests in place of a graph walk.
 
 World cap policies
 ------------------
@@ -129,7 +129,7 @@ constructed once per search from the task and consulted on every update.
    practice.
 
 The mapping from task properties to a policy lives in one function,
-``make_world_cap_policy``, rather than at each call site.
+``make_world_cap_policy``, not at each call site.
 
 Heuristics
 ----------
@@ -172,7 +172,7 @@ In classical planning one relaxes by ignoring delete effects, because progress
 is monotone growth of a fact set. In DEL the actions that establish knowledge
 are announcements and sensing, which carry no ontic effect at all: they make
 progress by eliminating worlds an agent considers possible. The monotone
-quantity is therefore the world set, shrinking rather than growing, and the
+quantity is therefore the world set, which shrinks as search proceeds, and the
 relaxation applies every eliminating action at once, ignoring the interference
 between them:
 
@@ -191,7 +191,7 @@ The closure ignores that announcements have preconditions of their own, that
 events pruning well in the relaxation may be inconsistent with the actual
 world, and that ontic effects can restore uncertainty. Conjuncts it cannot
 resolve fall back to a residual epistemic distance offset past the last layer,
-so the estimate degrades to a gradient rather than to a constant.
+so the estimate degrades to a gradient, not to a constant.
 
 Search strategies
 -----------------
@@ -207,20 +207,20 @@ accepts:
 
 ``aostar``
    AO* over the AND/OR graph induced by sensing actions. This is the strategy
-   that produces a branching policy rather than a sequence: the OR nodes are
+   that produces a branching policy in place of a sequence: the OR nodes are
    action choices and the AND nodes are the outcomes of a sensing action, all
    of which must be handled.
 
 The search records why branches were discarded, not merely how many.
 ``PlannerStats`` separates dead ends, duplicates, updates rejected by the world
 cap, updates whose designated set was emptied by KD45 seriality repair, and
-genuinely inapplicable actions. Only the last is a property of the domain, and
+truly inapplicable actions. Only the last is a property of the domain, and
 collapsing them makes a failed run unreadable.
 
 Selection policy
 ----------------
 
-Which strategy and heuristic to use is decided by a rule table rather than by
+Which strategy and heuristic to use is decided by a rule table, not by
 control flow. Rules are evaluated first-match-wins over an ordered list; each
 rule is a conjunction of comparisons against named numeric features of the
 task, and a rule with no conditions always matches and so acts as a terminal

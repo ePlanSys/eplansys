@@ -155,7 +155,7 @@ Known gaps
 .. todo::
 
    The negative case is not covered: an outcome the policy does not plan for,
-   where ``EpistemicSwitch`` must fail rather than guess. It needs a performer
+   where ``EpistemicSwitch`` must fail instead of guessing. It needs a performer
    that reports something the model cannot account for.
 
 * ``ObservedOutcome`` is a test's stand-in for a sensor. A deployment still

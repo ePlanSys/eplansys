@@ -8,8 +8,8 @@ Both robots route around the corridor, so the mission is not finished until
 both know whether it is passable.
 
 Nothing in this scenario changes the corridor. What changes is who knows about
-it, which is why a classical planner has nothing to work with here, and why
-the solution is a policy rather than a sequence.
+it, so a classical planner has nothing to work with here, and
+the solution is a policy and not a sequence.
 
 The smallest scenario of the fleet family, and the one to read first: one
 corridor, one sensing action, one branch.
@@ -69,8 +69,8 @@ entirely in who observes what.
      :observability-conditions (default Fully))
 
 ``report-clear`` is the mirror of ``report-blocked``: a robot can only report
-what it found, which is why there are two announcements rather than one action
-with a parameter.
+what it found, so the domain has two announcements in place of one action with
+a parameter.
 
 .. graphviz::
    :caption: What each action type does to the fleet's knowledge
@@ -138,7 +138,7 @@ importantly, what it leaves open:
 
 It never says whether the corridor is blocked. The theory is therefore
 satisfied by two worlds, both designated: the model is multi-pointed, and the
-corridor genuinely is one way or the other without anyone (including the
+corridor is one way or the other without anyone (including the
 planner) knowing which. That is the property that makes the solution branch,
 and the reason this scenario exists.
 
@@ -180,8 +180,8 @@ and the reason this scenario exists.
 
 A double circle is a designated world, one the fleet cannot rule out as the
 actual one. An edge labelled ``r1`` is r1 being unable to tell the two apart.
-The mission is finished when no agent has an edge left, which is exactly what
-``Kw`` asks for.
+The mission is finished when no agent has an edge left, the condition ``Kw``
+expresses.
 
 Grounding
 ---------

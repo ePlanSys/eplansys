@@ -5,7 +5,7 @@ The fleet scenario at its third size: four robots, three routes out of the
 depot, any of which may be blocked, and every robot needing to know the state
 of all three.
 
-It is deliberately big rather than clever. The mechanisms are exactly those of
+It is deliberately big, not clever. The mechanisms are those of
 :doc:`fleet_corridor` and :doc:`fleet_depot` (drive, look, say what you saw)
 with nothing added, so that what grows between the three scenarios is the
 search and not the modelling. That is what makes the family worth having: the
@@ -87,7 +87,7 @@ Grounding takes under a tenth of a second and reports the numbers above in the
 task's ``planning-task-info``: 4 agents, 15 atoms, 48 actions, 8 initial
 worlds. The action mapping for it *is* checked in, at
 ``plansys2_epistemic_planner/examples/mappings/robot-fleet-survey.json``, since
-it is a fixed correspondence rather than a derived artefact.
+it is a fixed correspondence, not a derived artefact.
 
 The policy
 ----------
@@ -161,8 +161,8 @@ As in the other two, with the survey task and mapping:
 
 ``plan_solver_timeout`` is the parameter to notice. Its default is 15 seconds,
 which this scenario exceeds by a factor of four: leave it and the planner
-returns no plan, with the search abandoned rather than failed. The two smaller
-scenarios never come close to it, which is exactly why it is easy to forget.
+returns no plan, with the search abandoned and not failed. The two smaller
+scenarios never approach it, so it is easy to forget.
 
 Performance
 -----------
@@ -202,8 +202,8 @@ policy chooses (``ks``):
 That last comparison is the point of running this scenario at all. Across the
 three sizes the search grows by five orders of magnitude and the resident set
 does not move, because what the planner holds is a bisimulation-contracted
-model of what the agents know rather than an enumeration of the histories that
-could have produced it.
+model of what the agents know, not an enumeration of the histories that could
+have produced it.
 
 .. list-table:: The family, side by side
    :header-rows: 1
