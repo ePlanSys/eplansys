@@ -61,7 +61,8 @@ OUTCOMES = {
 def launch_setup(context, *args, **kwargs):
     pkg = get_package_share_directory('eplansys_demo')
 
-    task = os.path.join(pkg, 'epddl', 'corridor-task.json')
+    domain = os.path.join(pkg, 'epddl', 'corridor.epddl')
+    problem = os.path.join(pkg, 'epddl', 'corridor-problem.epddl')
     mapping = os.path.join(pkg, 'pddl', 'corridor-mapping.json')
     model = os.path.join(pkg, 'pddl', 'corridor.pddl')
 
@@ -71,11 +72,14 @@ def launch_setup(context, *args, **kwargs):
             f"corridor:={corridor} is not one of {sorted(OUTCOMES)}. It is what "
             'the robot turns out to see when it looks.')
 
-    # The parameters name the task by placeholder, because its path belongs to
-    # whoever installed the package.
+    # The parameters name the sources by placeholder, because their paths
+    # belong to whoever installed the package.
     with open(os.path.join(pkg, 'params', 'corridor.yaml')) as handle:
         params = handle.read()
-    params = params.replace('TASK_FILE', task).replace('MAPPING_FILE', mapping)
+    params = (params
+              .replace('EPDDL_DOMAIN', domain)
+              .replace('EPDDL_PROBLEM', problem)
+              .replace('MAPPING_FILE', mapping))
 
     filled = tempfile.NamedTemporaryFile(
         mode='w', suffix='_corridor.yaml', delete=False)

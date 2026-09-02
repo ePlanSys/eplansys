@@ -1,0 +1,180 @@
+(define (domain survey-team)
+
+  ;; A three-robot survey team, and a mission whose difficulty is entirely in
+  ;; who is allowed to know what.
+  ;;
+  ;; A site may be contaminated. Only a robot standing at the site can tell,
+  ;; and a robot watching another one scan learns that it scanned, not what it
+  ;; found. So far this is the corridor mission with a third robot.
+  ;;
+  ;; What makes it a different problem is the third robot. `observer` is a
+  ;; machine the team does not control -- a contractor's drone, a public
+  ;; telemetry feed -- and the mission forbids it learning the finding. That
+  ;; single negative goal is what the domain is built around: it rules out the
+  ;; open channel, which is otherwise the cheapest way for the team to inform
+  ;; itself, and forces the planner to choose a channel by who can hear it.
+  ;;
+  ;; Every action below therefore comes in more than one form, differing only
+  ;; in its audience. A classical planner cannot tell them apart: they have the
+  ;; same effects on the world, and none of them has any effect on the world at
+  ;; all.
+
+  (:requirements
+    :equality :partial-observability :list-comprehensions :lists
+    :ontic-actions :group-modalities
+    :negative-preconditions :modal-preconditions :knowing-whether
+  )
+
+  (:action-type-libraries intermediate)
+
+  (:predicates
+    (contaminated)               ; the site is contaminated
+    (on-site ?i - agent)         ; ?i is close enough to scan
+  )
+
+  (:event nil)
+
+  ;--------------------DRIVE TO THE SITE------------------
+  ;
+  ; Ontic and public. A survey team tracks its own members, and the observer
+  ; watches them move: nobody is hiding the fact that they went.
+
+  (:event e-goto-site
+    :parameters (?i - agent)
+    :precondition (not (on-site ?i))
+    :effects (on-site ?i)
+  )
+
+  (:action goto-site
+    :parameters (?i - agent)
+    :action-type (public-ontic (e-goto-site ?i))
+    :observability-conditions (default Fully)
+  )
+
+  ;--------------------SCAN, IN THE OPEN------------------
+  ;
+  ; Semi-private sensing: the scanning robot learns the answer and everyone
+  ; else sees it scan. The observer learns that a scan happened and nothing
+  ; about the result, which is what a camera on somebody else's robot amounts
+  ; to.
+
+  (:event e-scan-dirty
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (on-site ?i)
+        (contaminated)
+        (<Kw. ?i> (contaminated)) )
+  )
+
+  (:event e-scan-clean
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (on-site ?i)
+        (not (contaminated))
+        (<Kw. ?i> (contaminated)) )
+  )
+
+  (:action scan
+    :parameters (?i - agent)
+    :action-type (semi-private-sensing
+      (e-scan-dirty ?i)
+      (e-scan-clean ?i) )
+    :observability-conditions
+      (:and
+        (?i Fully)
+        (default Partially) )
+  )
+
+  ;--------------------REPORT ON THE OPEN CHANNEL------------------
+  ;
+  ; Public announcement: everyone hears, including the observer. It is the
+  ; cheapest way to inform the team and the mission forbids it, which is the
+  ; whole point of the domain. The planner has to discover that this action,
+  ; which achieves the positive half of the goal in one step, destroys the
+  ; negative half.
+  ;
+  ; Knowledge is factive, so hearing "?i knows it is contaminated" is learning
+  ; that it is.
+
+  (:event e-open-dirty
+    :parameters (?i - agent)
+    :precondition ([?i] (contaminated))
+  )
+
+  (:event e-not-open-dirty
+    :parameters (?i - agent)
+    :precondition (not ([?i] (contaminated)))
+  )
+
+  (:action broadcast-dirty
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-open-dirty ?i)
+      (e-not-open-dirty ?i) )
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-open-clean
+    :parameters (?i - agent)
+    :precondition ([?i] (not (contaminated)))
+  )
+
+  (:event e-not-open-clean
+    :parameters (?i - agent)
+    :precondition (not ([?i] (not (contaminated))))
+  )
+
+  (:action broadcast-clean
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-open-clean ?i)
+      (e-not-open-clean ?i) )
+    :observability-conditions (default Fully)
+  )
+
+  ;--------------------REPORT ON THE TEAM CHANNEL------------------
+  ;
+  ; Private announcement: the speaker and the named listener learn; everyone
+  ; else is oblivious, and does not even learn that anything was said. This is
+  ; the encrypted link between two robots of the same team.
+  ;
+  ; This is the action the mission needs, and the planner has to find it by
+  ; elimination: it is the only way to move the finding from one robot to
+  ; another without the observer coming to know it.
+
+  (:event e-team-dirty
+    :parameters (?i - agent)
+    :precondition ([?i] (contaminated))
+  )
+
+  (:action relay-dirty
+    :parameters (?i ?j - agent)
+    :action-type (private-announcement
+      (e-team-dirty ?i)
+      (nil) )
+    :observability-conditions
+      (:and
+        (?i Fully)
+        (?j Fully)
+        (default Oblivious) )
+  )
+
+  (:event e-team-clean
+    :parameters (?i - agent)
+    :precondition ([?i] (not (contaminated)))
+  )
+
+  (:action relay-clean
+    :parameters (?i ?j - agent)
+    :action-type (private-announcement
+      (e-team-clean ?i)
+      (nil) )
+    :observability-conditions
+      (:and
+        (?i Fully)
+        (?j Fully)
+        (default Oblivious) )
+  )
+)

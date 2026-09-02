@@ -1,0 +1,30 @@
+# The site survey, as parameters.
+#
+# The solver is given EPDDL sources, not a grounded task: it runs plank on
+# first use and again whenever the sources change. This is the ordinary way to
+# state an epistemic problem, and the counterpart of classical PlanSys2's
+# model_file.
+
+planner:
+  ros__parameters:
+    plan_solver_plugins: ["EPISTEMIC"]
+    EPISTEMIC:
+      plugin: "plansys2/EpistemicPlanSolver"
+      epddl_domain: "EPDDL_DOMAIN"
+      epddl_problem: "EPDDL_PROBLEM"
+      action_mapping: "MAPPING_FILE"
+      strategy: "aostar"
+      conditional_plan: "policy"
+
+executor:
+  ros__parameters:
+    bt_builder_plugin: "EpistemicBTBuilder"
+    bt_node_plugins: ["libplansys2_epistemic_bt_nodes.so"]
+
+epistemic_state:
+  ros__parameters:
+    # The same sources the planner is given. Both ground them independently;
+    # neither grounds for the other, and pointing them at one pair is what
+    # keeps the policy and the model it is checked against in one vocabulary.
+    epddl_domain: "EPDDL_DOMAIN"
+    epddl_problem: "EPDDL_PROBLEM"

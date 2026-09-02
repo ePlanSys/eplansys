@@ -11,7 +11,9 @@ policy and not a sequence: ``r1`` drives out, looks, and reports what it found,
 and which report it makes is decided while the mission runs.
 
 The demo needs no simulator and no hardware. What it shows is the planning, and
-everything that would otherwise stand between a reader and that is left out.
+everything that would otherwise stand between a reader and that is left out. The
+problem is stated in EPDDL and ground by ``plank`` at start up, so ``plank`` has
+to be built and on ``PATH``; :doc:`../getting_started/installation` says how.
 
 Running it
 ----------
@@ -29,7 +31,7 @@ What runs
 ---------
 
 .. graphviz::
-   :caption: The corridor mission, from a grounded task to a branch taken
+   :caption: The corridor mission, from EPDDL sources to a branch taken
 
    digraph corridor {
      rankdir=LR;
@@ -38,14 +40,14 @@ What runs
      node [shape=box, fontname="sans-serif", fontsize=10, margin="0.14,0.10"];
      edge [fontname="sans-serif", fontsize=9];
 
-     task      [label="grounded task\ntwo worlds, both possible"];
+     task      [label="EPDDL domain and problem\ntwo worlds, both possible"];
      planner   [label="planner"];
      policy    [label="policy\nfour nodes, branching", shape=note];
      executor  [label="executor"];
      performer [label="performer"];
      state     [label="epistemic state"];
 
-     task      -> planner   [label="EPDDL"];
+     task      -> planner   [label="ground (plank)"];
      planner   -> policy;
      policy    -> executor;
      executor  -> performer [label="dispatch"];
@@ -118,6 +120,9 @@ Two files, and neither is about knowledge:
    say what exists, name the goal, run. Doing it from a node is what makes the
    demo one command.
 
-Nothing else in the demo is code. The task, the PDDL and the mapping are the
-three files a mission of your own would also need, and
+Nothing else in the demo is code. The EPDDL pair, the PDDL and the mapping are
+the files a mission of your own would also need, and
 :doc:`../getting_started/first_plan` says what each is for.
+
+A harder mission of the same shape, with three agents and a goal about who may
+*not* know, is in :doc:`survey`.
