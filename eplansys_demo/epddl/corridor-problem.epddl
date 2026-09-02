@@ -1,0 +1,48 @@
+(define (problem fleet-corridor)
+
+  ;; Two survey robots at the dock. It is common knowledge that neither is at
+  ;; the junction and that neither knows whether the corridor is blocked.
+  ;;
+  ;; Note what the initial state does *not* say: whether the corridor is
+  ;; blocked. The theory leaves it open, so the initial model designates two
+  ;; worlds rather than one — genuinely undetermined, the way a corridor nobody
+  ;; has looked at is. That is what makes the solution branch.
+
+  (:domain robot-fleet)
+
+  (:requirements
+    :equality :list-comprehensions
+    :finitary-S5-theories :modal-goals :knowing-whether
+    :multi-pointed-models
+  )
+
+  (:agents r1 r2)
+
+  (:init
+    (:and
+      (:forall (?i - agent)
+        ([C. All] (not (at-junction ?i))))
+      (:forall (?i - agent)
+        ([C. All] (<Kw. ?i> (blocked))))
+    )
+  )
+
+  ;; The whole fleet must know whether the corridor is passable, because both
+  ;; robots route around it. Knowing *whether*, not knowing *that*: a mission
+  ;; that only succeeds when the corridor turns out to be blocked is not a
+  ;; mission, and a plan for it would be unexecutable half the time.
+  ;;
+  ;; This is the goal that makes the fleet talk. Either robot could drive to
+  ;; the junction and look, but looking is semi-private — the other sees it
+  ;; look without learning what it saw — so one robot sensing does not inform
+  ;; the other. Both could go and look, at four actions; one can go, look and
+  ;; broadcast, at three. The planner finds the second, which is to say it
+  ;; works out that talking is cheaper than everybody going to see for
+  ;; themselves.
+  (:goal
+    (and
+      ([Kw. r1] (blocked))
+      ([Kw. r2] (blocked))
+    )
+  )
+)

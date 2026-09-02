@@ -1,0 +1,122 @@
+{
+  "broadcast-clean_observer": {
+    "action": "(broadcast observer)",
+    "duration": 2.0
+  },
+  "broadcast-clean_relay": {
+    "action": "(broadcast relay)",
+    "duration": 2.0
+  },
+  "broadcast-clean_scout": {
+    "action": "(broadcast scout)",
+    "duration": 2.0
+  },
+  "broadcast-dirty_observer": {
+    "action": "(broadcast observer)",
+    "duration": 2.0
+  },
+  "broadcast-dirty_relay": {
+    "action": "(broadcast relay)",
+    "duration": 2.0
+  },
+  "broadcast-dirty_scout": {
+    "action": "(broadcast scout)",
+    "duration": 2.0
+  },
+  "goto-site_observer": {
+    "action": "(goto_site observer)",
+    "duration": 4.0
+  },
+  "goto-site_relay": {
+    "action": "(goto_site relay)",
+    "duration": 4.0
+  },
+  "goto-site_scout": {
+    "action": "(goto_site scout)",
+    "duration": 4.0
+  },
+  "relay-clean_observer_observer": {
+    "action": "(relay observer observer)",
+    "duration": 2.0
+  },
+  "relay-clean_observer_relay": {
+    "action": "(relay observer relay)",
+    "duration": 2.0
+  },
+  "relay-clean_observer_scout": {
+    "action": "(relay observer scout)",
+    "duration": 2.0
+  },
+  "relay-clean_relay_observer": {
+    "action": "(relay relay observer)",
+    "duration": 2.0
+  },
+  "relay-clean_relay_relay": {
+    "action": "(relay relay relay)",
+    "duration": 2.0
+  },
+  "relay-clean_relay_scout": {
+    "action": "(relay relay scout)",
+    "duration": 2.0
+  },
+  "relay-clean_scout_observer": {
+    "action": "(relay scout observer)",
+    "duration": 2.0
+  },
+  "relay-clean_scout_relay": {
+    "action": "(relay scout relay)",
+    "duration": 2.0
+  },
+  "relay-clean_scout_scout": {
+    "action": "(relay scout scout)",
+    "duration": 2.0
+  },
+  "relay-dirty_observer_observer": {
+    "action": "(relay observer observer)",
+    "duration": 2.0
+  },
+  "relay-dirty_observer_relay": {
+    "action": "(relay observer relay)",
+    "duration": 2.0
+  },
+  "relay-dirty_observer_scout": {
+    "action": "(relay observer scout)",
+    "duration": 2.0
+  },
+  "relay-dirty_relay_observer": {
+    "action": "(relay relay observer)",
+    "duration": 2.0
+  },
+  "relay-dirty_relay_relay": {
+    "action": "(relay relay relay)",
+    "duration": 2.0
+  },
+  "relay-dirty_relay_scout": {
+    "action": "(relay relay scout)",
+    "duration": 2.0
+  },
+  "relay-dirty_scout_observer": {
+    "action": "(relay scout observer)",
+    "duration": 2.0
+  },
+  "relay-dirty_scout_relay": {
+    "action": "(relay scout relay)",
+    "duration": 2.0
+  },
+  "relay-dirty_scout_scout": {
+    "action": "(relay scout scout)",
+    "duration": 2.0
+  },
+  "scan_observer": {
+    "action": "(scan observer)",
+    "duration": 3.0
+  },
+  "scan_relay": {
+    "action": "(scan relay)",
+    "duration": 3.0
+  },
+  "scan_scout": {
+    "action": "(scan scout)",
+    "duration": 3.0
+  }
+}

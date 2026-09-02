@@ -1,0 +1,72 @@
+(define (problem site-survey)
+
+  ;; Three robots at the depot. `scout` and `relay` are the survey team;
+  ;; `observer` is not, and the mission is written so that the team cannot
+  ;; simply shout.
+  ;;
+  ;; As in any honest sensing problem, the initial state does not say whether
+  ;; the site is contaminated. The theory leaves it open, so the model
+  ;; designates two worlds and the solution has to branch.
+
+  (:domain survey-team)
+
+  (:requirements
+    :equality :list-comprehensions
+    :finitary-S5-theories :modal-goals :knowing-whether
+    :multi-pointed-models :negative-preconditions
+  )
+
+  (:agents scout relay observer)
+
+  (:init
+    (:and
+      (:forall (?i - agent)
+        ([C. All] (not (on-site ?i))))
+      (:forall (?i - agent)
+        ([C. All] (<Kw. ?i> (contaminated))))
+    )
+  )
+
+  ;; Three conjuncts, and each one rules out a different shortcut.
+  ;;
+  ;;   scout must know whether    -- somebody has to go and look
+  ;;   relay must know whether    -- the finding has to travel. Note that this
+  ;;                                 is knowledge of the finding itself, not
+  ;;                                 knowledge *about scout's* knowledge: the
+  ;;                                 weaker, second-order goal
+  ;;                                 ([relay] ([Kw. scout] (contaminated)))
+  ;;                                 is already satisfied by the scan, because
+  ;;                                 semi-private sensing lets the others see
+  ;;                                 that a scan happened. Asking for it would
+  ;;                                 be asking for something the mission gets
+  ;;                                 for nothing
+  ;;   observer must not know     -- and so the finding cannot travel over the
+  ;;     whether                     open channel
+  ;;
+  ;; The three together admit only one shape of solution: a team member goes,
+  ;; scans, and tells the other over a link the observer cannot hear.
+  ;;
+  ;; Measured, by removing conjuncts and re-planning:
+  ;;
+  ;;   without the third   the planner sends `observer` itself to scan and
+  ;;                       then broadcast. Three actions, and 32 expansions
+  ;;   with all three      a team member scans and uses the private link.
+  ;;                       Three actions, and 40 expansions
+  ;;
+  ;; Both plans are the same length, which is worth noting because it is the
+  ;; opposite of what one expects: secrecy does not cost the mission an extra
+  ;; step. What it does is make a whole class of solutions inadmissible, and
+  ;; the search work goes up rather than the plan.
+  ;;
+  ;; Weakening the second conjunct to the second-order
+  ;; ([relay] ([Kw. scout] (contaminated))) collapses the mission to two
+  ;; actions, because semi-private sensing already tells the others that a scan
+  ;; happened.
+  (:goal
+    (and
+      ([Kw. scout] (contaminated))
+      ([Kw. relay] (contaminated))
+      (<Kw. observer> (contaminated))
+    )
+  )
+)

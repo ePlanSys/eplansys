@@ -9,10 +9,13 @@ planner:
     plan_solver_plugins: ["EPISTEMIC"]
     EPISTEMIC:
       plugin: "plansys2/EpistemicPlanSolver"
-      # The grounded epistemic task. This is where the mission's difficulty
-      # lives: two worlds, both held possible, differing on whether the
-      # corridor is blocked.
-      task_file: "TASK_FILE"
+      # The EPDDL sources. They are ground by plank on first use and again
+      # whenever they change, which is the ordinary way to state an epistemic
+      # problem. This is where the mission's difficulty lives: the theory
+      # leaves it open whether the corridor is blocked, so the model designates
+      # two worlds and the solution has to branch.
+      epddl_domain: "EPDDL_DOMAIN"
+      epddl_problem: "EPDDL_PROBLEM"
       # Aletheia's names and PlanSys2's are two vocabularies. This is the map.
       action_mapping: "MAPPING_FILE"
       # AO* is the strategy that returns a policy instead of a path.
@@ -31,7 +34,8 @@ executor:
 
 epistemic_state:
   ros__parameters:
-    # The same task the planner solves. A model built from a different one
-    # would answer knowledge questions in a vocabulary the policy does not
-    # speak.
-    task_file: "TASK_FILE"
+    # The same sources the planner is given. Both ground them independently;
+    # pointing them at one pair is what keeps the policy and the model it is
+    # checked against expressed in one vocabulary.
+    epddl_domain: "EPDDL_DOMAIN"
+    epddl_problem: "EPDDL_PROBLEM"

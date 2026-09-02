@@ -32,7 +32,25 @@ target_link_libraries(corridor_mission
 )
 target_compile_definitions(corridor_mission PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
-install(TARGETS corridor_actions corridor_mission
+add_executable(survey_actions src/survey_actions.cpp)
+target_link_libraries(survey_actions
+  plansys2_executor::plansys2_executor
+  rclcpp::rclcpp
+)
+target_compile_definitions(survey_actions PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+
+add_executable(survey_mission src/survey_mission.cpp)
+target_link_libraries(survey_mission
+  plansys2_executor::plansys2_executor
+  plansys2_planner::plansys2_planner
+  plansys2_problem_expert::plansys2_problem_expert
+  plansys2_domain_expert::plansys2_domain_expert
+  ${plansys2_msgs_TARGETS}
+  rclcpp::rclcpp
+)
+target_compile_definitions(survey_mission PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+
+install(TARGETS corridor_actions corridor_mission survey_actions survey_mission
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
