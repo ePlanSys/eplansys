@@ -280,6 +280,34 @@ bool is_trivially_true(const std::string & rendered)
   return rendered.empty() || rendered == "true" || rendered == "(true)";
 }
 
+/// Append one postcondition to a rendered effects list.
+///
+/// A free function and not a lambda: the parameter list has to wrap either way,
+/// and a wrapped lambda signature is formatted differently by different
+/// versions of uncrustify, which makes the file fail a lint it passes locally.
+void append_effect(
+  const PlanningTask & task, AtomIdx atom, const std::string & value,
+  const FormulaPtr & when, std::string & effects)
+{
+  if (atom >= task.atom_names.size()) {
+    return;
+  }
+
+  if (!effects.empty()) {
+    effects += ", ";
+  }
+  effects += task.atom_names[atom] + " := " + value;
+
+  // A postcondition is conditional in general; an unconditional one is the
+  // special case where the condition is just true.
+  if (when) {
+    const auto text = render_formula(task, *when);
+    if (!is_trivially_true(text)) {
+      effects += " when " + text;
+    }
+  }
+}
+
 /// What an agent's observability of an action amounts to, in a sentence.
 ///
 /// The relation is per event: which other events this agent could confuse this
@@ -422,31 +450,11 @@ void EpistemicStateNode::get_action_details_callback(
       event.precondition ? render_formula(*task_, *event.precondition) : std::string());
 
     std::string effects;
-    const auto append = [&](const std::string & atom, const std::string & value,
-        const FormulaPtr & when) {
-        if (!effects.empty()) {
-          effects += ", ";
-        }
-        effects += atom + " := " + value;
-        // A postcondition is conditional in general; an unconditional one is
-        // the special case where the condition is just true.
-        if (when) {
-          const auto text = render_formula(*task_, *when);
-          if (!is_trivially_true(text)) {
-            effects += " when " + text;
-          }
-        }
-      };
-
     for (const auto & [atom, when] : event.post_true) {
-      if (atom < task_->atom_names.size()) {
-        append(task_->atom_names[atom], "true", when);
-      }
+      append_effect(*task_, atom, "true", when, effects);
     }
     for (const auto & [atom, when] : event.post_false) {
-      if (atom < task_->atom_names.size()) {
-        append(task_->atom_names[atom], "false", when);
-      }
+      append_effect(*task_, atom, "false", when, effects);
     }
     response->effects.push_back(effects);
   }

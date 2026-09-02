@@ -84,7 +84,7 @@ class EpistemicVerb(VerbExtension):
                 'announce <formula>: everyone just learned this; '
                 'apply <action>: advance the model by an executed action; '
                 'domain: what the EPDDL domain declares; '
-                'action <name>: one action\'s event model and who observes it; '
+                "action <name>: one action's event model and who observes it; "
                 'view <agent>: the model as that agent sees it'
             ),
         )
@@ -95,7 +95,7 @@ class EpistemicVerb(VerbExtension):
         parser.add_argument(
             '--agent', default='',
             help=(
-                'check: evaluate from this agent\'s point of view instead of '
+                "check: evaluate from this agent's point of view instead of "
                 'against the model. "is the corridor blocked" is a question '
                 'about the world; "would r2 say so" is a question about r2.'
             ),
