@@ -1,0 +1,37 @@
+# The corridor demo, as parameters.
+#
+# Three things make this an epistemic deployment rather than a classical one,
+# and they are all here: the solver plugin, the tree builder, and the node
+# library the builder's trees are written against.
+
+planner:
+  ros__parameters:
+    plan_solver_plugins: ["EPISTEMIC"]
+    EPISTEMIC:
+      plugin: "plansys2/EpistemicPlanSolver"
+      # The grounded epistemic task. This is where the mission's difficulty
+      # lives: two worlds, both held possible, differing on whether the
+      # corridor is blocked.
+      task_file: "TASK_FILE"
+      # Aletheia's names and PlanSys2's are two vocabularies. This is the map.
+      action_mapping: "MAPPING_FILE"
+      # AO* is the strategy that returns a policy instead of a path.
+      strategy: "aostar"
+      # Keep the branches. Flattening one would commit the robot to a
+      # contingency before it had looked.
+      conditional_plan: "policy"
+
+executor:
+  ros__parameters:
+    # Renders a policy as a tree with a branch in it, in place of a sequence.
+    bt_builder_plugin: "EpistemicBTBuilder"
+    # The nodes that tree is written against: the knowledge guard, the DEL
+    # update, the switch, the goal check, and the belief watchdog.
+    bt_node_plugins: ["libplansys2_epistemic_bt_nodes.so"]
+
+epistemic_state:
+  ros__parameters:
+    # The same task the planner solves. A model built from a different one
+    # would answer knowledge questions in a vocabulary the policy does not
+    # speak.
+    task_file: "TASK_FILE"

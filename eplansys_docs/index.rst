@@ -66,6 +66,10 @@ Packages
      - The command line front end: the ``ros2 plansys2`` verbs, among them
        ``epistemic``, which is the terminal for what the agents know, and a
        four-quadrant Textual dashboard over the running system.
+   * - ``eplansys_demo``
+     - Runnable missions. The corridor demo needs no simulator and no
+       hardware, so a clone of this repository can execute an epistemic policy
+       with one command. See :doc:`demos/index`.
    * - ``eplansys``
      - A metapackage that installs PlanSys2 and all of the above as one unit.
        It builds nothing itself.
@@ -88,6 +92,12 @@ Contents
    concepts/epistemic_models
    concepts/epddl
    concepts/architecture
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Demos
+
+   demos/index
 
 .. toctree::
    :maxdepth: 2
