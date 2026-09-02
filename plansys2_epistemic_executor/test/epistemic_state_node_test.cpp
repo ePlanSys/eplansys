@@ -26,8 +26,13 @@
 #include "gtest/gtest.h"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "plansys2_epistemic_executor/EpistemicStateNode.hpp"
+#include "std_msgs/msg/string.hpp"
+
 #include "plansys2_epistemic_msgs/srv/announce.hpp"
 #include "plansys2_epistemic_msgs/srv/check_formula.hpp"
+#include "plansys2_epistemic_msgs/srv/get_agent_perspective.hpp"
+#include "plansys2_epistemic_msgs/srv/get_epistemic_action_details.hpp"
+#include "plansys2_epistemic_msgs/srv/get_epistemic_domain.hpp"
 #include "plansys2_epistemic_msgs/srv/get_goal.hpp"
 #include "plansys2_epistemic_msgs/srv/set_goal.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -53,7 +58,7 @@ protected:
   void SetUp() override
   {
     node_ = std::make_shared<plansys2::EpistemicStateNode>();
-    node_->set_parameter(rclcpp::Parameter("task_file", task_file()));
+    node_->set_parameter(rclcpp::Parameter("task_file", task_for_test()));
 
     ASSERT_EQ(
       node_->configure().id(),
@@ -100,6 +105,28 @@ protected:
     }
     return future.get();
   }
+
+  /// The latest state the node published, or empty when none arrived. Latched,
+  /// so a subscription made now still receives the last one.
+  std::string wait_for_state(std::chrono::seconds timeout = 3s)
+  {
+    std::string latest;
+    auto subscription = client_node_->create_subscription<std_msgs::msg::String>(
+      "epistemic_state/state", rclcpp::QoS(1).transient_local(),
+      [&latest](const std_msgs::msg::String::SharedPtr message) {
+        latest = message->data;
+      });
+
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
+    while (latest.empty() && std::chrono::steady_clock::now() < deadline) {
+      std::this_thread::sleep_for(10ms);
+    }
+    return latest;
+  }
+
+  /// Which task this fixture loads. Overridden by a fixture whose point is a
+  /// different domain.
+  virtual std::string task_for_test() const {return task_file();}
 
   std::shared_ptr<plansys2::EpistemicStateNode> node_;
   rclcpp::Node::SharedPtr client_node_;
@@ -226,6 +253,428 @@ TEST_F(EpistemicStateNodeTest, AnnouncingSomethingImpossibleIsRefused)
   EXPECT_FALSE(response->success);
   EXPECT_NE(response->error.find("no possible world"), std::string::npos)
     << response->error;
+}
+
+// The domain side.
+//
+// The problem expert answers what is true and the state answers what is known.
+// Neither says what the domain declares can be done, and for EPDDL that is a
+// different question from the PDDL one: an action is an event model with
+// per-agent observability, and no part of that has a PDDL surface to be read
+// off. These are the queries that make it visible.
+
+TEST_F(EpistemicStateNodeTest, TheDomainListsWhatItDeclares)
+{
+  auto response = call<plansys2_epistemic_msgs::srv::GetEpistemicDomain>(
+    "epistemic_domain/get_domain",
+    std::make_shared<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Request>());
+
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  EXPECT_EQ(response->agents.size(), 2u);
+  EXPECT_NE(
+    std::find(response->agents.begin(), response->agents.end(), "c1"),
+    response->agents.end());
+
+  EXPECT_NE(
+    std::find(response->atoms.begin(), response->atoms.end(), "muddy_c1"),
+    response->atoms.end());
+
+  ASSERT_FALSE(response->actions.empty());
+  ASSERT_EQ(response->actions.size(), response->sensing.size())
+    << "every action has to say whether it senses";
+
+  // Muddy children is asking and being answered, so every action senses. A
+  // domain where nothing did would have no policy to build.
+  EXPECT_NE(
+    std::find(response->sensing.begin(), response->sensing.end(), true),
+    response->sensing.end());
+
+  EXPECT_FALSE(response->kd45) << "muddy children is S5";
+}
+
+TEST_F(EpistemicStateNodeTest, AnActionShowsItsEventsAndWhoSeesWhat)
+{
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Request>();
+  request->action = "ask_c1";
+
+  auto response = call<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails>(
+    "epistemic_domain/get_action_details", request);
+
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  // Sensing, so more than one event can occur: asking whether c1 is muddy has
+  // a positive answer and a negative one, and which occurs is what the asking
+  // is for.
+  EXPECT_EQ(response->events.size(), 2u);
+  EXPECT_EQ(response->designated_events.size(), 2u);
+
+  ASSERT_EQ(response->preconditions.size(), response->events.size());
+  ASSERT_EQ(response->effects.size(), response->events.size());
+
+  // One line per agent. `ask` is public sensing, so both children learn the
+  // answer, and the point of asking is that they learn it together.
+  ASSERT_EQ(response->observability.size(), 2u);
+  for (const auto & line : response->observability) {
+    EXPECT_NE(line.find("sees which event occurred"), std::string::npos)
+      << "a public announcement that someone missed is not public: " << line;
+  }
+}
+
+/// The corridor mission instead, where the two robots do not learn the same
+/// thing. Its own fixture because the fixture above is bound to one task, and
+/// what makes this worth asserting is the task.
+class EpistemicFleetDomainTest : public EpistemicStateNodeTest
+{
+protected:
+  std::string task_for_test() const override
+  {
+    return std::string(EPISTEMIC_TASK_DIR) + "/robot-fleet.json";
+  }
+};
+
+/// The same corridor, with a prior the robot arrived carrying: the map says
+/// the corridor is clear, so only the clear world is held actual, though the
+/// blocked one is still in the model. Both robots are already at the junction.
+///
+/// This is where a belief and a sensor reading can disagree in the ordinary
+/// way, which is what recovery is for.
+class StalePriorTest : public EpistemicStateNodeTest
+{
+protected:
+  std::string task_for_test() const override
+  {
+    return std::string(EPISTEMIC_TASK_DIR) + "/robot-fleet-stale-prior.json";
+  }
+};
+
+TEST_F(EpistemicFleetDomainTest, AnActionCanTellOneAgentMoreThanAnother)
+{
+  auto domain = call<plansys2_epistemic_msgs::srv::GetEpistemicDomain>(
+    "epistemic_domain/get_domain",
+    std::make_shared<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Request>());
+
+  ASSERT_NE(domain, nullptr);
+  ASSERT_TRUE(domain->success) << domain->error;
+
+  EXPECT_TRUE(domain->partial_obs)
+    << "inspect tells r1 more than it tells r2, which is what partial means here";
+
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Request>();
+  request->action = "inspect_r1";
+
+  auto response = call<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails>(
+    "epistemic_domain/get_action_details", request);
+
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  ASSERT_EQ(response->observability.size(), 2u);
+  EXPECT_NE(response->observability[0], response->observability[1])
+    << "r1 looks and r2 only sees that it looked; an action reporting the same "
+    "to both is not semi-private at all";
+}
+
+TEST_F(EpistemicStateNodeTest, AnActionTheDomainDoesNotHaveIsRefused)
+{
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Request>();
+  request->action = "no-such-action";
+
+  auto response = call<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails>(
+    "epistemic_domain/get_action_details", request);
+
+  ASSERT_NE(response, nullptr);
+  EXPECT_FALSE(response->success);
+  EXPECT_NE(response->error.find("no-such-action"), std::string::npos) << response->error;
+}
+
+// One agent's point of view.
+//
+// The state holds one model for the whole system, which is what makes "r1
+// knows that r2 does not" expressible at all. A deployment often needs the
+// other reading: what would this robot act on, given only what it has seen.
+
+TEST_F(EpistemicFleetDomainTest, AnAgentsViewIsWhatItConsidersPossible)
+{
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetAgentPerspective::Request>();
+  request->agent = "r1";
+
+  auto response = call<plansys2_epistemic_msgs::srv::GetAgentPerspective>(
+    "epistemic_state/get_agent_perspective", request);
+
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  EXPECT_GT(response->worlds, 0u);
+  EXPECT_GT(response->designated, 0u);
+  EXPECT_FALSE(response->model.empty());
+
+  // The fleet task is S5, so an agent can be ignorant but never wrong: what it
+  // holds possible always includes what is actually the case.
+  EXPECT_TRUE(response->includes_actual)
+    << "an S5 agent that has ruled out the actual world is a contradiction";
+}
+
+TEST_F(EpistemicFleetDomainTest, AnAgentTheDomainDoesNotHaveIsRefused)
+{
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetAgentPerspective::Request>();
+  request->agent = "r99";
+
+  auto response = call<plansys2_epistemic_msgs::srv::GetAgentPerspective>(
+    "epistemic_state/get_agent_perspective", request);
+
+  ASSERT_NE(response, nullptr);
+  EXPECT_FALSE(response->success);
+  EXPECT_NE(response->error.find("r99"), std::string::npos) << response->error;
+}
+
+TEST_F(EpistemicFleetDomainTest, AFormulaCanBeAskedFromAnAgentsPointOfView)
+{
+  // Nobody has looked yet, so nobody knows whether the corridor is blocked.
+  // Asked of the model, "blocked" is a question about the world; asked of r1,
+  // it is a question about r1, which has no opinion either way.
+  auto from_agent =
+    std::make_shared<plansys2_epistemic_msgs::srv::CheckFormula::Request>();
+  from_agent->formula = "blocked";
+  from_agent->agent = "r1";
+
+  auto response = call<plansys2_epistemic_msgs::srv::CheckFormula>(
+    "epistemic_state/check_formula", from_agent);
+
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+  EXPECT_FALSE(response->holds)
+    << "r1 has not looked, so it cannot hold that the corridor is blocked";
+
+  // And the same question of an agent that does not exist is refused, not
+  // answered against the model by accident.
+  auto unknown =
+    std::make_shared<plansys2_epistemic_msgs::srv::CheckFormula::Request>();
+  unknown->formula = "blocked";
+  unknown->agent = "nobody";
+
+  auto refused = call<plansys2_epistemic_msgs::srv::CheckFormula>(
+    "epistemic_state/check_formula", unknown);
+
+  ASSERT_NE(refused, nullptr);
+  EXPECT_FALSE(refused->success);
+}
+
+TEST_F(EpistemicFleetDomainTest, TheModelItselfIsUnchangedByAskingForAView)
+{
+  // Taking a view is a query. A state that moved when it was asked a question
+  // would make every monitor a participant.
+  auto before = call<plansys2_epistemic_msgs::srv::GetGoal>(
+    "epistemic_state/get_goal",
+    std::make_shared<plansys2_epistemic_msgs::srv::GetGoal::Request>());
+  ASSERT_NE(before, nullptr);
+
+  auto request =
+    std::make_shared<plansys2_epistemic_msgs::srv::GetAgentPerspective::Request>();
+  request->agent = "r2";
+  ASSERT_NE(
+    call<plansys2_epistemic_msgs::srv::GetAgentPerspective>(
+      "epistemic_state/get_agent_perspective", request), nullptr);
+
+  auto after = call<plansys2_epistemic_msgs::srv::GetGoal>(
+    "epistemic_state/get_goal",
+    std::make_shared<plansys2_epistemic_msgs::srv::GetGoal::Request>());
+  ASSERT_NE(after, nullptr);
+
+  EXPECT_EQ(before->goal, after->goal);
+  EXPECT_EQ(before->holds, after->holds);
+}
+
+// Recovery.
+//
+// The model is a belief about the world, and the world can contradict it. What
+// the state used to do was refuse the update and keep the belief, which is
+// honest about never having represented what happened but leaves the model
+// frozen: the replan that follows then plans from the very state the
+// observation ruled out.
+
+TEST_F(StalePriorTest, AnImpossibleObservationIsRefusedWhenRecoveryIsOff)
+{
+  // The same reading as the test below, and the old behaviour: the model keeps
+  // the map's belief and the update does not happen. Honest, but it leaves a
+  // replan planning for a corridor the robot has just seen is blocked.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "e-inspect-blocked";
+  request->allow_recovery = false;
+
+  auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(response, nullptr);
+
+  EXPECT_FALSE(response->success);
+  EXPECT_FALSE(response->recovered);
+}
+
+TEST_F(StalePriorTest, TheModelIsRepairedRatherThanFrozen)
+{
+  // The robot drives out carrying the map's word that the corridor is clear,
+  // looks, and sees that it is blocked. The model held that impossible, and a
+  // world for it is right there in the model, never having been believed.
+  // Trusting the map over the sensor is the wrong way round.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "e-inspect-blocked";
+  request->allow_recovery = true;
+
+  auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(response, nullptr);
+
+  EXPECT_TRUE(response->success) << response->error;
+  EXPECT_TRUE(response->recovered)
+    << "the update went through without the model admitting it was wrong";
+  EXPECT_FALSE(response->recovery.empty())
+    << "a change of belief has to say what it gave up";
+  EXPECT_EQ(response->outcome, "e-inspect-blocked");
+}
+
+TEST_F(StalePriorTest, ARepairedModelIsTheOneAReplanStartsFrom)
+{
+  // The point of repairing at all: what a replan plans from afterwards has to
+  // be the corrected belief, not the one the sensor contradicted. A robot that
+  // replanned from the map's version would route itself down a blocked
+  // corridor it had just looked at.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "e-inspect-blocked";
+  request->allow_recovery = true;
+
+  auto applied = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(applied, nullptr);
+  ASSERT_TRUE(applied->success) << applied->error;
+
+  // The corridor is blocked, and r1 now knows it. Both have to hold: the fact
+  // the sensor reported, and the knowledge the looking produced.
+  for (const auto & formula : {"blocked", "(Kw r1 blocked)"}) {
+    auto check = std::make_shared<plansys2_epistemic_msgs::srv::CheckFormula::Request>();
+    check->formula = formula;
+
+    auto holds = call<plansys2_epistemic_msgs::srv::CheckFormula>(
+      "epistemic_state/check_formula", check);
+    ASSERT_NE(holds, nullptr);
+    ASSERT_TRUE(holds->success) << holds->error;
+    EXPECT_TRUE(holds->holds)
+      << "the repaired model does not record what the robot just saw: " << formula;
+  }
+}
+
+TEST_F(EpistemicFleetDomainTest, AWorldTheModelNeverHadCannotBeRecoveredTo)
+{
+  // The limit of the repair, stated as a test so it is not mistaken for a bug.
+  // Re-designation corrects which world is believed actual; it cannot add a
+  // world the model never contained. Inspecting before driving out needs
+  // at-junction_r1, which is false in every world here, so there is nothing to
+  // re-designate to.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "e-inspect-clear";
+  request->allow_recovery = true;
+
+  auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(response, nullptr);
+
+  EXPECT_FALSE(response->success);
+  EXPECT_FALSE(response->recovered);
+  EXPECT_NE(response->error.find("cannot represent"), std::string::npos)
+    << response->error;
+}
+
+TEST_F(StalePriorTest, AnObservationNoWorldCouldProduceIsStillRefused)
+{
+  // Recovery trusts the world over the belief, but it cannot invent a world.
+  // An outcome no world in the model could have produced means the model
+  // cannot represent what happened at all, and saying so is the only honest
+  // answer left.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "no-such-event";
+  request->allow_recovery = true;
+
+  auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(response, nullptr);
+  EXPECT_FALSE(response->success);
+}
+
+// Information arriving from outside the plan.
+//
+// A policy is built against a belief. Its own actions move that belief in ways
+// it has branches for; an announcement moves it for a reason it never planned
+// for. The state counts the second kind so a running tree can notice, since a
+// behavior tree cannot see a service call.
+
+TEST_F(StalePriorTest, AnAnnouncementIsCountedAsInformationFromOutside)
+{
+  const auto version = [this]() -> std::int64_t {
+      auto message = wait_for_state();
+      if (message.empty()) {
+        return -1;
+      }
+      const auto at = message.find("\"belief_version\":");
+      if (at == std::string::npos) {
+        return -1;
+      }
+      return std::stoll(message.substr(at + 17));
+    };
+
+  const auto before = version();
+  ASSERT_GE(before, 0) << "the state does not publish a belief version";
+
+  // Something the model holds possible, since announcing the impossible is
+  // refused. An operator confirming the map's word is exactly the case: it
+  // arrives from outside the plan whether or not it changes the model.
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::Announce::Request>();
+  request->formula = "(not blocked)";
+
+  auto response = call<plansys2_epistemic_msgs::srv::Announce>(
+    "epistemic_state/announce", request);
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  EXPECT_GT(version(), before)
+    << "an announcement did not register as information arriving from outside";
+}
+
+TEST_F(StalePriorTest, ThePolicysOwnUpdatesAreNotCountedAsOutsideInformation)
+{
+  // The distinction the counter exists to make. A policy that abandoned itself
+  // every time one of its own actions worked would never finish anything.
+  const auto version = [this]() -> std::int64_t {
+      auto message = wait_for_state();
+      const auto at = message.find("\"belief_version\":");
+      return at == std::string::npos ? -1 : std::stoll(message.substr(at + 17));
+    };
+
+  const auto before = version();
+  ASSERT_GE(before, 0);
+
+  auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+  request->epistemic_action = "inspect_r1";
+  request->observed_outcome = "e-inspect-blocked";
+  request->allow_recovery = true;
+
+  auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+    "epistemic_state/apply_action", request);
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(response->success) << response->error;
+
+  EXPECT_EQ(version(), before)
+    << "the policy's own update was mistaken for information from outside";
 }
 
 // Leave through _exit, so the DDS threads never outlive the process.

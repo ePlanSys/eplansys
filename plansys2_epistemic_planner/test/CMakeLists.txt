@@ -43,3 +43,27 @@ target_include_directories(epistemic_formula_text_test PRIVATE ${CMAKE_CURRENT_S
 target_compile_definitions(epistemic_formula_text_test PRIVATE
   EPISTEMIC_TASK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tasks")
 target_link_libraries(epistemic_formula_text_test ${PROJECT_NAME})
+
+# Writing a belief state back out, which is what replanning from one needs.
+ament_add_gtest(epistemic_state_json_test state_json_test.cpp TIMEOUT 120)
+target_include_directories(epistemic_state_json_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(epistemic_state_json_test PRIVATE
+  EPISTEMIC_TEST_TASK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tasks")
+target_link_libraries(epistemic_state_json_test ${PROJECT_NAME})
+
+# Replanning from the model the mission reached, not the one grounding made.
+ament_add_gtest(epistemic_replan_from_state_test replan_from_state_test.cpp TIMEOUT 300)
+target_include_directories(epistemic_replan_from_state_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(epistemic_replan_from_state_test PRIVATE
+  EPISTEMIC_TEST_TASK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tasks"
+  EPISTEMIC_EXAMPLE_MAPPING_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../examples/mappings")
+target_link_libraries(epistemic_replan_from_state_test ${PROJECT_NAME})
+
+# Drafting an action mapping, so that only the modelling decision is hand-written.
+ament_add_gtest(epistemic_mapping_draft_test mapping_draft_test.cpp TIMEOUT 120)
+target_include_directories(epistemic_mapping_draft_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(epistemic_mapping_draft_test PRIVATE
+  EPISTEMIC_TEST_TASK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tasks"
+  EPISTEMIC_EXAMPLE_EPDDL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../plansys2_epddl_grounder/examples"
+  EPISTEMIC_MISSION_PDDL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../plansys2_tests/test_5/pddl")
+target_link_libraries(epistemic_mapping_draft_test ${PROJECT_NAME})

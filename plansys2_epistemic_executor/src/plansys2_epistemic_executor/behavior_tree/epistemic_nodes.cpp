@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include "rclcpp/rclcpp.hpp"
 
 namespace plansys2
@@ -215,7 +217,24 @@ BT::NodeStatus ApplyEpistemicUpdate::tick()
   std::string observed;
   getInput("observed", observed);
 
-  const auto answer = client_->apply_action(item.epistemic_action, observed);
+  // A robot whose belief has been contradicted is better off correcting the
+  // belief than refusing to move. Refusing leaves the model as it was, and the
+  // replan that follows a failure would then plan from the very state the
+  // observation ruled out.
+  std::string recover_text = "true";
+  getInput("recover", recover_text);
+  const bool recover = recover_text != "false" && recover_text != "0";
+
+  const auto answer = client_->apply_action(item.epistemic_action, observed, recover);
+
+  if (answer.recovered) {
+    // Loud, because this is a change of belief and not a detail of the update.
+    // Whoever reads the log after a mission needs to see where the model and
+    // the world parted company.
+    RCLCPP_WARN(
+      logger(), "[%s] the model was repaired to accept what was observed: %s",
+      action.c_str(), answer.recovery.c_str());
+  }
   if (!answer.answered || !answer.success) {
     RCLCPP_ERROR(
       logger(), "[%s] the epistemic update failed: %s", action.c_str(),
@@ -301,6 +320,66 @@ BT::NodeStatus EpistemicSwitch::tick()
   return status;
 }
 
+// ── CheckBeliefUnchanged ────────────────────────────────────────────────────
+
+CheckBeliefUnchanged::CheckBeliefUnchanged(
+  const std::string & xml_tag_name, const BT::NodeConfig & conf)
+: ConditionNode(xml_tag_name, conf)
+{
+  // Its own node, because a behavior tree node has no executor of its own to
+  // spin and the tree is ticked from the executor's thread. Transient local,
+  // so the version the state last published is there on subscription rather
+  // than only at the next announcement.
+  static int instances = 0;
+  node_ = rclcpp::Node::make_shared("belief_watch_" + std::to_string(++instances));
+  subscription_ = node_->create_subscription<std_msgs::msg::String>(
+    "epistemic_state/state", rclcpp::QoS(1).transient_local(),
+    [this](const std_msgs::msg::String::SharedPtr message) {
+      try {
+        const auto parsed = nlohmann::json::parse(message->data);
+        latest_ = parsed.value("belief_version", static_cast<std::uint64_t>(0));
+      } catch (const std::exception &) {
+        // An unreadable state says nothing about the belief having changed.
+        // Failing the policy over a malformed message would be worse than
+        // carrying on.
+      }
+    });
+}
+
+BT::NodeStatus CheckBeliefUnchanged::tick()
+{
+  std::string enabled = "true";
+  getInput("enabled", enabled);
+  if (enabled == "false" || enabled == "0") {
+    return BT::NodeStatus::SUCCESS;
+  }
+
+  rclcpp::spin_some(node_);
+
+  if (!have_baseline_) {
+    baseline_ = latest_;
+    have_baseline_ = true;
+    return BT::NodeStatus::SUCCESS;
+  }
+
+  if (latest_ == baseline_) {
+    return BT::NodeStatus::SUCCESS;
+  }
+
+  std::string action;
+  getInput("action", action);
+  RCLCPP_WARN(
+    logger(),
+    "[%s] the belief changed from outside the plan; the policy was built "
+    "against a belief that no longer holds, so it is abandoned here",
+    action.c_str());
+
+  // Taken as read, so that a tree which is ticked again after a replan starts
+  // from the belief as it now stands instead of failing on the same change.
+  baseline_ = latest_;
+  return BT::NodeStatus::FAILURE;
+}
+
 // ── CheckEpistemicGoal ──────────────────────────────────────────────────────
 
 CheckEpistemicGoal::CheckEpistemicGoal(
@@ -347,6 +426,7 @@ void register_epistemic_nodes(BT::BehaviorTreeFactory & factory)
   factory.registerNodeType<CheckKnowledge>("CheckKnowledge");
   factory.registerNodeType<ApplyEpistemicUpdate>("ApplyEpistemicUpdate");
   factory.registerNodeType<EpistemicSwitch>("EpistemicSwitch");
+  factory.registerNodeType<CheckBeliefUnchanged>("CheckBeliefUnchanged");
   factory.registerNodeType<CheckEpistemicGoal>("CheckEpistemicGoal");
 }
 

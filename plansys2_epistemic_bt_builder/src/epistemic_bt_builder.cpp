@@ -14,7 +14,11 @@
 
 #include "plansys2_epistemic_bt_builder/epistemic_bt_builder.hpp"
 
+#include <limits>
 #include <map>
+#include <set>
+#include <tuple>
+#include <vector>
 #include <memory>
 #include <string>
 
@@ -132,12 +136,128 @@ std::string EpistemicBTBuilder::get_tree(const plansys2_msgs::msg::Plan & curren
 
   plan_ = current_plan;
   const Policy policy(current_plan);
+  graph_ = build_graph(policy);
 
   RCLCPP_INFO(
     logger(), "building a tree for %zu policy nodes%s", policy.size(),
     policy.branches() ? ", branching" : "");
 
   return policy_to_bt(policy, bt_action_, precision_);
+}
+
+namespace
+{
+
+/// One graph node per policy node, keyed by policy index so the arcs can be
+/// wired by index afterwards.
+std::vector<Node::Ptr> policy_nodes(const Policy & policy)
+{
+  std::vector<Node::Ptr> nodes;
+  nodes.reserve(policy.size());
+
+  for (std::uint32_t i = 0; i < policy.size(); ++i) {
+    const auto & item = policy.item(i);
+
+    auto node = Node::make_shared(static_cast<int>(i));
+    node->action.time = item.time;
+    node->action.expression = item.action;
+    node->action.duration = item.duration;
+    // Every policy node drives a whole action, start to end, so it is durative
+    // in the executor's sense even when its duration is the default.
+    node->action.type = ActionType::DURATIVE;
+    nodes.push_back(node);
+  }
+  return nodes;
+}
+
+}  // namespace
+
+Graph::Ptr EpistemicBTBuilder::build_graph(const Policy & policy)
+{
+  auto graph = Graph::make_shared();
+  if (policy.empty()) {
+    return graph;
+  }
+
+  const auto nodes = policy_nodes(policy);
+
+  for (std::uint32_t i = 0; i < policy.size(); ++i) {
+    const auto & item = policy.item(i);
+
+    for (const auto child : item.children) {
+      if (child == plansys2_msgs::msg::PlanItem::POLICY_DONE || child >= nodes.size()) {
+        continue;         // the policy ends on this outcome
+      }
+
+      // The bounds are filled in by propagate. They start fully open because
+      // an arc with a bound nothing computed would be a constraint the
+      // executor enforces for no reason.
+      const auto arc = std::make_tuple(nodes[i], 0.0, std::numeric_limits<double>::infinity());
+      nodes[child]->input_arcs.insert(arc);
+      nodes[i]->output_arcs.insert(
+        std::make_tuple(nodes[child], 0.0, std::numeric_limits<double>::infinity()));
+    }
+  }
+
+  // A plan that names no continuations is the sequence PlanSys2 would execute,
+  // and its graph is the chain that says so.
+  if (policy.sequential()) {
+    for (std::uint32_t i = 0; i + 1 < policy.size(); ++i) {
+      const auto arc = std::make_tuple(nodes[i], 0.0, std::numeric_limits<double>::infinity());
+      nodes[i + 1]->input_arcs.insert(arc);
+      nodes[i]->output_arcs.insert(
+        std::make_tuple(nodes[i + 1], 0.0, std::numeric_limits<double>::infinity()));
+    }
+  }
+
+  for (const auto & node : nodes) {
+    graph->nodes.push_back(node);
+  }
+
+  propagate(graph);
+  return graph;
+}
+
+Graph::Ptr EpistemicBTBuilder::get_graph()
+{
+  return graph_;
+}
+
+bool EpistemicBTBuilder::propagate(Graph::Ptr graph)
+{
+  if (!graph) {
+    return false;
+  }
+
+  // A continuation cannot start before the action it follows has finished, and
+  // the epistemic layer makes that stricter than it is for a classical plan:
+  // the knowledge guard on a continuation is checked against the state its
+  // parent's update produced, so the two cannot overlap at all. The lower
+  // bound is therefore the parent's whole duration.
+  for (auto & node : graph->nodes) {
+    std::set<std::tuple<Node::Ptr, double, double>> bounded;
+    for (const auto & arc : node->input_arcs) {
+      const auto parent = std::get<0>(arc);
+      bounded.insert(
+        std::make_tuple(
+          parent, static_cast<double>(parent->action.duration),
+          std::numeric_limits<double>::infinity()));
+    }
+    node->input_arcs = std::move(bounded);
+  }
+
+  for (auto & node : graph->nodes) {
+    std::set<std::tuple<Node::Ptr, double, double>> bounded;
+    for (const auto & arc : node->output_arcs) {
+      bounded.insert(
+        std::make_tuple(
+          std::get<0>(arc), static_cast<double>(node->action.duration),
+          std::numeric_limits<double>::infinity()));
+    }
+    node->output_arcs = std::move(bounded);
+  }
+
+  return true;
 }
 
 std::string EpistemicBTBuilder::get_dotgraph(

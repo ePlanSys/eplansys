@@ -280,6 +280,15 @@ protected:
    */
   bool replan_for_execution(PlanRuntineInfo & runtime_info);
 
+  /// How many actions of this plan have run to completion. Progress, for the
+  /// purpose of deciding whether replanning is getting anywhere.
+  std::size_t completed_actions(
+    const std::shared_ptr<std::map<std::string, ActionExecutionInfo>> & action_map) const;
+
+  /// Whether this replan should be allowed, given how many have already
+  /// happened without the mission advancing. Updates the counters.
+  bool replanning_is_making_progress(PlanRuntineInfo & runtime_info);
+
   /**
    * @brief Executes the current plan using the behavior tree.
    */
@@ -346,6 +355,19 @@ protected:
   bool cancel_plan_requested_;
   bool replan_requested_;
   bool new_plan_received_ {false};
+
+  /// How many times in a row a replan has arrived without the mission having
+  /// got any further, and how far it had got when the last one did.
+  ///
+  /// A plan that fails, is replanned, and fails the same way is a loop: the
+  /// planner is being asked the same question and answering it the same way,
+  /// and the executor will keep driving the robot into the same failure until
+  /// someone stops it. Counting replans alone would not do, since a mission
+  /// that legitimately replans many times while making progress is healthy;
+  /// what marks the loop is replanning with nothing having completed in
+  /// between.
+  int replans_without_progress_ {0};
+  std::size_t completed_at_last_replan_ {0};
   bool cancel_requested_ {false};
 
   bool node_running_ {true};

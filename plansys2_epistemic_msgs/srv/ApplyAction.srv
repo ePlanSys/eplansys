@@ -12,9 +12,36 @@ string epistemic_action
 # does not, the model genuinely cannot know, and an observation is required
 # rather than guessed.
 string observed_outcome
+
+# What to do when the observation contradicts the model: when the action is not
+# applicable, or the observed outcome is not one it could produce here.
+#
+# False refuses the update and leaves the model as it was. That keeps the model
+# honest about never having represented what happened, but it also freezes it:
+# a replan from a state that refused an observation starts from the belief the
+# observation just contradicted, and plans for a world that has been ruled out.
+#
+# True repairs it instead, by trusting the observation over the belief. The
+# model is re-designated to the worlds where the observed event could have
+# fired, and the update proceeds from there. This is a real change of belief
+# and not a correction of arithmetic, so the response says when it happened and
+# the state says so in its log.
+#
+# Recovery is possible only when some world in the model could have produced
+# the observation. When none could, the model cannot represent what happened at
+# all and the update is refused whatever this says.
+bool allow_recovery
 ---
 bool success
 string error
+
+# True when the update went through only because the model was repaired first.
+# A caller that cares whether its belief has been overridden reads this; one
+# that does not still gets a working state.
+bool recovered
+
+# What the model had to give up, when it was repaired. Empty otherwise.
+string recovery
 
 # The outcome that occurred, for a sensing action: either the observation that
 # was passed in, or the one the model determined. Empty for an ontic action,

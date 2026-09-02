@@ -228,6 +228,27 @@ performs, and a branch on what was observed.
 A node with a single continuation renders without a switch, so a classical plan
 comes out as the same flat sequence PlanSys2 would have built.
 
+``get_graph`` reports the policy as a temporal graph: one node per policy node,
+an arc to each continuation. SimpleBTBuilder derives its graph by working out
+which actions establish each other's preconditions, because a sequential plan
+leaves the ordering open. A policy has it already, so this records the
+structure instead of deriving one, and ``propagate`` fills in the bounds from
+the durations the plan carries.
+
+The lower bound on every arc is the parent's whole duration, so a continuation
+cannot begin before the action it follows has finished. That is stricter than a
+classical plan needs, and it is a requirement of the epistemic layer rather
+than a scheduling choice: ``CheckKnowledge`` on a continuation is evaluated
+against the state that ``ApplyEpistemicUpdate`` produced for its parent, so the
+two overlapping would check a guard against a model that does not exist yet.
+
+The consequence is that the epistemic builder runs one action at a time, where
+SimpleBTBuilder can run independent actions concurrently. Recovering that would
+mean proving, for each pair, both that their PDDL effects do not interfere and
+that neither one's knowledge guard depends on the other's epistemic update. The
+second condition has no counterpart in classical planning and is not checked
+anywhere today, so the builder sequences rather than assume it.
+
 Reporting an observation
 ------------------------
 
@@ -303,6 +324,12 @@ Four node types are registered by the plugin library
    belief nothing supports. The failure reaches the executor, whose answer to a
    failed plan is to replan.
 
+``CheckBeliefUnchanged``
+   A condition node that fails when the belief has changed from outside the
+   plan, which is what makes an announcement interrupt a policy it invalidates.
+   Ports: ``action`` for the message, and ``enabled``, false for a deployment
+   that would rather not be interrupted.
+
 ``CheckEpistemicGoal``
    A condition node that runs once, after the policy, with a single ``goal``
    port, empty for none. A tree with no epistemic goal, which is to say a
@@ -310,6 +337,42 @@ Four node types are registered by the plugin library
    goal. Reaching a leaf means one execution finished, not that the goal holds:
    every leaf was believed to reach it, but that belief was formed against the
    model at planning time.
+
+The domain side
+---------------
+
+The problem expert answers what is true and the epistemic state answers what is
+known. Neither says what the domain declares can be done, and for EPDDL that is
+a different question from the PDDL one: an action here is an event model with
+per-agent observability, and no part of that has a PDDL surface. ``get domain
+action details`` on the classical terminal is blind to all of it.
+
+Two services on the same node answer it, named ``epistemic_domain`` to keep
+what is being asked about clear. They live on the node that holds the task
+because in EPDDL the domain and the problem are one grounded artefact: the
+event models and the initial model arrive together, and a separate node
+answering about the first would have to ground the same sources again.
+
+``epistemic_domain/get_domain``
+   The agents, the atoms, the grounded actions, and which of those are sensing.
+   Sensing is not a flag a domain sets; it is what having more than one event
+   that can occur amounts to. It also reports the frame, S5 or KD45, and
+   whether any action gives two agents different observability.
+
+``epistemic_domain/get_action_details``
+   One action's event model: every event with its precondition and effects,
+   which of them can actually occur, and a line per agent saying what that
+   agent observes of it.
+
+That last line is the part with no PDDL counterpart. For the corridor mission's
+``inspect_r1``::
+
+   r1: sees which event occurred
+   r2: sees nothing of which event occurred
+
+Two agents equally affected by an action, learning entirely different things
+from it. The terminal reaches both services through ``ros2 plansys2 epistemic
+domain`` and ``ros2 plansys2 epistemic action <name>``.
 
 Epistemic state
 ---------------
@@ -405,6 +468,115 @@ service call
 from there can deadlock a single-threaded executor. Setting
 ``goal_from_state`` to false plans for the problem exactly as written.
 
+When information arrives from outside the plan
+----------------------------------------------
+
+A policy is built against a belief. While it runs, its own actions move that
+belief in ways it has branches for. An announcement is the other case:
+perception resolves a region, an operator says something, two robots reconcile
+their maps when a link comes back, and the model moves for a reason the policy
+never accounted for.
+
+Nothing in a behavior tree can see a service call, so a running policy would
+carry on against a belief that no longer holds until some later action failed
+for what looks like an unrelated reason. The state therefore counts the
+announcements it has taken, publishing the count as ``belief_version``, and
+``CheckBeliefUnchanged`` reads it.
+
+The packaged action template puts that node inside the reactive sequence, so it
+is re-checked while the action runs and the interruption arrives when the
+information does, rather than after the action it invalidated has finished. The
+executor's answer to a failed plan is to replan, and the model it replans from
+is the one the announcement produced.
+
+Only announcements count. A policy that abandoned itself every time one of its
+own actions worked would never finish anything, so ``apply_action`` does not
+touch the version. A deployment that would rather finish what it started sets
+the node's ``enabled`` port to false.
+
+When replanning stops getting anywhere
+--------------------------------------
+
+A plan that fails, is replanned, and fails the same way is a loop. The planner
+is being asked the same question and answering it the same way, and the
+executor would keep driving the robot into the same failure until someone
+stopped it. Epistemic missions reach this more easily than classical ones,
+because ``EpistemicSwitch`` fails on any outcome the policy did not plan for,
+and a domain that cannot express the outcome will not plan for it next time
+either.
+
+The executor counts replans that arrive with no action having completed since
+the last one. Counting replans alone would be wrong: a mission that replans
+often while getting further is healthy, and what marks the loop is replanning
+with nothing having happened in between. Past
+``max_replans_without_progress``, which defaults to three, the plan is aborted
+through the ordinary failure path rather than replanned again. Setting it to
+zero asks the executor to keep trying however long the loop runs.
+
+Recovery and this guard pull in opposite directions on purpose. Repairing the
+model is what lets a contradicted belief be corrected and the next plan be a
+different one; the guard is what stops the case where it is not.
+
+When the world contradicts the model
+------------------------------------
+
+The model is a belief about the world, and the world can contradict it. A robot
+drives out carrying the map's word that a corridor is clear, looks, and sees
+that it is blocked. ``apply_action`` is then handed an outcome the model holds
+impossible.
+
+Refusing the update keeps the model honest about never having represented what
+happened, but it freezes it, and a frozen model is worse than a corrected one:
+the replan that follows plans from the belief the sensor just contradicted, and
+routes the robot down the corridor it has looked at.
+
+So ``allow_recovery`` on the request repairs the model instead, by trusting the
+observation over the belief. The model is re-designated to the worlds where the
+observed event could have fired, and the update proceeds from there. The
+response reports ``recovered`` and what the repair gave up, and the state logs
+it at warning level, because this is a change of belief rather than a detail of
+an update.
+
+``ApplyEpistemicUpdate`` asks for recovery by default, on the grounds that a
+robot which corrects a wrong belief is in better shape than one which stops.
+Its ``recover`` port turns that off for a deployment that would rather fail.
+
+Recovery has a limit worth stating plainly. Re-designation corrects which world
+is believed actual; it cannot add a world the model never contained. Observing
+something no world in the model could have produced means the model cannot
+represent what happened at all, and that is refused whatever ``allow_recovery``
+says. In the corridor domain, inspecting before driving out is such a case:
+every world has the robot away from the junction, so there is nothing to
+re-designate to.
+
+Replanning from the current belief
+----------------------------------
+
+The same topic carries the model itself, under ``model``, in the shape the task
+format gives an initial state. The solver reads it and plans from it, which is
+controlled by ``initial_from_state`` and on by default.
+
+This is what makes a replan start from where the mission got to. The executor's
+answer to a failed plan is to replan, and an epistemic policy usually fails
+because ``EpistemicSwitch`` saw an outcome the policy did not plan for. Planning
+again from the model grounding produced would begin at a belief that divergence
+has already disproved: the robot would be sent to find out what it has just
+found out, or told to act on a possibility it has ruled out.
+
+The model is resolved against the task before it is used. Every atom, agent and
+designated world it names must exist there; a name the task lacks is an error
+and not a new symbol, since it means the state and the planner hold different
+problems and a policy built from one could not be executed against the other. A
+model designating no world is refused for the same reason an empty announcement
+is: every formula holds vacuously in it, so the goal check would report success
+from a model that says nothing.
+
+Two parameters turn it off, at either end. ``initial_from_state`` false on the
+solver plans from the task's own initial state. ``publish_model`` false on the
+state node omits the model from the published message, which for a large model
+is most of it; the solver then falls back to the task's initial state on its
+own.
+
 The state advances by executed actions, not by observing the world, which is
 what distinguishes a belief state from a log. When it disagrees with what
 the robot observed, the disagreement surfaces at ``apply_action`` as an outcome
@@ -415,6 +587,31 @@ Which outcome occurred is a question about the world, not about the model. When
 the state designates a single world it already answers it, and the response
 reports it. When it designates several the model is undetermined, and the
 observation has to come from whoever did the sensing.
+
+One agent's point of view
+-------------------------
+
+The state holds one model for the whole system, and that is what makes a
+group's knowledge expressible at all: "r1 knows that r2 does not know" is a
+statement about one structure, not about two. A deployment often needs the
+other reading, though — what would this robot act on, given only what it has
+seen — and that is a different model.
+
+``epistemic_state/get_agent_perspective`` returns it: the same worlds and
+relations, designating what the agent considers possible from the worlds that
+are actually the case. It comes back in the task format's initial-state shape,
+so it can be handed to a planner the same way a replan's starting model is.
+
+``check_formula`` takes the same view through its ``agent`` field. The two
+readings answer different questions. Asked of the model, ``blocked`` is about
+the corridor; asked of ``r1``, it is about ``r1``, which has no opinion either
+way until it has looked.
+
+The response also reports whether the agent holds the actual world possible.
+Under S5 it always does, so an agent can be uninformed but never mistaken.
+Under KD45 it need not, and that is the difference between an agent that does
+not know and one that is wrong. The terminal reaches both through ``ros2
+plansys2 epistemic view <agent>`` and ``--agent`` on ``check``.
 
 Perception
 ----------

@@ -32,6 +32,7 @@
 #include "plansys2_epistemic_planner/policy_plan.hpp"
 #include "plansys2_epistemic_planner/product_update.hpp"
 #include "plansys2_epistemic_planner/state.hpp"
+#include "plansys2_epistemic_planner/state_json.hpp"
 
 namespace plansys2
 {
@@ -73,6 +74,11 @@ EpistemicStateNode::EpistemicStateNode()
 : rclcpp_lifecycle::LifecycleNode("epistemic_state")
 {
   declare_parameter<std::string>("task_file", "");
+  // Whether the published state carries the model as well as its shape. On by
+  // default, since replanning from where a mission got to depends on it; worth
+  // turning off only when nothing replans and the model is large enough for
+  // the message to matter.
+  declare_parameter<bool>("publish_model", true);
   declare_epddl_parameters(this, epddl_parameter_names_);
 }
 
@@ -80,6 +86,8 @@ EpistemicStateNode::CallbackReturnT
 EpistemicStateNode::on_configure(const rclcpp_lifecycle::State & state)
 {
   (void)state;
+
+  publish_model_ = get_parameter("publish_model").as_bool();
 
   load_task_service_ = create_service<plansys2_epistemic_msgs::srv::LoadTask>(
     "epistemic_state/load_task",
@@ -115,6 +123,26 @@ EpistemicStateNode::on_configure(const rclcpp_lifecycle::State & state)
     "epistemic_state/announce",
     std::bind(
       &EpistemicStateNode::announce_callback, this,
+      std::placeholders::_1, std::placeholders::_2));
+
+  get_domain_service_ = create_service<plansys2_epistemic_msgs::srv::GetEpistemicDomain>(
+    "epistemic_domain/get_domain",
+    std::bind(
+      &EpistemicStateNode::get_domain_callback, this,
+      std::placeholders::_1, std::placeholders::_2));
+
+  get_action_details_service_ =
+    create_service<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails>(
+    "epistemic_domain/get_action_details",
+    std::bind(
+      &EpistemicStateNode::get_action_details_callback, this,
+      std::placeholders::_1, std::placeholders::_2));
+
+  get_perspective_service_ =
+    create_service<plansys2_epistemic_msgs::srv::GetAgentPerspective>(
+    "epistemic_state/get_agent_perspective",
+    std::bind(
+      &EpistemicStateNode::get_perspective_callback, this,
       std::placeholders::_1, std::placeholders::_2));
 
   state_pub_ = create_publisher<std_msgs::msg::String>(
@@ -210,18 +238,260 @@ void EpistemicStateNode::publish_state()
     ", \"agents\": " + std::to_string(task_ ? task_->num_agents() : 0) +
     ", \"atoms\": " + std::to_string(task_ ? task_->num_atoms() : 0) +
     ", \"goal\": \"" + goal + "\"" +
-    ", \"goal_from_task\": " + (goal_override_ ? "false" : "true");
+    ", \"goal_from_task\": " + (goal_override_ ? "false" : "true") +
+    ", \"belief_version\": " + std::to_string(belief_version_);
 
   if (!goal.empty()) {
     const auto & formula = goal_override_ ? goal_override_ : task_->goal;
     data += ", \"goal_holds\": ";
     data += state_->satisfies(*formula) ? "true" : "false";
   }
+
+  // The model itself, in the shape the task format gives an initial state.
+  //
+  // The summary above says how big the model is; this says what it is, which
+  // is what a planner needs to replan from where a mission actually got to.
+  // Without it a replan starts from the state grounding produced, which is the
+  // one the divergence already disproved.
+  //
+  // It travels on this topic for the same reason the goal does: planning
+  // happens inside the planner's own service callback, and a service call from
+  // there can deadlock. Deployments that never replan can turn it off, since
+  // for a large model it is the bulk of the message.
+  if (publish_model_ && task_) {
+    data += ", \"model\": " + state_to_json(*task_, *state_);
+  }
+
   data += "}";
 
   std_msgs::msg::String msg;
   msg.data = std::move(data);
   state_pub_->publish(msg);
+}
+
+namespace
+{
+
+/// Whether a rendered formula is the trivial one. The renderer parenthesises,
+/// so the constant arrives as `(true)` as often as `true`, and an
+/// unconditional case should not be printed as if it had a condition.
+bool is_trivially_true(const std::string & rendered)
+{
+  return rendered.empty() || rendered == "true" || rendered == "(true)";
+}
+
+/// Append one postcondition to a rendered effects list.
+///
+/// A free function and not a lambda: the parameter list has to wrap either way,
+/// and a wrapped lambda signature is formatted differently by different
+/// versions of uncrustify, which makes the file fail a lint it passes locally.
+void append_effect(
+  const PlanningTask & task, AtomIdx atom, const std::string & value,
+  const FormulaPtr & when, std::string & effects)
+{
+  if (atom >= task.atom_names.size()) {
+    return;
+  }
+
+  if (!effects.empty()) {
+    effects += ", ";
+  }
+  effects += task.atom_names[atom] + " := " + value;
+
+  // A postcondition is conditional in general; an unconditional one is the
+  // special case where the condition is just true.
+  if (when) {
+    const auto text = render_formula(task, *when);
+    if (!is_trivially_true(text)) {
+      effects += " when " + text;
+    }
+  }
+}
+
+/// What an agent's observability of an action amounts to, in a sentence.
+///
+/// The relation is per event: which other events this agent could confuse this
+/// one with. Two extremes account for most declarations, and naming them is
+/// more use to a reader than printing the relation.
+std::string describe_observability(const Action & action, const ObsCase & obs_case)
+{
+  const std::size_t events = action.events.size();
+
+  bool identity = true;      // tells every event apart
+  bool total = true;         // tells none apart
+
+  for (std::size_t e = 0; e < events && e < obs_case.relation.size(); ++e) {
+    const auto & reachable = obs_case.relation[e];
+    if (reachable.size() != 1 || !reachable.count(static_cast<EventIdx>(e))) {
+      identity = false;
+    }
+    if (reachable.size() != events) {
+      total = false;
+    }
+  }
+
+  if (identity) {
+    return "sees which event occurred";
+  }
+  if (total) {
+    return "sees nothing of which event occurred";
+  }
+
+  std::string out = "tells some events apart: ";
+  for (std::size_t e = 0; e < events && e < obs_case.relation.size(); ++e) {
+    out += (e ? ", " : "");
+    out += action.events[e].name + " ~ {";
+    bool first = true;
+    for (const auto other : obs_case.relation[e]) {
+      if (other < events) {
+        out += (first ? "" : " ");
+        out += action.events[other].name;
+        first = false;
+      }
+    }
+    out += "}";
+  }
+  return out;
+}
+
+}  // namespace
+
+void EpistemicStateNode::get_perspective_callback(
+  const std::shared_ptr<plansys2_epistemic_msgs::srv::GetAgentPerspective::Request> request,
+  std::shared_ptr<plansys2_epistemic_msgs::srv::GetAgentPerspective::Response> response)
+{
+  if (!task_ || !state_) {
+    response->success = false;
+    response->error = "no task is loaded, so there is no model to take a view of";
+    return;
+  }
+
+  const auto agent = task_->agent_index.find(request->agent);
+  if (agent == task_->agent_index.end()) {
+    response->success = false;
+    response->error = "the domain declares no agent '" + request->agent + "'";
+    return;
+  }
+
+  const auto perspective = agent_perspective(*state_, agent->second);
+
+  response->worlds = perspective.num_worlds;
+  response->designated = static_cast<std::uint32_t>(perspective.num_designated());
+  response->model = state_to_json(*task_, perspective);
+
+  // Whether the agent holds the actual world possible. Under S5 it always
+  // does; under KD45 it need not, and that is the difference between an agent
+  // that does not know and one that is wrong.
+  response->includes_actual = false;
+  for (std::uint32_t w = 0; w < state_->num_worlds; ++w) {
+    if (state_->is_designated(w) && perspective.is_designated(w)) {
+      response->includes_actual = true;
+      break;
+    }
+  }
+
+  response->success = true;
+}
+
+void EpistemicStateNode::get_domain_callback(
+  const std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Request> request,
+  std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicDomain::Response> response)
+{
+  (void)request;
+
+  if (!task_) {
+    response->success = false;
+    response->error = "no task is loaded, so there is no domain to describe";
+    return;
+  }
+
+  response->agents = task_->agent_names;
+  response->atoms = task_->atom_names;
+
+  for (const auto & action : task_->actions) {
+    response->actions.push_back(action.name);
+    // Sensing is not a flag the domain sets; it is what having more than one
+    // event that can occur amounts to.
+    response->sensing.push_back(!action.is_ontic());
+  }
+
+  response->kd45 = task_->kd45;
+  response->partial_obs = task_->partial_obs;
+  response->success = true;
+}
+
+void EpistemicStateNode::get_action_details_callback(
+  const std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Request> request,
+  std::shared_ptr<plansys2_epistemic_msgs::srv::GetEpistemicActionDetails::Response> response)
+{
+  if (!task_) {
+    response->success = false;
+    response->error = "no task is loaded, so there is no domain to describe";
+    return;
+  }
+
+  const auto it = task_->action_index.find(request->action);
+  if (it == task_->action_index.end()) {
+    // Named and not found is a disagreement about which problem is being
+    // solved, so it is reported as one instead of answered emptily.
+    response->success = false;
+    response->error =
+      "the domain declares no action '" + request->action +
+      "'; get_domain lists the ones it does";
+    return;
+  }
+
+  const auto & action = task_->actions[it->second];
+
+  for (const auto & event : action.events) {
+    response->events.push_back(event.name);
+
+    response->preconditions.push_back(
+      event.precondition ? render_formula(*task_, *event.precondition) : std::string());
+
+    std::string effects;
+    for (const auto & [atom, when] : event.post_true) {
+      append_effect(*task_, atom, "true", when, effects);
+    }
+    for (const auto & [atom, when] : event.post_false) {
+      append_effect(*task_, atom, "false", when, effects);
+    }
+    response->effects.push_back(effects);
+  }
+
+  for (const auto designated : action.designated_events) {
+    if (designated < action.events.size()) {
+      response->designated_events.push_back(action.events[designated].name);
+    }
+  }
+
+  for (std::size_t agent = 0; agent < task_->agent_names.size(); ++agent) {
+    const auto & name = task_->agent_names[agent];
+
+    if (agent >= action.obs_cases.size() || action.obs_cases[agent].empty()) {
+      // The product update treats an agent with no case as fully observant, so
+      // that is what the domain says about it.
+      response->observability.push_back(name + ": sees which event occurred");
+      continue;
+    }
+
+    std::string line = name + ": ";
+    const auto & cases = action.obs_cases[agent];
+    for (std::size_t c = 0; c < cases.size(); ++c) {
+      if (c) {
+        line += "; otherwise ";
+      }
+      const auto condition =
+        cases[c].condition ? render_formula(*task_, *cases[c].condition) : std::string("true");
+      if (!is_trivially_true(condition)) {
+        line += "when " + condition + ", ";
+      }
+      line += describe_observability(action, cases[c]);
+    }
+    response->observability.push_back(line);
+  }
+
+  response->success = true;
 }
 
 std::string EpistemicStateNode::goal_text() const
@@ -313,9 +583,80 @@ void EpistemicStateNode::check_formula_callback(
     return;
   }
 
+  if (request->agent.empty()) {
+    response->success = true;
+    response->holds = state_->satisfies(*formula);
+    return;
+  }
+
+  // Asked from an agent's point of view instead. This is a different question:
+  // "is the corridor blocked" is about the world, and "would r2 say so" is
+  // about r2, which has no opinion at all until it has looked.
+  const auto agent = task_->agent_index.find(request->agent);
+  if (agent == task_->agent_index.end()) {
+    response->success = false;
+    response->error =
+      "the domain declares no agent '" + request->agent + "'";
+    return;
+  }
+
+  const auto perspective = agent_perspective(*state_, agent->second);
   response->success = true;
-  response->holds = state_->satisfies(*formula);
+  response->holds = perspective.satisfies(*formula);
 }
+
+
+namespace
+{
+
+/// Re-designate a model to the worlds where an event could have fired.
+///
+/// This is the repair. The model said the actual world was among W*, the robot
+/// observed something no world in W* could have produced, and one of the two
+/// is wrong. The observation wins: it came from the world, and the model is a
+/// belief about it.
+///
+/// The worlds considered are every world in the model, not just the designated
+/// ones, because the designated set is exactly what is being corrected. A
+/// world already ruled out is the most likely place for the truth to be.
+///
+/// Returns false when no world in the model satisfies the event's
+/// precondition. Then the model cannot represent what happened at all, and
+/// there is nothing to repair it to.
+bool redesignate_for_event(
+  EpistemicState & state, const Event & event, std::string & gave_up)
+{
+  std::vector<WorldIdx> candidates;
+  for (std::uint32_t w = 0; w < state.num_worlds; ++w) {
+    if (!event.precondition || state.holds_at(*event.precondition, w)) {
+      candidates.push_back(static_cast<WorldIdx>(w));
+    }
+  }
+
+  if (candidates.empty()) {
+    return false;
+  }
+
+  std::size_t was_designated = 0;
+  for (const auto w : candidates) {
+    if (state.is_designated(w)) {
+      ++was_designated;
+    }
+  }
+
+  gave_up =
+    "re-designated to the " + std::to_string(candidates.size()) +
+    " world(s) where the observed event could fire, of which " +
+    std::to_string(was_designated) + " had been held possible";
+
+  state.designated.assign(state.rel_words, 0);
+  for (const auto w : candidates) {
+    state.set_designated(w);
+  }
+  return true;
+}
+
+}  // namespace
 
 void EpistemicStateNode::apply_action_callback(
   const std::shared_ptr<plansys2_epistemic_msgs::srv::ApplyAction::Request> request,
@@ -364,12 +705,60 @@ void EpistemicStateNode::apply_action_callback(
       return;
     }
 
-    response->success = false;
-    response->error =
-      "'" + request->epistemic_action + "' is not applicable in the current "
-      "epistemic state; the model and the world disagree";
-    RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", response->error.c_str());
-    return;
+    // The model and the world disagree. Refusing keeps the model honest about
+    // never having represented what happened, but it also freezes it, and a
+    // replan from a frozen model plans for a world the robot has ruled out.
+    if (!request->allow_recovery) {
+      response->success = false;
+      response->error =
+        "'" + request->epistemic_action + "' is not applicable in the current "
+        "epistemic state; the model and the world disagree";
+      RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", response->error.c_str());
+      return;
+    }
+
+    // Trust the world. Which event to repair towards is the observed one when
+    // there is one, and otherwise any event of the action that some world
+    // could have produced.
+    const Event * target = nullptr;
+    for (const auto & event : action.events) {
+      if (!request->observed_outcome.empty() && event.name != request->observed_outcome) {
+        continue;
+      }
+      if (action.designated_events.count(event.id) == 0) {
+        continue;         // an event that cannot occur is not an explanation
+      }
+      target = &event;
+      break;
+    }
+
+    std::string gave_up;
+    if (!target || !redesignate_for_event(*state_, *target, gave_up)) {
+      response->success = false;
+      response->error =
+        "'" + request->epistemic_action + "' is not applicable and the model "
+        "has no world that could have produced what was observed; it cannot "
+        "represent what happened";
+      RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", response->error.c_str());
+      return;
+    }
+
+    response->recovered = true;
+    response->recovery = gave_up;
+    RCLCPP_WARN(
+      get_logger(),
+      "[epistemic_state] the model could not account for '%s'; trusting the "
+      "observation over the belief: %s",
+      request->epistemic_action.c_str(), gave_up.c_str());
+
+    if (!action.applicable(*state_)) {
+      response->success = false;
+      response->error =
+        "'" + request->epistemic_action + "' is still not applicable after "
+        "repairing the model";
+      RCLCPP_ERROR(get_logger(), "[epistemic_state] %s", response->error.c_str());
+      return;
+    }
   }
 
   if (action.is_ontic()) {
@@ -407,6 +796,41 @@ void EpistemicStateNode::apply_action_callback(
           break;
         }
       }
+      if (chosen == outcomes.size() && request->allow_recovery) {
+        // The robot saw an outcome this model says could not happen. Repair
+        // towards it and split again, so the update proceeds from a model that
+        // can represent what was seen.
+        const Event * target = nullptr;
+        for (const auto & event : action.events) {
+          if (event.name == request->observed_outcome) {
+            target = &event;
+            break;
+          }
+        }
+
+        std::string gave_up;
+        if (target && redesignate_for_event(*state_, *target, gave_up)) {
+          outcomes = product_update_split(*state_, action, task_->kd45);
+          for (std::size_t i = 0; i < outcomes.size(); ++i) {
+            if (outcomes[i].first < action.events.size() &&
+              action.events[outcomes[i].first].name == request->observed_outcome)
+            {
+              chosen = i;
+              break;
+            }
+          }
+          if (chosen < outcomes.size()) {
+            response->recovered = true;
+            response->recovery = gave_up;
+            RCLCPP_WARN(
+              get_logger(),
+              "[epistemic_state] '%s' was observed but the model held it "
+              "impossible; trusting the observation: %s",
+              request->observed_outcome.c_str(), gave_up.c_str());
+          }
+        }
+      }
+
       if (chosen == outcomes.size()) {
         response->success = false;
         response->error =
@@ -557,6 +981,12 @@ void EpistemicStateNode::announce_callback(
 
   const auto worlds_before = state_->num_worlds;
   state_ = std::move(restricted);
+
+  // Information that arrived outside the plan. A policy is built against a
+  // belief, and this is the belief changing from somewhere the policy did not
+  // account for, so anything executing one should reconsider it. Counting it
+  // is how that reaches the behavior tree, which cannot see service calls.
+  ++belief_version_;
 
   response->success = true;
   response->num_worlds = state_->num_worlds;

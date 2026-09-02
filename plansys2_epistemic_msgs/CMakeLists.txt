@@ -11,6 +11,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/SetGoal.srv"
   "srv/GetGoal.srv"
   "srv/Announce.srv"
+  "srv/GetAgentPerspective.srv"
+  "srv/GetEpistemicDomain.srv"
+  "srv/GetEpistemicActionDetails.srv"
 )
 
 if(BUILD_TESTING)

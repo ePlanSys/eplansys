@@ -75,18 +75,30 @@ class EpistemicVerb(VerbExtension):
         add_arguments(parser)
         parser.add_argument(
             'command', nargs='?', default='show',
-            choices=['show', 'check', 'goal', 'announce', 'apply'],
+            choices=['show', 'check', 'goal', 'announce', 'apply',
+                     'domain', 'action', 'view'],
             help=(
                 'show: the model and the goal; '
                 'check <formula>: does it hold now; '
                 'goal [<formula>]: report the goal, or set it; '
                 'announce <formula>: everyone just learned this; '
-                'apply <action>: advance the model by an executed action'
+                'apply <action>: advance the model by an executed action; '
+                'domain: what the EPDDL domain declares; '
+                "action <name>: one action's event model and who observes it; "
+                'view <agent>: the model as that agent sees it'
             ),
         )
         parser.add_argument(
             'argument', nargs='?', default='',
             help='The formula or action the command takes.',
+        )
+        parser.add_argument(
+            '--agent', default='',
+            help=(
+                "check: evaluate from this agent's point of view instead of "
+                'against the model. "is the corridor blocked" is a question '
+                'about the world; "would r2 say so" is a question about r2.'
+            ),
         )
         parser.add_argument(
             '--observed', default='',
@@ -106,7 +118,8 @@ class EpistemicVerb(VerbExtension):
         # to build its help, and a missing epistemic message package would
         # then break `ros2 plansys2` as a whole rather than this one verb.
         from plansys2_epistemic_msgs.srv import (
-            Announce, ApplyAction, CheckFormula, GetGoal, SetGoal,
+            Announce, ApplyAction, CheckFormula, GetAgentPerspective,
+            GetEpistemicActionDetails, GetEpistemicDomain, GetGoal, SetGoal,
         )
 
         handlers = {
@@ -115,6 +128,9 @@ class EpistemicVerb(VerbExtension):
             'goal': lambda node: self._goal(node, args, GetGoal, SetGoal),
             'announce': lambda node: self._announce(node, args, Announce),
             'apply': lambda node: self._apply(node, args, ApplyAction),
+            'domain': lambda node: self._domain(node, args, GetEpistemicDomain),
+            'action': lambda node: self._action(node, args, GetEpistemicActionDetails),
+            'view': lambda node: self._view(node, args, GetAgentPerspective),
         }
 
         # The real rclpy node, not the strategy wrapper. NodeStrategy forwards
@@ -123,6 +139,96 @@ class EpistemicVerb(VerbExtension):
         # instead of on the node the executor is spinning.
         with NodeStrategy(args) as strategy:
             return handlers[args.command](strategy.direct_node.node)
+
+    def _domain(self, node, args, GetEpistemicDomain):
+        """
+        Print what the EPDDL domain declares.
+
+        The classical terminal's `get domain actions` reads the PDDL domain and
+        is blind to all of this: an epistemic action is an event model with
+        per-agent observability, and none of that has a PDDL surface.
+        """
+        response = _call(
+            node, GetEpistemicDomain, 'epistemic_domain/get_domain',
+            GetEpistemicDomain.Request(), args.timeout,
+        )
+        if response is None:
+            return 1
+        if not response.success:
+            print(response.error, file=sys.stderr)
+            return 1
+
+        print(f'frame: {"KD45 (belief)" if response.kd45 else "S5 (knowledge)"}')
+        print(f'partially observable: {"yes" if response.partial_obs else "no"}')
+        print(f'agents: {" ".join(response.agents)}')
+        print(f'atoms:  {" ".join(response.atoms)}')
+        print('actions:')
+        for name, sensing in zip(response.actions, response.sensing):
+            print(f'  {name}{"  [sensing]" if sensing else ""}')
+        return 0
+
+    def _action(self, node, args, GetEpistemicActionDetails):
+        """Print one action's event model and who observes what of it."""
+        if not args.argument:
+            print('action takes the name of an action', file=sys.stderr)
+            return 1
+
+        request = GetEpistemicActionDetails.Request()
+        request.action = args.argument
+
+        response = _call(
+            node, GetEpistemicActionDetails,
+            'epistemic_domain/get_action_details', request, args.timeout,
+        )
+        if response is None:
+            return 1
+        if not response.success:
+            print(response.error, file=sys.stderr)
+            return 1
+
+        designated = set(response.designated_events)
+        print(f'{args.argument}: {len(response.events)} events, '
+              f'{len(designated)} of them possible')
+        for name, pre, eff in zip(
+                response.events, response.preconditions, response.effects):
+            mark = '*' if name in designated else ' '
+            print(f'  {mark} {name}')
+            if pre:
+                print(f'      when: {pre}')
+            if eff:
+                print(f'      does: {eff}')
+        print('observability:')
+        for line in response.observability:
+            print(f'  {line}')
+        return 0
+
+    def _view(self, node, args, GetAgentPerspective):
+        """Print the model as one agent sees it."""
+        if not args.argument:
+            print('view takes the name of an agent', file=sys.stderr)
+            return 1
+
+        request = GetAgentPerspective.Request()
+        request.agent = args.argument
+
+        response = _call(
+            node, GetAgentPerspective,
+            'epistemic_state/get_agent_perspective', request, args.timeout,
+        )
+        if response is None:
+            return 1
+        if not response.success:
+            print(response.error, file=sys.stderr)
+            return 1
+
+        print(f'{args.argument}: {response.designated} of {response.worlds} '
+              f'worlds held possible')
+        if not response.includes_actual:
+            # Only KD45 can produce this. Saying it plainly matters: an agent
+            # that has ruled out what is actually the case will act on a
+            # belief nothing supports.
+            print('  this agent has ruled out the actual world')
+        return 0
 
     def _show(self, node, args):
         """Print the latched state: the shape of the model and the goal."""
@@ -184,12 +290,16 @@ class EpistemicVerb(VerbExtension):
 
         request = CheckFormula.Request()
         request.formula = args.argument
+        # Empty is the model as it stands. An agent name asks the same formula
+        # of that agent instead, which is a different question.
+        request.agent = args.agent
         response = _call(
             node, CheckFormula, 'epistemic_state/check_formula', request, args.timeout)
         if not _report(response):
             return 1
 
-        print('holds' if response.holds else 'does not hold')
+        where = f' for {args.agent}' if args.agent else ''
+        print(('holds' if response.holds else 'does not hold') + where)
         return 0
 
     def _goal(self, node, args, GetGoal, SetGoal):

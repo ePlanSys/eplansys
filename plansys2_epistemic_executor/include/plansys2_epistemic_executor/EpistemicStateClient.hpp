@@ -57,6 +57,9 @@ public:
     bool holds{false};      ///< check_formula, get_goal, set_goal: does it hold
     std::string goal;       ///< get_goal: the goal as text
     bool from_task{false};  ///< get_goal: the goal is the loaded task's own
+    bool recovered{false};  ///< apply_action: the model was repaired to accept
+                            ///< the observation
+    std::string recovery;   ///< apply_action: what the repair gave up
   };
 
   explicit EpistemicStateClient(const std::string & node_name = "epistemic_state_client");
@@ -74,9 +77,15 @@ public:
   /// Advance the state by an executed action. `observed_outcome` may be empty,
   /// in which case the state decides when it can and reports an error when it
   /// cannot.
+  ///
+  /// `allow_recovery` says what to do when the observation contradicts the
+  /// model. False refuses and leaves the model as it was. True repairs it by
+  /// trusting the observation over the belief, and reports having done so on
+  /// the answer.
   Answer apply_action(
     const std::string & epistemic_action,
     const std::string & observed_outcome = "",
+    bool allow_recovery = false,
     const std::chrono::nanoseconds & timeout = std::chrono::seconds(5));
 
   /// What is being aimed at, and whether it holds yet.

@@ -102,12 +102,14 @@ EpistemicStateClient::Answer EpistemicStateClient::check_formula(
 EpistemicStateClient::Answer EpistemicStateClient::apply_action(
   const std::string & epistemic_action,
   const std::string & observed_outcome,
+  bool allow_recovery,
   const std::chrono::nanoseconds & timeout)
 {
   Answer answer;
   auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
   request->epistemic_action = epistemic_action;
   request->observed_outcome = observed_outcome;
+  request->allow_recovery = allow_recovery;
 
   const auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
     apply_action_client_, request, timeout, answer.error);
@@ -119,6 +121,8 @@ EpistemicStateClient::Answer EpistemicStateClient::apply_action(
   answer.success = response->success;
   answer.outcome = response->outcome;
   answer.error = response->error;
+  answer.recovered = response->recovered;
+  answer.recovery = response->recovery;
   return answer;
 }
 

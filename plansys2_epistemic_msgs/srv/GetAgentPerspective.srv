@@ -1,0 +1,30 @@
+# The model as one agent sees it.
+#
+# The state holds one model for the whole system, which is what makes a group's
+# knowledge expressible at all: "r1 knows that r2 does not know" is a statement
+# about one structure, not about two. But a deployment often needs the other
+# reading — what would this robot act on, given only what it has seen — and
+# that is a different model: the worlds this agent considers possible, taken
+# from the ones that are actually the case.
+#
+# Under S5 the agent's perspective always includes the actual world, so it can
+# be ignorant but never wrong. Under KD45 it need not, which is what lets an
+# agent be mistaken rather than merely uninformed.
+
+# The agent whose point of view is wanted.
+string agent
+---
+bool success
+string error
+
+# The shape of that agent's model.
+uint32 worlds
+uint32 designated
+
+# The perspective itself, in the shape the task format gives an initial state,
+# so it can be planned from or handed to another node.
+string model
+
+# True when the agent considers the actual world possible. False means it holds
+# a belief the world contradicts, which S5 cannot express and KD45 can.
+bool includes_actual

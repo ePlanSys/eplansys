@@ -38,6 +38,13 @@ EpistemicPerceptionNode::EpistemicPerceptionNode(const rclcpp::NodeOptions & opt
   // scenario with long approaches needs a larger number than a building of
   // small rooms does.
   declare_parameter<int>("applicability_retries", kApplicabilityRetries);
+  // Whether an observation the model cannot account for should repair the
+  // model or be refused. Off by default, deliberately: perception reads a grid
+  // through a confidence threshold, so a spurious reading here would rewrite
+  // the belief rather than be rejected. A performer reporting the outcome of a
+  // sensing action the policy asked for is the case that repairs by default;
+  // this one is a sensor talking, and a sensor can be wrong.
+  declare_parameter<bool>("allow_recovery", false);
 }
 
 template<typename T>
@@ -234,6 +241,8 @@ EpistemicPerceptionNode::on_configure(const rclcpp_lifecycle::State & state)
   call_timeout_ = std::chrono::duration_cast<std::chrono::nanoseconds>(
     std::chrono::duration<double>(call_timeout));
 
+  allow_recovery_ = get_parameter("allow_recovery").as_bool();
+
   state_ = std::make_shared<EpistemicStateClient>("epistemic_perception_state_client");
 
   // The map is latched: a grid published before this node came up is still the
@@ -340,7 +349,8 @@ bool EpistemicPerceptionNode::tell(Watched & watched, const Emission & emission)
       break;
 
     case Emission::Kind::ApplyAction:
-      answer = state_->apply_action(emission.action, emission.outcome, call_timeout_);
+      answer = state_->apply_action(
+        emission.action, emission.outcome, allow_recovery_, call_timeout_);
       break;
 
     case Emission::Kind::Nothing:

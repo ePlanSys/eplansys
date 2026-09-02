@@ -101,6 +101,13 @@ void expect_parses(const std::string & xml)
         BT::InputPort<std::string>("observed"), BT::OutputPort<std::string>("outcome")});
 
   // The PlanSys2 nodes the template reuses unchanged.
+  // The belief watchdog, which the packaged template puts inside the reactive
+  // sequence so an announcement interrupts the action it arrives during.
+  factory.registerSimpleCondition(
+    "CheckBeliefUnchanged", [](BT::TreeNode &) {
+      return BT::NodeStatus::SUCCESS;
+    }, {BT::InputPort<std::string>("action"), BT::InputPort<std::string>("enabled")});
+
   for (const auto & name : {"WaitAtStartReq", "CheckOverAllReq", "CheckAtEndReq"}) {
     factory.registerSimpleCondition(
       name, [](BT::TreeNode &) {
@@ -210,6 +217,35 @@ TEST(PolicyBtTest, TheObservationTravelsFromThePerformerToTheUpdate)
   // and the model's reading of it are two different things, and the switch
   // branches on the second.
   EXPECT_NE(xml.find("outcome=\"{epistemic_outcome_0}\""), std::string::npos);
+  expect_parses(xml);
+}
+
+TEST(PolicyBtTest, EveryActionIsWatchedForInformationArrivingFromOutside)
+{
+  plansys2_msgs::msg::Plan plan;
+  plan.items = {
+    action("(peek A)", 0.0f, {1, 2}, {"e_tails", "e_heads"}),
+    action("(shout-tails A)", 1.0f),
+    action("(open A)", 1.0f),
+  };
+  ASSERT_EQ(Policy::validate(plan), "");
+
+  const auto xml = policy_to_bt(Policy(plan));
+
+  // One watchdog per action, and inside the reactive sequence rather than
+  // before it: an announcement that arrives while an action is running has to
+  // interrupt that action, not be noticed after it finishes.
+  EXPECT_EQ(count_of(xml, "<CheckBeliefUnchanged"), 3u);
+
+  const auto watch = xml.find("<CheckBeliefUnchanged");
+  const auto reactive = xml.find("<ReactiveSequence");
+  const auto execute = xml.find("<ExecuteAction");
+  ASSERT_NE(watch, std::string::npos);
+  ASSERT_NE(reactive, std::string::npos);
+  EXPECT_LT(reactive, watch) << "the watchdog is outside the reactive sequence, "
+    "so it is checked once instead of while the action runs";
+  EXPECT_LT(watch, execute) << "the action starts before anything watches it";
+
   expect_parses(xml);
 }
 

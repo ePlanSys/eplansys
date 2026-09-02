@@ -85,6 +85,17 @@ namespace plansys2
  *                    convention that guesses parameter order and is not
  *                    suitable for dispatching to real actions. An action the
  *                    map does not cover fails the request.
+ *   initial_from_state
+ *                    Plan from the model the epistemic state publishes, rather
+ *                    than from the one grounding produced. True by default,
+ *                    and it is what makes replanning start from where a
+ *                    mission actually got to: after a sensing action rules
+ *                    worlds out, or an observation diverges from the policy,
+ *                    the state to plan from is the one the robot reached. With
+ *                    it off, every replan begins at the initial model, which a
+ *                    divergence has usually already disproved. Read from the
+ *                    state's latched topic for the same reason the goal is,
+ *                    and it needs the state's own `publish_model` left on.
  *   goal_from_state  Take the goal from the epistemic state when it publishes
  *                    one, rather than from the task. True by default, which is
  *                    what makes `set_goal` on the state change what is planned
@@ -138,6 +149,16 @@ private:
   /// and the planner are holding different problems.
   bool apply_state_goal(PlanningTask & task, std::string & error) const;
 
+  /// Replace the task's initial state with the model the epistemic state
+  /// published, when there is one. Returns false with `error` set when the
+  /// model does not read against this task, which means the state and the
+  /// planner are holding different problems.
+  ///
+  /// This is what makes replanning start from where a mission got to. Without
+  /// it every replan begins at the model grounding produced, which after a
+  /// divergence is a belief the robot has already disproved.
+  bool apply_state_initial(PlanningTask & task, std::string & error) const;
+
   std::string task_file_parameter_name_;
   std::string heuristic_parameter_name_;
   std::string strategy_parameter_name_;
@@ -149,12 +170,19 @@ private:
   EpddlGrounder grounder_;
 
   std::string goal_from_state_parameter_name_;
+  std::string initial_from_state_parameter_name_;
 
   /// The last goal the epistemic state published, as text. Latched by the
   /// subscription rather than fetched, so reading it costs nothing and cannot
   /// block the planning request that reads it.
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr state_sub_;
   std::string state_goal_;
+
+  /// The last model the epistemic state published, as the JSON text it was
+  /// sent in. Held unparsed because a model can only be read against a task,
+  /// and which task this plugin is answering for is not known until a planning
+  /// request names one.
+  std::string state_model_;
 };
 
 }  // namespace plansys2

@@ -4,6 +4,20 @@
 # The formula is written the way the policy carries it — "(K r1 (clear
 # corridor))", "(Kw A tails)" — over the vocabulary of the loaded task.
 string formula
+
+# Whose point of view to evaluate it from. Empty, the default, is the model as
+# it stands: what is actually the case, and what the agents therefore know.
+#
+# Naming an agent evaluates in that agent's perspective instead — the worlds it
+# considers possible from the ones that are actual. The two answer different
+# questions. "Is the corridor blocked" is about the world; "would r2 say the
+# corridor is blocked" is about r2, and an agent that has not looked has no
+# opinion either way even when the fact is settled.
+#
+# This is what makes a false belief expressible: under KD45 an agent's
+# perspective can exclude the actual world, and a formula can hold there while
+# failing in the model.
+string agent
 ---
 bool success       # false when no task is loaded or the formula does not parse
 bool holds         # meaningful only when success is true

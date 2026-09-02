@@ -25,6 +25,8 @@ set(EPISTEMIC_SOURCES
   src/heuristic.cpp
   src/search.cpp
   src/parser.cpp
+  src/state_json.cpp
+  src/mapping_draft.cpp
   src/policy_plan.cpp
   src/validator.cpp
   src/selection_policy.cpp
@@ -49,6 +51,13 @@ target_link_libraries(${PROJECT_NAME}
 target_compile_definitions(${PROJECT_NAME} PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
 pluginlib_export_plugin_description_file(plansys2_core plansys2_epistemic_planner_plugin.xml)
+
+add_executable(draft_epistemic_mapping src/draft_mapping_main.cpp)
+target_link_libraries(draft_epistemic_mapping ${PROJECT_NAME})
+
+install(TARGETS draft_epistemic_mapping
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
 
 install(DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}

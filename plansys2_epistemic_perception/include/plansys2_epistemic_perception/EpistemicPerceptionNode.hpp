@@ -150,6 +150,10 @@ private:
   std::vector<Watched> watched_;
   Thresholds thresholds_;
   std::chrono::nanoseconds call_timeout_{std::chrono::seconds(5)};
+
+  /// Whether an observation the model cannot account for repairs the model.
+  /// The configured value of `allow_recovery`, off by default.
+  bool allow_recovery_{false};
   bool active_{false};
 
   EpistemicStateClient::Ptr state_;

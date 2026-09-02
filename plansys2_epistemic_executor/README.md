@@ -73,6 +73,14 @@ built for a different belief, and running one anyway is a robot acting
 confidently on a belief nothing supports. The failure reaches the executor,
 whose answer to a failed plan is to replan.
 
+**CheckBeliefUnchanged** fails when the belief moves for a reason the policy
+did not account for. Its own actions are not such a reason; an announcement is
+— perception resolving a region, an operator saying something, two robots
+reconciling their maps. The packaged template puts it inside the reactive
+sequence, so the interruption arrives while the invalidated action is still
+running rather than after it. The executor replans, from the model the
+announcement produced.
+
 **CheckEpistemicGoal** runs once, after the policy. Reaching a leaf means one
 execution finished, not that the goal holds: every leaf was believed to reach
 it, but that belief was formed against the model at planning time.
