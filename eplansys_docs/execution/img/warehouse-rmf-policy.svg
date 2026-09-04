@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 686 694"
+     width="686" height="694"
+     font-family="Arial, Helvetica, sans-serif" role="img"
+     aria-label="The seventeen-node policy: a trunk to aisle 2, an inspection, and two continuations">
+  <style>
+    .box   { fill:#FFFFFF; stroke:#D6D6D6; stroke-width:1.4 }
+    .sense { stroke:#C8102E; stroke-width:2 }
+    .ontic { stroke:#111111; stroke-width:2 }
+    .off   { opacity:.34 }
+    .act   { font-family:'Courier New',Courier,monospace; font-size:12px;
+             fill:#111111 }
+    .edge  { stroke:#9A9A9A; stroke-width:1.3; fill:none; marker-end:url(#a) }
+    .took  { stroke:#5A5A5A; stroke-width:1.8 }
+    .brlab { font-size:11.5px; fill:#C8102E; font-weight:bold }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7"
+            markerHeight="7" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#9A9A9A"/>
+    </marker>
+  </defs>
+  <path class="edge took" d="M343,69 L343,91"/>
+  <path class="edge took" d="M343,127 L343,149"/>
+  <path class="edge off" d="M343,185 C343,196 133,196 133,207"/>
+  <text class="brlab" x="238" y="192" text-anchor="middle">aisle empty</text>
+  <path class="edge off" d="M133,243 L133,265"/>
+  <path class="edge off" d="M133,301 L133,323"/>
+  <path class="edge off" d="M133,359 L133,381"/>
+  <path class="edge off" d="M133,417 L133,439"/>
+  <path class="edge off" d="M133,475 L133,497"/>
+  <path class="edge off" d="M133,533 L133,555"/>
+  <path class="edge off" d="M133,591 L133,613"/>
+  <path class="edge took" d="M343,185 C343,196 553,196 553,207"/>
+  <text class="brlab" x="448" y="192" text-anchor="middle">pallet here</text>
+  <path class="edge took" d="M553,243 L553,265"/>
+  <path class="edge took" d="M553,301 L553,323"/>
+  <path class="edge took" d="M553,359 L553,381"/>
+  <path class="edge took" d="M553,417 L553,439"/>
+  <path class="edge took" d="M553,475 L553,497"/>
+  <g>
+    <rect class="box" x="250" y="39" width="186" height="30" rx="4"/>
+    <text class="act" x="343" y="58" text-anchor="middle">go_r1_dock_south_lane</text>
+  </g>
+  <g>
+    <rect class="box" x="250" y="97" width="186" height="30" rx="4"/>
+    <text class="act" x="343" y="116" text-anchor="middle">go_r1_lane_bay2</text>
+  </g>
+  <g>
+    <rect class="box sense" x="250" y="155" width="186" height="30" rx="4"/>
+    <text class="act" x="343" y="174" text-anchor="middle">inspect_r1_bay2</text>
+  </g>
+  <g class="off">
+    <rect class="box" x="40" y="213" width="186" height="30" rx="4"/>
+    <text class="act" x="133" y="232" text-anchor="middle">go_r1_bay2_lane</text>
+  </g>
+  <g class="off">
+    <rect class="box" x="40" y="271" width="186" height="30" rx="4"/>
+    <text class="act" x="133" y="290" text-anchor="middle">go_r1_lane_bay3</text>
+  </g>
+  <g class="off">
+    <rect class="box ontic" x="40" y="329" width="186" height="30" rx="4"/>
+    <text class="act" x="133" y="348" text-anchor="middle">pickup_r1_bay3</text>
+  </g>
+  <g class="off">
+    <rect class="box" x="40" y="387" width="186" height="30" rx="4"/>
+    <text class="act" x="133" y="406" text-anchor="middle">go_r1_bay3_lane</text>
+  </g>
+  <g class="off">
+    <rect class="box" x="40" y="445" width="186" height="30" rx="4"/>
+    <text class="act" x="133" y="464" text-anchor="middle">go_r1_lane_dock_south</text>
+  </g>
+  <g class="off">
+    <rect class="box" x="40" y="503" width="186" height="30" rx="4"/>
+    <text class="act" x="133" y="522" text-anchor="middle">go_r1_dock_south_corridor</text>
+  </g>
+  <g class="off">
+    <rect class="box" x="40" y="561" width="186" height="30" rx="4"/>
+    <text class="act" x="133" y="580" text-anchor="middle">go_r1_corridor_dock_north</text>
+  </g>
+  <g class="off">
+    <rect class="box ontic" x="40" y="619" width="186" height="30" rx="4"/>
+    <text class="act" x="133" y="638" text-anchor="middle">unload_r1_dock_north</text>
+  </g>
+  <g>
+    <rect class="box ontic" x="460" y="213" width="186" height="30" rx="4"/>
+    <text class="act" x="553" y="232" text-anchor="middle">pickup_r1_bay2</text>
+  </g>
+  <g>
+    <rect class="box" x="460" y="271" width="186" height="30" rx="4"/>
+    <text class="act" x="553" y="290" text-anchor="middle">go_r1_bay2_lane</text>
+  </g>
+  <g>
+    <rect class="box" x="460" y="329" width="186" height="30" rx="4"/>
+    <text class="act" x="553" y="348" text-anchor="middle">go_r1_lane_dock_south</text>
+  </g>
+  <g>
+    <rect class="box" x="460" y="387" width="186" height="30" rx="4"/>
+    <text class="act" x="553" y="406" text-anchor="middle">go_r1_dock_south_corridor</text>
+  </g>
+  <g>
+    <rect class="box" x="460" y="445" width="186" height="30" rx="4"/>
+    <text class="act" x="553" y="464" text-anchor="middle">go_r1_corridor_dock_north</text>
+  </g>
+  <g>
+    <rect class="box ontic" x="460" y="503" width="186" height="30" rx="4"/>
+    <text class="act" x="553" y="522" text-anchor="middle">unload_r1_dock_north</text>
+  </g>
+</svg>
