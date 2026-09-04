@@ -1,3 +1,10 @@
+.. meta::
+   :description: ePlanSys is an epistemic planning system for ROS 2. It extends
+      PlanSys2 with EPDDL, dynamic epistemic logic, and execution of branching
+      policies for robots acting under partial observability.
+   :keywords: ePlanSys, epistemic planning, EPDDL, PlanSys2, ROS 2, dynamic
+      epistemic logic, DEL, partial observability, multi-robot
+
 ePlanSys
 ========
 

@@ -13,7 +13,23 @@ extensions = [
     'sphinx.ext.graphviz',
     'sphinx.ext.mathjax',
     'sphinx.ext.todo',
+    'sphinx_sitemap',
 ]
+
+# Where the site is served from. The theme emits <link rel="canonical"> only
+# when this is set, and sphinx_sitemap builds every sitemap URL from it, so a
+# wrong value here is worse than none.
+html_baseurl = 'https://eplansys.github.io/eplansys/'
+
+# Project pages are served under /eplansys/, and a crawler only reads
+# robots.txt at the domain root, which would be the eplansys.github.io
+# repository and does not exist. The sitemap is submitted to Search Console
+# directly instead.
+sitemap_url_scheme = '{link}'
+
+# The generated index and the search form are navigation, not pages worth
+# offering a crawler.
+sitemap_excludes = ['genindex.html', 'search.html']
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'requirements.txt']
