@@ -107,6 +107,12 @@ Contents
 
 .. toctree::
    :maxdepth: 2
+   :caption: Open-RMF execution
+
+   execution/index
+
+.. toctree::
+   :maxdepth: 2
    :caption: Reports
 
    reports/epistemic_end_to_end

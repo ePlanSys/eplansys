@@ -1,0 +1,7 @@
+/* The theme sets white-space: nowrap on every table cell, so a cell holding a
+   sentence is clipped and the table grows a horizontal scrollbar instead of
+   wrapping. The reference tables under execution/ are mostly sentences. */
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+  white-space: normal;
+}
