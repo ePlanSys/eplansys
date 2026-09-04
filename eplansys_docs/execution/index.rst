@@ -15,25 +15,19 @@ planning stack unusable for installations that do not operate a fleet. This is
 the arrangement ``plansys2_aletheia_plan_solver`` already uses for its external
 binary.
 
-.. figure:: img/stack.svg
+.. figure:: img/pipeline.svg
    :width: 100%
-   :alt: The stack in three bands: what is stated, what executes it, and what
-         drives the robots, with the outcome returning from Open-RMF to the
-         epistemic state.
+   :alt: EPDDL is grounded by plank and planned into a branching policy; the
+         executor dispatches an action to eplansys_rmf_bridge, which submits an
+         RMF task; the robot executes it and the observation returns as an
+         outcome that updates the epistemic state.
 
-   Where the bridge sits, and what the outcome path is for
+   Where the bridge sits between the policy and the fleet
 
-The figure is the whole stack, not only this half. What is *stated* is EPDDL,
-grounded by ``plank`` into the task the planner searches. What *executes* it is
-the PlanSys2 executor rendering the policy as a behaviour tree, with the
-epistemic state applying a product update after every action. What *drives* the
-robots is Open-RMF, and ``eplansys_rmf_bridge`` is the performer standing
-between the two: it is the hardware's replacement for a fleet.
-
-The dashed return is the part worth reading twice. A sensing action's whole
-point is to find something out, and the branch the policy takes next depends on
-what came back. Everything else in the picture would work without it, and the
-execution would not be epistemic.
+The loop closes at the bridge: it is the only component that both dispatches
+into the fleet and receives what the fleet observed. Everything above it is the
+planner's, everything below it is Open-RMF's, and the ``outcome`` edge is the
+one that makes the execution epistemic rather than a remote control.
 
 Division of responsibility
 --------------------------
