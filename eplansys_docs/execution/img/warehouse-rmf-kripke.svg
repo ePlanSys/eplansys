@@ -1,0 +1,221 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 584 2320" width="584" height="2320" font-family="Arial, Helvetica, sans-serif" role="img" aria-label="Accessibility relations per agent at each step">
+<style>
+  .lbl  { font-size:11.5px; fill:#5A5A5A }
+  .ttl  { font-size:13px; font-weight:bold; fill:#111111 }
+  .cap  { font-size:11.5px; fill:#5A5A5A; font-style:italic }
+  .wid  { font-family:'Courier New',Courier,monospace; font-size:11px; fill:#111111 }
+  .atom { font-family:'Courier New',Courier,monospace; font-size:9.5px; fill:#5A5A5A }
+  .atomh{ font-family:'Courier New',Courier,monospace; font-size:9.5px;
+           fill:none; stroke:#FAFAFA; stroke-width:3; stroke-linejoin:round }
+  .node { fill:#FFFFFF; stroke:#5A5A5A; stroke-width:1.4 }
+  .des  { fill:#FFFFFF; stroke:#C8102E; stroke-width:2.6 }
+  .act  { fill:#FDECEF; stroke:#C8102E; stroke-width:2.6 }
+  .arc  { stroke:#1A52A0; stroke-width:1.3; fill:none; marker-end:url(#a) }
+  .arc2 { stroke:#1A52A0; stroke-width:1.3; fill:none;
+           marker-end:url(#a); marker-start:url(#b) }
+  .loop { stroke:#1A52A0; stroke-width:1.3; fill:none; marker-end:url(#a) }
+  .axis { stroke:#D6D6D6; stroke-width:1 }
+</style>
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6"
+    markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#1A52A0"/></marker>
+  <marker id="b" viewBox="0 0 10 10" refX="0.5" refY="5" markerWidth="6"
+    markerHeight="6" orient="auto">
+    <path d="M10,0 L0,5 L10,10 z" fill="#1A52A0"/></marker>
+</defs>
+<text class="ttl" x="12" y="22">after initial</text>
+<rect x="20" y="30" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="28" y="44">r1</text>
+<text class="lbl" x="28" y="60">reflexive</text>
+<path class="loop" d="M139.5,56.6 C122.5,45.2 177.5,45.2 160.5,56.6"/>
+<path class="arc2" d="M150.0,88.5 L150.0,183.5"/>
+<path class="loop" d="M160.5,215.4 C177.5,226.8 122.5,226.8 139.5,215.4"/>
+<circle class="des" cx="150" cy="70" r="15"/>
+<text class="wid" x="150" y="74" text-anchor="middle">w0</text>
+<text class="atomh" x="150" y="99" text-anchor="middle">pallet@bay3</text>
+<text class="atom" x="150" y="99" text-anchor="middle">pallet@bay3</text>
+<circle class="des" cx="150" cy="202" r="15"/>
+<text class="wid" x="150" y="206" text-anchor="middle">w1</text>
+<text class="atomh" x="150" y="231" text-anchor="middle">pallet@bay2</text>
+<text class="atom" x="150" y="231" text-anchor="middle">pallet@bay2</text>
+<rect x="292" y="30" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="300" y="44">r2</text>
+<text class="lbl" x="300" y="60">reflexive</text>
+<path class="loop" d="M411.5,56.6 C394.5,45.2 449.5,45.2 432.5,56.6"/>
+<path class="arc2" d="M422.0,88.5 L422.0,183.5"/>
+<path class="loop" d="M432.5,215.4 C449.5,226.8 394.5,226.8 411.5,215.4"/>
+<circle class="des" cx="422" cy="70" r="15"/>
+<text class="wid" x="422" y="74" text-anchor="middle">w0</text>
+<text class="atomh" x="422" y="99" text-anchor="middle">pallet@bay3</text>
+<text class="atom" x="422" y="99" text-anchor="middle">pallet@bay3</text>
+<circle class="des" cx="422" cy="202" r="15"/>
+<text class="wid" x="422" y="206" text-anchor="middle">w1</text>
+<text class="atomh" x="422" y="231" text-anchor="middle">pallet@bay2</text>
+<text class="atom" x="422" y="231" text-anchor="middle">pallet@bay2</text>
+<text class="ttl" x="12" y="248">after go_r1_dock_south_lane</text>
+<rect x="20" y="256" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="28" y="270">r1</text>
+<text class="lbl" x="28" y="286">reflexive</text>
+<path class="loop" d="M139.5,282.6 C122.5,271.2 177.5,271.2 160.5,282.6"/>
+<path class="arc2" d="M150.0,314.5 L150.0,409.5"/>
+<path class="loop" d="M160.5,441.4 C177.5,452.8 122.5,452.8 139.5,441.4"/>
+<circle class="des" cx="150" cy="296" r="15"/>
+<text class="wid" x="150" y="300" text-anchor="middle">w0</text>
+<text class="atomh" x="150" y="325" text-anchor="middle">pallet@bay3</text>
+<text class="atom" x="150" y="325" text-anchor="middle">pallet@bay3</text>
+<circle class="des" cx="150" cy="428" r="15"/>
+<text class="wid" x="150" y="432" text-anchor="middle">w1</text>
+<text class="atomh" x="150" y="457" text-anchor="middle">pallet@bay2</text>
+<text class="atom" x="150" y="457" text-anchor="middle">pallet@bay2</text>
+<rect x="292" y="256" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="300" y="270">r2</text>
+<text class="lbl" x="300" y="286">reflexive</text>
+<path class="loop" d="M411.5,282.6 C394.5,271.2 449.5,271.2 432.5,282.6"/>
+<path class="arc2" d="M422.0,314.5 L422.0,409.5"/>
+<path class="loop" d="M432.5,441.4 C449.5,452.8 394.5,452.8 411.5,441.4"/>
+<circle class="des" cx="422" cy="296" r="15"/>
+<text class="wid" x="422" y="300" text-anchor="middle">w0</text>
+<text class="atomh" x="422" y="325" text-anchor="middle">pallet@bay3</text>
+<text class="atom" x="422" y="325" text-anchor="middle">pallet@bay3</text>
+<circle class="des" cx="422" cy="428" r="15"/>
+<text class="wid" x="422" y="432" text-anchor="middle">w1</text>
+<text class="atomh" x="422" y="457" text-anchor="middle">pallet@bay2</text>
+<text class="atom" x="422" y="457" text-anchor="middle">pallet@bay2</text>
+<text class="ttl" x="12" y="474">after go_r1_lane_bay2</text>
+<rect x="20" y="482" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="28" y="496">r1</text>
+<text class="lbl" x="28" y="512">reflexive</text>
+<path class="loop" d="M139.5,508.6 C122.5,497.2 177.5,497.2 160.5,508.6"/>
+<path class="arc2" d="M150.0,540.5 L150.0,635.5"/>
+<path class="loop" d="M160.5,667.4 C177.5,678.8 122.5,678.8 139.5,667.4"/>
+<circle class="des" cx="150" cy="522" r="15"/>
+<text class="wid" x="150" y="526" text-anchor="middle">w0</text>
+<text class="atomh" x="150" y="551" text-anchor="middle">pallet@bay3</text>
+<text class="atom" x="150" y="551" text-anchor="middle">pallet@bay3</text>
+<circle class="des" cx="150" cy="654" r="15"/>
+<text class="wid" x="150" y="658" text-anchor="middle">w1</text>
+<text class="atomh" x="150" y="683" text-anchor="middle">pallet@bay2</text>
+<text class="atom" x="150" y="683" text-anchor="middle">pallet@bay2</text>
+<rect x="292" y="482" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="300" y="496">r2</text>
+<text class="lbl" x="300" y="512">reflexive</text>
+<path class="loop" d="M411.5,508.6 C394.5,497.2 449.5,497.2 432.5,508.6"/>
+<path class="arc2" d="M422.0,540.5 L422.0,635.5"/>
+<path class="loop" d="M432.5,667.4 C449.5,678.8 394.5,678.8 411.5,667.4"/>
+<circle class="des" cx="422" cy="522" r="15"/>
+<text class="wid" x="422" y="526" text-anchor="middle">w0</text>
+<text class="atomh" x="422" y="551" text-anchor="middle">pallet@bay3</text>
+<text class="atom" x="422" y="551" text-anchor="middle">pallet@bay3</text>
+<circle class="des" cx="422" cy="654" r="15"/>
+<text class="wid" x="422" y="658" text-anchor="middle">w1</text>
+<text class="atomh" x="422" y="683" text-anchor="middle">pallet@bay2</text>
+<text class="atom" x="422" y="683" text-anchor="middle">pallet@bay2</text>
+<text class="ttl" x="12" y="700">after inspect_r1_bay2</text>
+<rect x="20" y="708" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="28" y="722">r1</text>
+<text class="lbl" x="28" y="738">reflexive</text>
+<path class="loop" d="M139.5,734.6 C122.5,723.2 177.5,723.2 160.5,734.6"/>
+<path class="loop" d="M160.5,893.4 C177.5,904.8 122.5,904.8 139.5,893.4"/>
+<circle class="node" cx="150" cy="748" r="15"/>
+<text class="wid" x="150" y="752" text-anchor="middle">w0</text>
+<text class="atomh" x="150" y="777" text-anchor="middle">pallet@bay3</text>
+<text class="atom" x="150" y="777" text-anchor="middle">pallet@bay3</text>
+<circle class="des" cx="150" cy="880" r="15"/>
+<text class="wid" x="150" y="884" text-anchor="middle">w1</text>
+<text class="atomh" x="150" y="909" text-anchor="middle">pallet@bay2</text>
+<text class="atom" x="150" y="909" text-anchor="middle">pallet@bay2</text>
+<rect x="292" y="708" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="300" y="722">r2</text>
+<text class="lbl" x="300" y="738">reflexive</text>
+<path class="loop" d="M411.5,734.6 C394.5,723.2 449.5,723.2 432.5,734.6"/>
+<path class="arc2" d="M422.0,766.5 L422.0,861.5"/>
+<path class="loop" d="M432.5,893.4 C449.5,904.8 394.5,904.8 411.5,893.4"/>
+<circle class="des" cx="422" cy="748" r="15"/>
+<text class="wid" x="422" y="752" text-anchor="middle">w0</text>
+<text class="atomh" x="422" y="777" text-anchor="middle">pallet@bay3</text>
+<text class="atom" x="422" y="777" text-anchor="middle">pallet@bay3</text>
+<circle class="des" cx="422" cy="880" r="15"/>
+<text class="wid" x="422" y="884" text-anchor="middle">w1</text>
+<text class="atomh" x="422" y="909" text-anchor="middle">pallet@bay2</text>
+<text class="atom" x="422" y="909" text-anchor="middle">pallet@bay2</text>
+<text class="ttl" x="12" y="926">after pickup_r1_bay2</text>
+<rect x="20" y="934" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="28" y="948">r1</text>
+<text class="lbl" x="28" y="964">reflexive</text>
+<path class="loop" d="M139.5,960.6 C122.5,949.2 177.5,949.2 160.5,960.6"/>
+<circle class="des" cx="150" cy="974" r="15"/>
+<text class="wid" x="150" y="978" text-anchor="middle">w0</text>
+<rect x="292" y="934" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="300" y="948">r2</text>
+<text class="lbl" x="300" y="964">reflexive</text>
+<path class="loop" d="M411.5,960.6 C394.5,949.2 449.5,949.2 432.5,960.6"/>
+<circle class="des" cx="422" cy="974" r="15"/>
+<text class="wid" x="422" y="978" text-anchor="middle">w0</text>
+<text class="ttl" x="12" y="1152">after go_r1_bay2_lane</text>
+<rect x="20" y="1160" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="28" y="1174">r1</text>
+<text class="lbl" x="28" y="1190">reflexive</text>
+<path class="loop" d="M139.5,1186.6 C122.5,1175.2 177.5,1175.2 160.5,1186.6"/>
+<circle class="des" cx="150" cy="1200" r="15"/>
+<text class="wid" x="150" y="1204" text-anchor="middle">w0</text>
+<rect x="292" y="1160" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="300" y="1174">r2</text>
+<text class="lbl" x="300" y="1190">reflexive</text>
+<path class="loop" d="M411.5,1186.6 C394.5,1175.2 449.5,1175.2 432.5,1186.6"/>
+<circle class="des" cx="422" cy="1200" r="15"/>
+<text class="wid" x="422" y="1204" text-anchor="middle">w0</text>
+<text class="ttl" x="12" y="1378">after go_r1_lane_dock_south</text>
+<rect x="20" y="1386" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="28" y="1400">r1</text>
+<text class="lbl" x="28" y="1416">reflexive</text>
+<path class="loop" d="M139.5,1412.6 C122.5,1401.2 177.5,1401.2 160.5,1412.6"/>
+<circle class="des" cx="150" cy="1426" r="15"/>
+<text class="wid" x="150" y="1430" text-anchor="middle">w0</text>
+<rect x="292" y="1386" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="300" y="1400">r2</text>
+<text class="lbl" x="300" y="1416">reflexive</text>
+<path class="loop" d="M411.5,1412.6 C394.5,1401.2 449.5,1401.2 432.5,1412.6"/>
+<circle class="des" cx="422" cy="1426" r="15"/>
+<text class="wid" x="422" y="1430" text-anchor="middle">w0</text>
+<text class="ttl" x="12" y="1604">after go_r1_dock_south_corridor</text>
+<rect x="20" y="1612" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="28" y="1626">r1</text>
+<text class="lbl" x="28" y="1642">reflexive</text>
+<path class="loop" d="M139.5,1638.6 C122.5,1627.2 177.5,1627.2 160.5,1638.6"/>
+<circle class="des" cx="150" cy="1652" r="15"/>
+<text class="wid" x="150" y="1656" text-anchor="middle">w0</text>
+<rect x="292" y="1612" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="300" y="1626">r2</text>
+<text class="lbl" x="300" y="1642">reflexive</text>
+<path class="loop" d="M411.5,1638.6 C394.5,1627.2 449.5,1627.2 432.5,1638.6"/>
+<circle class="des" cx="422" cy="1652" r="15"/>
+<text class="wid" x="422" y="1656" text-anchor="middle">w0</text>
+<text class="ttl" x="12" y="1830">after go_r1_corridor_dock_north</text>
+<rect x="20" y="1838" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="28" y="1852">r1</text>
+<text class="lbl" x="28" y="1868">reflexive</text>
+<path class="loop" d="M139.5,1864.6 C122.5,1853.2 177.5,1853.2 160.5,1864.6"/>
+<circle class="des" cx="150" cy="1878" r="15"/>
+<text class="wid" x="150" y="1882" text-anchor="middle">w0</text>
+<rect x="292" y="1838" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="300" y="1852">r2</text>
+<text class="lbl" x="300" y="1868">reflexive</text>
+<path class="loop" d="M411.5,1864.6 C394.5,1853.2 449.5,1853.2 432.5,1864.6"/>
+<circle class="des" cx="422" cy="1878" r="15"/>
+<text class="wid" x="422" y="1882" text-anchor="middle">w0</text>
+<text class="ttl" x="12" y="2056">after unload_r1_dock_north</text>
+<rect x="20" y="2064" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="28" y="2078">r1</text>
+<text class="lbl" x="28" y="2094">reflexive</text>
+<path class="loop" d="M139.5,2090.6 C122.5,2079.2 177.5,2079.2 160.5,2090.6"/>
+<circle class="des" cx="150" cy="2104" r="15"/>
+<text class="wid" x="150" y="2108" text-anchor="middle">w0</text>
+<rect x="292" y="2064" width="260" height="200" rx="3" fill="#FAFAFA" stroke="#D6D6D6"/>
+<text class="ttl" x="300" y="2078">r2</text>
+<text class="lbl" x="300" y="2094">reflexive</text>
+<path class="loop" d="M411.5,2090.6 C394.5,2079.2 449.5,2079.2 432.5,2090.6"/>
+<circle class="des" cx="422" cy="2104" r="15"/>
+<text class="wid" x="422" y="2108" text-anchor="middle">w0</text>
+<text class="cap" x="12" y="2308">Nodes are worlds, arcs the agent's accessibility relation, red rings the worlds it designates. A missing self-loop is a world the agent excludes while it is the case.</text>
+</svg>

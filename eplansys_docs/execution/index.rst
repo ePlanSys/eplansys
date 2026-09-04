@@ -15,34 +15,25 @@ planning stack unusable for installations that do not operate a fleet. This is
 the arrangement ``plansys2_aletheia_plan_solver`` already uses for its external
 binary.
 
-.. graphviz::
-   :caption: Where the bridge sits between the policy and the fleet
+.. figure:: img/stack.svg
+   :width: 100%
+   :alt: The stack in three bands: what is stated, what executes it, and what
+         drives the robots, with the outcome returning from Open-RMF to the
+         epistemic state.
 
-   digraph pipeline {
-     rankdir=TB;
-     node [shape=box, fontname="sans-serif", fontsize=10];
-     edge [fontname="sans-serif", fontsize=9];
+   Where the bridge sits, and what the outcome path is for
 
-     epddl    [label="EPDDL"];
-     grounded [label="grounded task"];
-     planner  [label="planner"];
-     policy   [label="policy\n(branching)"];
-     executor [label="executor\n(behavior tree)"];
-     bridge   [label="eplansys_rmf_bridge", penwidth=2];
-     rmf      [label="Open-RMF"];
-     robot    [label="robot executes"];
-     state    [label="epistemic_state\n(DEL product update)"];
+The figure is the whole stack, not only this half. What is *stated* is EPDDL,
+grounded by ``plank`` into the task the planner searches. What *executes* it is
+the PlanSys2 executor rendering the policy as a behaviour tree, with the
+epistemic state applying a product update after every action. What *drives* the
+robots is Open-RMF, and ``eplansys_rmf_bridge`` is the performer standing
+between the two: it is the hardware's replacement for a fleet.
 
-     epddl    -> grounded [label="plank"];
-     grounded -> planner;
-     planner  -> policy;
-     policy   -> executor;
-     executor -> bridge   [label="dispatch"];
-     bridge   -> rmf      [label="submit RMF task"];
-     rmf      -> robot;
-     robot    -> state;
-     state    -> bridge   [label="outcome"];
-   }
+The dashed return is the part worth reading twice. A sensing action's whole
+point is to find something out, and the branch the policy takes next depends on
+what came back. Everything else in the picture would work without it, and the
+execution would not be epistemic.
 
 Division of responsibility
 --------------------------
@@ -97,5 +88,6 @@ is described in :doc:`demo`.
    decisions
    task_map
    demo
+   warehouse
    diagnostics
    building
