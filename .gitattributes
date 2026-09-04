@@ -1,0 +1,13 @@
+# What GitHub counts as this repository's language.
+#
+# Linguist measures every tracked file, so the vendored Textual library counts
+# as ePlanSys' own Python and buries the C++ the project actually is. NOTICE
+# records that tree as third party; this tells Linguist the same thing.
+#
+# .gitignore cannot do this. It only applies to untracked files, and untracking
+# these would delete the library the command line front end imports.
+
+plansys2_tui_cli/plansys2_tui_cli/vendor/** linguist-vendored
+
+# Prose, not source.
+eplansys_docs/** linguist-documentation
