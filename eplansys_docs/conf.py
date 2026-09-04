@@ -14,12 +14,28 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.todo',
     'sphinx_sitemap',
+    'sphinxext.opengraph',
 ]
+
+# The tab and the link preview both read this. Sphinx's default is
+# "<project> <release> documentation", which is what made a shared link look
+# like anyone's generated docs rather than this project.
+html_title = 'ePlanSys'
+
+# What a link to this site unfurls as. Without these there are no og: tags at
+# all, and a card falls back to the bare URL and a default icon.
+ogp_site_name = 'ePlanSys'
+ogp_image = 'https://eplansys.github.io/eplansys/_static/og-card.png'
+ogp_image_alt = 'ePlanSys, an epistemic planning system for ROS 2'
+ogp_description_length = 200
+ogp_type = 'website'
+ogp_enable_meta_description = True
 
 # Where the site is served from. The theme emits <link rel="canonical"> only
 # when this is set, and sphinx_sitemap builds every sitemap URL from it, so a
 # wrong value here is worse than none.
 html_baseurl = 'https://eplansys.github.io/eplansys/'
+ogp_site_url = html_baseurl
 
 # Project pages are served under /eplansys/, and a crawler only reads
 # robots.txt at the domain root, which would be the eplansys.github.io
