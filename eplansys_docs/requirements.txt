@@ -2,3 +2,4 @@
 sphinx==7.4.7
 sphinx-rtd-theme==3.0.2
 sphinx-sitemap==2.6.0
+sphinxext-opengraph==0.9.1
