@@ -13,10 +13,9 @@
   {%- endif %}
 {%- endblock %}
 
-{#- Google Search Console verifies ownership by either an HTML file at the
-    site root or this tag. Project pages are served under /eplansys/, so the
-    file route would land at the wrong path; paste the token here instead and
-    uncomment. #}
+{#- Google Search Console is verified by the file in _extra, which lands at
+    /eplansys/ alongside these pages. This tag is the alternative route, kept
+    commented in case the file is ever lost: paste the token and uncomment. #}
 {%- block extrahead %}
   {{ super() }}
   {#- <meta name="google-site-verification" content="PASTE_TOKEN_HERE"> #}

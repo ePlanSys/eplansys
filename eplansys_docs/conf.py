@@ -49,6 +49,11 @@ html_theme_options = {
 # The reports directory carries a LaTeX source and its built PDF; the PDF is
 # served from here so a page can link to it.
 html_static_path = ['_static']
+
+# Copied verbatim to the root of the built site. Search Console verifies a
+# URL-prefix property by a file directly under that prefix, which for this
+# site is /eplansys/.
+html_extra_path = ['_extra']
 html_css_files = ['css/tables.css']
 html_logo = 'eplansys.png'
 html_favicon = 'favicon.svg'
