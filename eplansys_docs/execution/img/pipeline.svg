@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 500" role="img" aria-label="EPDDL is grounded by plank and planned into a branching policy; the executor dispatches an action to eplansys_rmf_bridge, which submits an RMF task to Open-RMF; the robot executes it and the observation returns to the bridge as an outcome that updates the epistemic state.">
+            <defs>
+              <marker id="pipe-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <polygon points="0,1 10,5 0,9" fill="#000"></polygon>
+              </marker>
+            </defs>
+            <g fill="#fff" stroke="#000" stroke-width="1">
+              <rect x="20"  y="26" width="100" height="46"></rect>
+              <rect x="172" y="26" width="126" height="46"></rect>
+              <rect x="350" y="26" width="100" height="46"></rect>
+              <rect x="502" y="26" width="130" height="46"></rect>
+              <rect x="684" y="26" width="126" height="46"></rect>
+              <rect x="20"  y="368" width="134" height="52"></rect>
+              <rect x="292" y="368" width="146" height="52"></rect>
+              <rect x="548" y="368" width="204" height="52"></rect>
+              <rect x="318" y="204" width="292" height="54" stroke-width="2"></rect>
+            </g>
+            <g fill="#000" font-family="Lato, sans-serif" font-size="14" text-anchor="middle">
+              <text x="70"  y="54">EPDDL</text>
+              <text x="235" y="54">grounded task</text>
+              <text x="400" y="54">planner</text>
+              <text x="567" y="47">policy</text>
+              <text x="747" y="47">executor</text>
+              <text x="87"  y="399">Open-RMF</text>
+              <text x="365" y="399">robot executes</text>
+            </g>
+            <g fill="#000" font-family="Lato, sans-serif" font-size="11.5" text-anchor="middle">
+              <text x="567" y="63">(branching)</text>
+              <text x="747" y="63">(behavior tree)</text>
+              <text x="650" y="411">(DEL product update)</text>
+            </g>
+            <text x="464" y="237" fill="#000" font-family="SFMono-Regular, Menlo, monospace" font-size="15" text-anchor="middle">eplansys_rmf_bridge</text>
+            <text x="650" y="393" fill="#000" font-family="SFMono-Regular, Menlo, monospace" font-size="13.5" text-anchor="middle">epistemic_state</text>
+            <g stroke="#000" stroke-width="1" fill="none" marker-end="url(#pipe-arrow)">
+              <path d="M120,49 H164"></path>
+              <path d="M298,49 H342"></path>
+              <path d="M450,49 H494"></path>
+              <path d="M632,49 H676"></path>
+              <path d="M154,394 H284"></path>
+              <path d="M438,394 H540"></path>
+              <path d="M747,72 V146 H464 V196"></path>
+              <path d="M390,258 V318 H87 V360"></path>
+              <path d="M752,394 H876 V231 H618"></path>
+            </g>
+            <path d="M150,231 H310" stroke="#000" stroke-width="1" stroke-dasharray="4 3" fill="none" marker-end="url(#pipe-arrow)"></path>
+            <text x="142" y="235" fill="#000" font-family="Lato, sans-serif" font-size="13" font-style="italic" text-anchor="end">eplansys-rmf</text>
+            <g fill="#000" font-family="Lato, sans-serif" font-size="12" text-anchor="middle">
+              <text x="142" y="41">plank</text>
+              <text x="606" y="138">dispatch</text>
+              <text x="240" y="310">submit RMF task</text>
+              <text x="772" y="223">outcome</text>
+            </g>
+          </svg>
