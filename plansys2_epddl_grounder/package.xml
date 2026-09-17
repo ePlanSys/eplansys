@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>plansys2_epddl_grounder</name>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
   <description>
     The EPDDL front end: turns an EPDDL domain, problem and action-type
     libraries into the grounded task JSON that plansys2_epistemic_planner and

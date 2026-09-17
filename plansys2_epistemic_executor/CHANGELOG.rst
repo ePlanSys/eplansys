@@ -2,8 +2,8 @@
 Changelog for package plansys2_epistemic_executor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2026-09-17)
+------------------
 * Execution of epistemic policies as behavior trees
 * EPDDL as the input, instead of a grounded task made by hand
 * The epistemic state as a node of the system

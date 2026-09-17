@@ -2,8 +2,12 @@
 Changelog for package plansys2_epistemic_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2026-09-17)
+------------------
+* Search with Aletheia itself, not a copy of it: the planning core is linked
+  from the Aletheia package rather than vendored, and the heuristic and
+  strategy tables come from it, so the plugin runs every choice its selection
+  policy makes.
 * Adding planner
 * Adding planner
 * Adding planner

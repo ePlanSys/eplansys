@@ -12,6 +12,9 @@ repositories:
   # the binary into <prefix>/bin, which puts `plank` on PATH once the workspace
   # is sourced. Without it the epistemic packages still build; only the EPDDL
   # front end is unavailable, and it says so.
+  #
+  # Pinned like Aletheia above: grounding decides what the planner searches
+  # over, so which grounder produced a task is part of what a release is.
   # The epistemic planner. plansys2_epistemic_planner links its planning core
   # as a library, and its epistemic_planner binary is what
   # plansys2_aletheia_plan_solver runs; colcon installs it into <prefix>/bin.
@@ -24,7 +27,7 @@ repositories:
   plank:
     type: git
     url: https://github.com/HanielUlises/plank.git
-    version: main
+    version: a68248071bebfb32d5aedf4fe32c766ba81397eb
 #   behavior_tree_cpp:
 #     type: git
 #     url: https://github.com/BehaviorTree/BehaviorTree.CPP.git
