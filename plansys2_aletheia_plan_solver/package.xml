@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>plansys2_aletheia_plan_solver</name>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
   <description>
     Plan solver plugin that runs the Aletheia epistemic planner as an external
     process, the way plansys2_popf_plan_solver runs POPF. The same planning is
