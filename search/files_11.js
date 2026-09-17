@@ -7,10 +7,11 @@ var searchData=
   ['simple_5fbt_5fbuilder_2ecpp_4',['simple_bt_builder.cpp',['../simple__bt__builder_8cpp.html',1,'']]],
   ['simple_5fbt_5fbuilder_2ehpp_5',['simple_bt_builder.hpp',['../simple__bt__builder_8hpp.html',1,'']]],
   ['simple_5fbtbuilder_5ftests_2ecpp_6',['simple_btbuilder_tests.cpp',['../simple__btbuilder__tests_8cpp.html',1,'']]],
-  ['state_2ecpp_7',['State.cpp',['../State_8cpp.html',1,'']]],
-  ['state_2ehpp_8',['State.hpp',['../State_8hpp.html',1,'']]],
-  ['state_5ftest_2ecpp_9',['state_test.cpp',['../state__test_8cpp.html',1,'']]],
-  ['stn_5fbt_5fbuilder_2ecpp_10',['stn_bt_builder.cpp',['../stn__bt__builder_8cpp.html',1,'']]],
-  ['stn_5fbt_5fbuilder_2ehpp_11',['stn_bt_builder.hpp',['../stn__bt__builder_8hpp.html',1,'']]],
-  ['stringreader_2ehpp_12',['Stringreader.hpp',['../Stringreader_8hpp.html',1,'']]]
+  ['slow_5fplan_5fsolver_2ecpp_7',['slow_plan_solver.cpp',['../slow__plan__solver_8cpp.html',1,'']]],
+  ['state_2ecpp_8',['State.cpp',['../State_8cpp.html',1,'']]],
+  ['state_2ehpp_9',['State.hpp',['../State_8hpp.html',1,'']]],
+  ['state_5ftest_2ecpp_10',['state_test.cpp',['../state__test_8cpp.html',1,'']]],
+  ['stn_5fbt_5fbuilder_2ecpp_11',['stn_bt_builder.cpp',['../stn__bt__builder_8cpp.html',1,'']]],
+  ['stn_5fbt_5fbuilder_2ehpp_12',['stn_bt_builder.hpp',['../stn__bt__builder_8hpp.html',1,'']]],
+  ['stringreader_2ehpp_13',['Stringreader.hpp',['../Stringreader_8hpp.html',1,'']]]
 ];
