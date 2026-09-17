@@ -62,6 +62,18 @@ PlannerNode::PlannerNode(const rclcpp::NodeOptions & options)
 
 PlannerNode::~PlannerNode()
 {
+  // Stop taking requests and let the search in hand finish, before the
+  // solvers it is using are destroyed below.
+  {
+    std::lock_guard<std::mutex> lock(planning_mutex_);
+    planning_stopped_ = true;
+    planning_queue_.clear();
+  }
+  planning_available_.notify_all();
+  if (planning_thread_.joinable()) {
+    planning_thread_.join();
+  }
+
   // Destroy the plugin instances before unloading the libraries that define
   // them. A destructor body runs before its members are destroyed, so without
   // this the loop below unloads the code out from under every solver still in
@@ -139,19 +151,36 @@ PlannerNode::on_configure(const rclcpp_lifecycle::State & state)
 
   RCLCPP_INFO(get_logger(), "[%s] Solver Timeout %g", get_name(), solver_timeout_.seconds());
 
+  // Both planning services answer late: the callback hands the request to the
+  // planning thread and returns, so the executor is free while the search
+  // runs. See plan_in_background.
   get_plan_service_ = create_service<plansys2_msgs::srv::GetPlan>(
     "planner/get_plan",
-    std::bind(
-      &PlannerNode::get_plan_service_callback,
-      this, std::placeholders::_1, std::placeholders::_2,
-      std::placeholders::_3));
+    [this](
+      const std::shared_ptr<rclcpp::Service<plansys2_msgs::srv::GetPlan>> service,
+      const std::shared_ptr<rmw_request_id_t> header,
+      const std::shared_ptr<plansys2_msgs::srv::GetPlan::Request> request) {
+      plan_in_background(
+        [this, service, header, request]() {
+          auto response = std::make_shared<plansys2_msgs::srv::GetPlan::Response>();
+          get_plan_service_callback(header, request, response);
+          service->send_response(*header, *response);
+        });
+    });
 
   get_plan_array_service_ = create_service<plansys2_msgs::srv::GetPlanArray>(
     "planner/get_plan_array",
-    std::bind(
-      &PlannerNode::get_plan_array_service_callback,
-      this, std::placeholders::_1, std::placeholders::_2,
-      std::placeholders::_3));
+    [this](
+      const std::shared_ptr<rclcpp::Service<plansys2_msgs::srv::GetPlanArray>> service,
+      const std::shared_ptr<rmw_request_id_t> header,
+      const std::shared_ptr<plansys2_msgs::srv::GetPlanArray::Request> request) {
+      plan_in_background(
+        [this, service, header, request]() {
+          auto response = std::make_shared<plansys2_msgs::srv::GetPlanArray::Response>();
+          get_plan_array_service_callback(header, request, response);
+          service->send_response(*header, *response);
+        });
+    });
 
   validate_domain_service_ = create_service<plansys2_msgs::srv::ValidateDomain>(
     "planner/validate_domain",
@@ -210,6 +239,39 @@ PlannerNode::on_error(const rclcpp_lifecycle::State & state)
   RCLCPP_ERROR(get_logger(), "[%s] Error transition", get_name());
 
   return CallbackReturnT::SUCCESS;
+}
+
+void
+PlannerNode::plan_in_background(std::function<void()> job)
+{
+  std::unique_lock<std::mutex> lock(planning_mutex_);
+  if (planning_stopped_) {
+    return;
+  }
+
+  if (!planning_thread_.joinable()) {
+    planning_thread_ = std::thread(
+      [this]() {
+        while (true) {
+          std::function<void()> next;
+          {
+            std::unique_lock<std::mutex> wait_lock(planning_mutex_);
+            planning_available_.wait(
+              wait_lock, [this] {return planning_stopped_ || !planning_queue_.empty();});
+            if (planning_stopped_) {
+              return;
+            }
+            next = std::move(planning_queue_.front());
+            planning_queue_.pop_front();
+          }
+          next();
+        }
+      });
+  }
+
+  planning_queue_.push_back(std::move(job));
+  lock.unlock();
+  planning_available_.notify_one();
 }
 
 plansys2_msgs::msg::PlanArray
