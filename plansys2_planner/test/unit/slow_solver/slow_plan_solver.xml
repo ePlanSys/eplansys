@@ -1,0 +1,5 @@
+<library path="slow_plan_solver">
+  <class type="plansys2_planner_test::SlowPlanSolver" base_class_type="plansys2::PlanSolverBase">
+    <description>A solver that takes three seconds, for testing the planner node.</description>
+  </class>
+</library>

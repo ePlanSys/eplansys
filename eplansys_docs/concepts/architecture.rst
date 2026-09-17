@@ -133,6 +133,15 @@ are strings except where noted:
 The solver validates a solution before returning it, and a plan that fails
 validation is not returned at all.
 
+The planner node answers both planning services late: the service callback
+hands the request to the node's own planning thread and returns, so the
+executor is free while the search runs, and one request is searched at a time.
+This matters in ``plansys2_bringup``'s monolithic node, where one executor
+serves every PlanSys2 node and also answers the lifecycle manager bringing them
+up. A search that ran inside its callback held all of that for as long as it
+took: seconds, for an epistemic domain of any size, which is long enough for
+bring-up to give up on nodes that were never asked.
+
 Running the planner as a subprocess
 -----------------------------------
 

@@ -15,9 +15,14 @@
 #ifndef PLANSYS2_PLANNER__PLANNERNODE_HPP_
 #define PLANSYS2_PLANNER__PLANNERNODE_HPP_
 
+#include <condition_variable>
+#include <deque>
+#include <functional>
 #include <memory>
-#include <unordered_map>
+#include <mutex>
 #include <string>
+#include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "plansys2_domain_expert/DomainExpertClient.hpp"
@@ -166,6 +171,32 @@ public:
   void set_timeout(rclcpp::Duration solver_timeout) {solver_timeout_ = solver_timeout;}
 
 private:
+  /**
+   * @brief Run a planning request on the planner's own thread.
+   *
+   * Searching inside the service callback holds the executor for as long as
+   * the search takes, and in plansys2_bringup's monolithic node that executor
+   * is also what answers the lifecycle manager and every other node in the
+   * process. A classical plan returns before anyone notices; an epistemic
+   * search over several sites takes seconds, and bring-up fails with "Failed
+   * to start plansys2!" while a perfectly good plan is on its way to a system
+   * that has shut down.
+   *
+   * The services therefore defer their responses, and the work queues here.
+   * One thread, so that two requests cannot be in a solver at once: the
+   * plugins hold per-task state and the epistemic ones share an interned
+   * formula registry.
+   *
+   * @param[in] job The search, and the sending of its response.
+   */
+  void plan_in_background(std::function<void()> job);
+
+  std::thread planning_thread_;
+  std::mutex planning_mutex_;
+  std::condition_variable planning_available_;
+  std::deque<std::function<void()>> planning_queue_;
+  bool planning_stopped_{false};
+
   pluginlib::ClassLoader<plansys2::PlanSolverBase> lp_loader_;
   SolverMap solvers_;
   std::vector<std::string> default_ids_;
