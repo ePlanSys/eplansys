@@ -29,10 +29,10 @@
 #include <nlohmann/json.hpp>
 
 #include "plansys2_epistemic_planner/action_mapping.hpp"
-#include "plansys2_epistemic_planner/formula.hpp"
-#include "plansys2_epistemic_planner/parser.hpp"
+#include "aletheia/formula.hpp"
+#include "aletheia/parser.hpp"
 #include "plansys2_epistemic_planner/policy_plan.hpp"
-#include "plansys2_epistemic_planner/validator.hpp"
+#include "aletheia/validator.hpp"
 #include "pluginlib/class_list_macros.hpp"
 #include "rclcpp/logging.hpp"
 

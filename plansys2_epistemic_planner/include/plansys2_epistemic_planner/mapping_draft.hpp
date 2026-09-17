@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-#include "plansys2_epistemic_planner/task.hpp"
+#include "aletheia/task.hpp"
 
 namespace plansys2
 {

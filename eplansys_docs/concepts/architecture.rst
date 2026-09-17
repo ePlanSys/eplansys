@@ -109,12 +109,14 @@ are strings except where noted:
        request instead.
    * - ``heuristic``
      - empty
-     - Pins a heuristic: ``ug``, ``ed``, ``ks``, ``wc``, ``rpg`` or ``radd``.
-       Empty leaves the choice to the selection policy.
+     - Pins a heuristic: ``ug``, ``ed``, ``ks``, ``wc``, ``rpg``, ``radd``,
+       ``kadd`` or ``kff``. Empty leaves the choice to the selection policy.
    * - ``strategy``
      - empty
-     - Pins a search strategy: ``gbfs``, ``ehc`` or ``aostar``. Empty leaves
-       the choice to the selection policy.
+     - Pins a search strategy: ``gbfs``, ``ehc``, ``aostar``, ``replan`` or
+       ``portfolio``. Empty leaves the choice to the selection policy, and AO*
+       chosen that way on a task with sensing actions gets a short pass before
+       ``replan`` takes the rest of the timeout, as in the Aletheia binary.
    * - ``policy_file``
      - empty
      - Path to a JSON selection policy replacing the built-in rule table.
@@ -162,8 +164,10 @@ task, not of the plan, so the task is parsed on this side as well and
 the conversion is performed by ``plansys2_epistemic_planner``'s own policy
 serialisation. The returned plan is also validated against the task as parsed
 here, in addition to the planner's own validation: the two can disagree only if
-the binary and the workspace were built from different sources, which is the
-failure a separately built planner introduces.
+the binary and the workspace were built from different Aletheia checkouts,
+which is the failure a separately built planner introduces. The ``aletheia``
+package installs both from one checkout, and a test in this package holds the
+two plugins to the same policy on the fleet tasks.
 
 The in-process plugin remains the better default, since it costs no process
 launch, no serialisation, and no separately installed binary. The subprocess
@@ -740,8 +744,8 @@ Package boundaries
      - The three service definitions
      - No
    * - ``plansys2_epistemic_planner``
-     - Kripke states, product update, contraction, heuristics, search, the
-       solver plugin
+     - The solver plugin over Aletheia's planning core, policy and belief state
+       serialisation
      - No
    * - ``plansys2_epistemic_executor``
      - Policy, tree rendering, the four nodes, the state node

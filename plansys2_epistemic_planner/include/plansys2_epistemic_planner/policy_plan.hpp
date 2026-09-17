@@ -20,8 +20,8 @@
 #include <string>
 
 #include "plansys2_epistemic_planner/action_mapping.hpp"
-#include "plansys2_epistemic_planner/search.hpp"
-#include "plansys2_epistemic_planner/task.hpp"
+#include "aletheia/search.hpp"
+#include "aletheia/task.hpp"
 #include "plansys2_msgs/msg/plan.hpp"
 
 namespace plansys2

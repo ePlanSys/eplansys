@@ -24,14 +24,14 @@
 #include <utility>
 #include <vector>
 
-#include "plansys2_epistemic_planner/action.hpp"
-#include "plansys2_epistemic_planner/bitset.hpp"
+#include "aletheia/action.hpp"
+#include "aletheia/bitset.hpp"
 #include "plansys2_epistemic_planner/formula_text.hpp"
-#include "plansys2_epistemic_planner/formula.hpp"
-#include "plansys2_epistemic_planner/parser.hpp"
+#include "aletheia/formula.hpp"
+#include "aletheia/parser.hpp"
 #include "plansys2_epistemic_planner/policy_plan.hpp"
-#include "plansys2_epistemic_planner/product_update.hpp"
-#include "plansys2_epistemic_planner/state.hpp"
+#include "aletheia/product_update.hpp"
+#include "aletheia/state.hpp"
 #include "plansys2_epistemic_planner/state_json.hpp"
 
 namespace plansys2

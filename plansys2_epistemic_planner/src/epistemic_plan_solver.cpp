@@ -17,25 +17,32 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
+#include "aletheia/formula.hpp"
+#include "aletheia/heuristic.hpp"
+#include "aletheia/knowledge_relaxation.hpp"
+#include "aletheia/parser.hpp"
+#include "aletheia/portfolio.hpp"
+#include "aletheia/selection_policy.hpp"
+#include "aletheia/strategy.hpp"
+#include "aletheia/symmetry.hpp"
+#include "aletheia/validator.hpp"
 #include "plansys2_epistemic_planner/action_mapping.hpp"
-#include "plansys2_epistemic_planner/formula.hpp"
 #include "plansys2_epistemic_planner/formula_text.hpp"
-#include "plansys2_epistemic_planner/heuristic.hpp"
-#include "plansys2_epistemic_planner/parser.hpp"
 #include "plansys2_epistemic_planner/policy_plan.hpp"
-#include "plansys2_epistemic_planner/selection_policy.hpp"
 #include "plansys2_epistemic_planner/state_json.hpp"
-#include "plansys2_epistemic_planner/validator.hpp"
 #include "pluginlib/class_list_macros.hpp"
 
 namespace plansys2
@@ -45,7 +52,7 @@ namespace
 {
 
 /// Aletheia's parser reads from a path. Writing the JSON to a temporary file
-/// keeps the vendored parser untouched; it costs one small write per call,
+/// keeps its parser untouched; it costs one small write per call,
 /// which is immaterial next to the search itself.
 class TempTask
 {
@@ -123,21 +130,6 @@ void flatten(const std::shared_ptr<PlanNode> & node, std::vector<std::string> & 
     node->branches.begin(), node->branches.end(),
     [](const auto & a, const auto & b) {return a.first < b.first;});
   flatten(lowest->second, out);
-}
-
-std::unique_ptr<Heuristic> make_heuristic(const std::string & label)
-{
-  if (label == "ug") {return std::make_unique<UnsatisfiedGoalHeuristic>();}
-  if (label == "ed") {return std::make_unique<EpistemicDistanceHeuristic>();}
-  if (label == "ks") {return std::make_unique<KnowledgeSpreadHeuristic>();}
-  if (label == "wc") {return std::make_unique<WorldCountHeuristic>();}
-  if (label == "rpg") {
-    return std::make_unique<RelaxedClosureHeuristic>(RelaxedAggregation::Max);
-  }
-  if (label == "radd") {
-    return std::make_unique<RelaxedClosureHeuristic>(RelaxedAggregation::Add);
-  }
-  return nullptr;
 }
 
 /// Translate a grounded plan into a Plan message, or report the first action
@@ -414,6 +406,23 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
     RCLCPP_ERROR(lc_node_->get_logger(), "[epistemic] %s", error.c_str());
     return std::nullopt;
   }
+
+  const auto started = std::chrono::steady_clock::now();
+  const Deadline deadline = started + std::chrono::nanoseconds(solver_timeout.nanoseconds());
+
+  // Agent symmetry is on in the epistemic_planner binary, so it is on here: a
+  // task should plan the same in process and through the Aletheia plugin.
+  // Detection comes after the state's model and goal are applied, since the
+  // swaps it finds have to map this task onto itself, and it only prunes, so
+  // it gets a tenth of the budget and keeps whatever it verified in that time.
+  {
+    const Deadline detect_by =
+      started + std::chrono::nanoseconds(solver_timeout.nanoseconds() / 10);
+    auto symmetry = std::make_shared<AgentSymmetry>(AgentSymmetry::detect(*task_opt, detect_by));
+    if (!symmetry->empty()) {
+      task_opt->symmetry = std::move(symmetry);
+    }
+  }
   const PlanningTask & task = *task_opt;
 
   // Selection policy: explicit parameters win, otherwise the rule table
@@ -458,21 +467,27 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
     heuristic_label = select(policy.heuristic_rules, features).outcome;
   }
   std::string strategy_label = parameter(strategy_parameter_name_);
-  if (strategy_label.empty()) {
+  const bool strategy_chosen_by_policy = strategy_label.empty();
+  if (strategy_chosen_by_policy) {
     strategy_label = select(policy.strategy_rules, features).outcome;
   }
 
-  std::unique_ptr<Heuristic> h = make_heuristic(heuristic_label);
+  // Both tables are Aletheia's, so every label its policy can choose is one
+  // this plugin can run.
+  std::unique_ptr<Heuristic> h = make_heuristic(heuristic_label, task);
   if (!h) {
     RCLCPP_ERROR(
       lc_node_->get_logger(), "[epistemic] unknown heuristic '%s'",
       heuristic_label.c_str());
     return std::nullopt;
   }
-
-  const Deadline deadline =
-    std::chrono::steady_clock::now() +
-    std::chrono::nanoseconds(solver_timeout.nanoseconds());
+  const auto strategy = parse_strategy(strategy_label);
+  if (!strategy) {
+    RCLCPP_ERROR(
+      lc_node_->get_logger(), "[epistemic] unknown strategy '%s'",
+      strategy_label.c_str());
+    return std::nullopt;
+  }
 
   RCLCPP_INFO(
     lc_node_->get_logger(),
@@ -482,22 +497,84 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
     static_cast<std::size_t>(task.init.num_designated()),
     static_cast<std::size_t>(task.num_actions()));
 
+  // Searched the way the epistemic_planner binary searches, fallbacks
+  // included, so that the two plugins return the same plan for a task.
+  std::optional<ConditionalSearchResult> conditional;
+  std::optional<SearchResult> linear;
+
+  switch (*strategy) {
+    case Strategy::PORTFOLIO: {
+        const KnowledgeRelaxationHeuristic relaxation(task);
+        const KnowledgeSpreadHeuristic spread;
+        auto outcome = race(task, relaxation, spread, deadline);
+        conditional = std::move(outcome.contingent);
+        linear = std::move(outcome.linear);
+        if (!outcome.member.empty()) {
+          RCLCPP_INFO(
+            lc_node_->get_logger(), "[epistemic] portfolio won by %s",
+            outcome.member.c_str());
+        } else if (outcome.unsolvable) {
+          RCLCPP_WARN(lc_node_->get_logger(), "[epistemic] no policy exists for this task");
+        }
+        break;
+      }
+
+    case Strategy::AOSTAR:
+    case Strategy::REPLAN: {
+        // AO* chosen by the policy on a task that senses gets a short pass,
+        // which keeps the shallowest policy on easy tasks, and replanning
+        // takes the rest of the budget. AO* asked for by name keeps all of it.
+        const bool hand_over = *strategy == Strategy::AOSTAR &&
+          strategy_chosen_by_policy && has_sensing_actions(task);
+        bool exhausted = false;
+
+        if (*strategy == Strategy::AOSTAR) {
+          const auto seconds = static_cast<std::int64_t>(solver_timeout.seconds());
+          const auto pass = std::chrono::seconds(
+            std::min<std::int64_t>(5, std::max<std::int64_t>(1, seconds / 10)));
+          conditional = aostar::search(
+            task, *h, 0, hand_over ? std::min(deadline, started + pass) : deadline, &exhausted);
+        } else {
+          conditional = replan::search(task, *h, deadline);
+        }
+
+        if (!conditional && hand_over && !exhausted) {
+          RCLCPP_INFO(lc_node_->get_logger(), "[epistemic] AO* pass spent, replanning");
+          conditional = replan::search(task, *h, deadline);
+        }
+
+        // Without sensing a conformant sequence may exist that the AND-OR
+        // search did not reach, and GBFS searches in a different order.
+        if (!conditional && !has_sensing_actions(task) && !expired(deadline)) {
+          RCLCPP_INFO(lc_node_->get_logger(), "[epistemic] no policy found, trying GBFS");
+          linear = gbfs::search(task, *h, 0, deadline);
+        }
+        break;
+      }
+
+    case Strategy::EHC:
+      linear = ehc::search(task, *h, 0, deadline);
+      if (!linear) {
+        RCLCPP_INFO(lc_node_->get_logger(), "[epistemic] EHC failed, falling back to GBFS");
+        linear = gbfs::search(task, *h, 0, deadline);
+      }
+      break;
+
+    case Strategy::GBFS:
+      linear = gbfs::search(task, *h, 0, deadline);
+      break;
+  }
+
   std::vector<std::string> actions;
 
-  if (strategy_label == "aostar") {
-    auto result = aostar::search(task, *h, 0, deadline);
-    if (!result) {
-      RCLCPP_WARN(lc_node_->get_logger(), "[epistemic] no solution found");
-      return std::nullopt;
-    }
-
+  if (conditional) {
     // An empty tree means the goal already held: a valid, empty plan.
-    if (!result->plan_tree) {
+    if (!conditional->plan_tree) {
       std::string unused;
       return to_plan_msg({}, mapping, unused);
     }
 
-    const auto vr = validate(task, result->plan_tree);
+    const auto vr = validate(task, conditional->plan_tree);
     if (!vr.valid) {
       RCLCPP_ERROR(
         lc_node_->get_logger(), "[epistemic] plan failed validation: %s",
@@ -514,7 +591,7 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
     // only run a sequence.
     if (mode == "policy") {
       std::string policy_error;
-      auto policy = to_policy_plan(task, result->plan_tree, mapping, policy_error);
+      auto policy = to_policy_plan(task, conditional->plan_tree, mapping, policy_error);
       if (!policy) {
         RCLCPP_ERROR(
           lc_node_->get_logger(),
@@ -524,11 +601,11 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
       RCLCPP_INFO(
         lc_node_->get_logger(), "[epistemic] policy with %zu nodes%s",
         policy->items.size(),
-        policy_branches(result->plan_tree) ? ", branching" : ", linear");
+        policy_branches(conditional->plan_tree) ? ", branching" : ", linear");
       return policy;
     }
 
-    if (branches_anywhere(result->plan_tree)) {
+    if (branches_anywhere(conditional->plan_tree)) {
       if (mode == "reject") {
         RCLCPP_ERROR(
           lc_node_->get_logger(),
@@ -545,27 +622,13 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
         "This plan is valid only if execution takes that contingency.");
     }
 
-    flatten(result->plan_tree, actions);
+    flatten(conditional->plan_tree, actions);
 
-  } else if (strategy_label == "ehc" || strategy_label == "gbfs") {
-    auto result = strategy_label == "ehc" ?
-      ehc::search(task, *h, 0, deadline) :
-      gbfs::search(task, *h, 0, deadline);
-
-    if (!result && strategy_label == "ehc") {
-      RCLCPP_INFO(lc_node_->get_logger(), "[epistemic] EHC failed, falling back to GBFS");
-      result = gbfs::search(task, *h, 0, deadline);
-    }
-    if (!result) {
-      RCLCPP_WARN(lc_node_->get_logger(), "[epistemic] no solution found");
-      return std::nullopt;
-    }
-    actions = result->plan;
+  } else if (linear) {
+    actions = linear->plan;
 
   } else {
-    RCLCPP_ERROR(
-      lc_node_->get_logger(), "[epistemic] unknown strategy '%s'",
-      strategy_label.c_str());
+    RCLCPP_WARN(lc_node_->get_logger(), "[epistemic] no solution found");
     return std::nullopt;
   }
 

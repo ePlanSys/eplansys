@@ -12,6 +12,15 @@ repositories:
   # the binary into <prefix>/bin, which puts `plank` on PATH once the workspace
   # is sourced. Without it the epistemic packages still build; only the EPDDL
   # front end is unavailable, and it says so.
+  # The epistemic planner. plansys2_epistemic_planner links its planning core
+  # as a library, and its epistemic_planner binary is what
+  # plansys2_aletheia_plan_solver runs; colcon installs it into <prefix>/bin.
+  # Pinned to a commit, because the plugins validate and serialise plans with
+  # this library and a moving branch would change what they accept.
+  aletheia:
+    type: git
+    url: https://github.com/HanielUlises/Aletheia.git
+    version: 32036843b1277f68f62b61aaa6fa58233894a779
   plank:
     type: git
     url: https://github.com/HanielUlises/plank.git

@@ -22,11 +22,11 @@
 #include <string>
 #include <vector>
 
-#include "plansys2_epistemic_planner/formula.hpp"
-#include "plansys2_epistemic_planner/heuristic.hpp"
-#include "plansys2_epistemic_planner/parser.hpp"
-#include "plansys2_epistemic_planner/search.hpp"
-#include "plansys2_epistemic_planner/validator.hpp"
+#include "aletheia/formula.hpp"
+#include "aletheia/heuristic.hpp"
+#include "aletheia/parser.hpp"
+#include "aletheia/search.hpp"
+#include "aletheia/validator.hpp"
 
 #include "task_fixtures.hpp"
 

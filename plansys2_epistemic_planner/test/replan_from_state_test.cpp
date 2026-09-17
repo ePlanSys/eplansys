@@ -25,6 +25,7 @@
 // reached. These tests publish a state on the topic the solver listens to and
 // check that the plan changes accordingly.
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <vector>
@@ -32,7 +33,7 @@
 #include "gtest/gtest.h"
 
 #include "plansys2_epistemic_planner/epistemic_plan_solver.hpp"
-#include "plansys2_epistemic_planner/parser.hpp"
+#include "aletheia/parser.hpp"
 #include "plansys2_epistemic_planner/state_json.hpp"
 
 #include "rclcpp/rclcpp.hpp"
@@ -72,15 +73,22 @@ EpistemicState after_r1_has_looked(const PlanningTask & task)
   // w0: the corridor is clear. w1: it is blocked.
   s.set_atom(1, blocked);
 
+  // Each world points at its successor set for each agent.
+  SetInterner sets(s);
+  const std::vector<WorldIdx> only_w0{0};
+  const std::vector<WorldIdx> only_w1{1};
+  const std::vector<WorldIdx> both{0, 1};
+  const auto point = [&](AgentIdx ag, WorldIdx w, const std::vector<WorldIdx> & to) {
+      s.set_of[std::size_t(ag) * s.num_worlds + w] = sets.intern(to);
+    };
+
   // r1 has looked, so it can tell the two apart.
-  s.add_edge(r1, 0, 0);
-  s.add_edge(r1, 1, 1);
+  point(r1, 0, only_w0);
+  point(r1, 1, only_w1);
 
   // r2 has not been told, so it still cannot.
-  s.add_edge(r2, 0, 0);
-  s.add_edge(r2, 0, 1);
-  s.add_edge(r2, 1, 0);
-  s.add_edge(r2, 1, 1);
+  point(r2, 0, both);
+  point(r2, 1, both);
 
   // The corridor is in fact clear.
   s.set_designated(0);

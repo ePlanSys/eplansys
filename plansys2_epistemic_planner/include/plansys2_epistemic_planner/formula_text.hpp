@@ -17,8 +17,8 @@
 
 #include <string>
 
-#include "plansys2_epistemic_planner/task.hpp"
-#include "plansys2_epistemic_planner/types.hpp"
+#include "aletheia/task.hpp"
+#include "aletheia/types.hpp"
 
 namespace plansys2
 {

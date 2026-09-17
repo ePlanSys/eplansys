@@ -13,22 +13,25 @@
 // limitations under the License.
 
 // The subprocess route to the same planner. plansys2_epistemic_planner links
-// Aletheia in; this plugin runs the `epistemic_planner` binary and reads its
-// plan file back. Both are Aletheia, and a fleet mission has to come out the
-// same way through either — that is what this checks, on the scenario the
+// Aletheia's library; this plugin runs the `epistemic_planner` binary and reads
+// its plan file back. Both are Aletheia, and a fleet mission has to come out
+// the same way through either — that is what this checks, on the scenario the
 // examples are built around.
 //
-// The binary is not a build dependency of anything, so a workspace without it
-// skips rather than fails. Point ALETHEIA_PLANNER at it, or put it on PATH.
+// The aletheia package installs the binary, so a sourced workspace has it on
+// PATH. One that uses an Aletheia installed elsewhere may not, and skips rather
+// than fails. Point ALETHEIA_PLANNER at it, or put it on PATH.
 
 #include <unistd.h>
 
+#include <cstddef>
 #include <cstdlib>
 #include <memory>
 #include <string>
 
 #include "gtest/gtest.h"
 #include "plansys2_aletheia_plan_solver/aletheia_plan_solver.hpp"
+#include "plansys2_epistemic_planner/epistemic_plan_solver.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
@@ -118,6 +121,42 @@ TEST_F(FleetSolverTest, FlatteningYieldsARunnableSequence)
   for (const auto & item : plan->items) {
     EXPECT_TRUE(item.children.empty()) << "flattened items carry no branches";
     EXPECT_GT(item.duration, 0.0f);
+  }
+}
+
+// The two plugins search with one Aletheia: the in-process one links its
+// library, and this one runs the binary built from the same checkout. So a task
+// has to come out as the same policy through either, and a difference means
+// the workspace holds two planners again.
+TEST_F(FleetSolverTest, TheInProcessPluginReturnsTheSamePolicy)
+{
+  plansys2::EpistemicPlanSolver in_process;
+  in_process.configure(node_, "EPISTEMIC");
+
+  for (const std::string name : {"robot-fleet", "robot-fleet-depot", "muddy-children-2"}) {
+    SCOPED_TRACE(name);
+    use(name);
+    node_->set_parameter(rclcpp::Parameter("ALETHEIA.conditional_plan", "policy"));
+    node_->set_parameter(rclcpp::Parameter("EPISTEMIC.task_file", task(name)));
+    node_->set_parameter(rclcpp::Parameter("EPISTEMIC.action_mapping", mapping(name)));
+    node_->set_parameter(rclcpp::Parameter("EPISTEMIC.conditional_plan", "policy"));
+
+    const auto through_binary = solver_.getPlan("", "");
+    if (!through_binary) {
+      GTEST_SKIP() << "the epistemic_planner binary is not available";
+    }
+    const auto linked = in_process.getPlan("", "");
+    ASSERT_TRUE(linked.has_value());
+
+    ASSERT_EQ(linked->items.size(), through_binary->items.size());
+    for (std::size_t i = 0; i < linked->items.size(); ++i) {
+      const auto & a = linked->items[i];
+      const auto & b = through_binary->items[i];
+      EXPECT_EQ(a.epistemic_action, b.epistemic_action) << "item " << i;
+      EXPECT_EQ(a.action, b.action) << "item " << i;
+      EXPECT_EQ(a.children, b.children) << "item " << i;
+      EXPECT_EQ(a.outcomes, b.outcomes) << "item " << i;
+    }
   }
 }
 

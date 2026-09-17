@@ -17,8 +17,8 @@
 
 #include <string>
 
-#include "plansys2_epistemic_planner/state.hpp"
-#include "plansys2_epistemic_planner/task.hpp"
+#include "aletheia/state.hpp"
+#include "aletheia/task.hpp"
 
 namespace plansys2
 {

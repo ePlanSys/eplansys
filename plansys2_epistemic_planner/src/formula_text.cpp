@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "plansys2_epistemic_planner/formula.hpp"
+#include "aletheia/formula.hpp"
 
 namespace plansys2
 {

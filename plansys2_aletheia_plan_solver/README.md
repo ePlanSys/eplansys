@@ -3,8 +3,9 @@
 Runs the Aletheia epistemic planner as an external process.
 
 `plansys2_epistemic_planner` performs the same search in process and is the
-better default: no fork, no serialisation, and no dependency on a binary being
-installed. This package is for the cases where that is not what is wanted — a
+better default: no fork and no serialisation. Both reach one Aletheia: that
+package links its library, and the `aletheia` package in the workspace installs
+the binary this one runs, from the same checkout. This package is for the cases where that is not what is wanted — a
 planner built and versioned separately from the workspace, one run under its
 own resource limits, or one being compared against the in-process build. Both
 are `PlanSolverBase` plugins, so choosing between them is a parameter change.
@@ -47,8 +48,8 @@ to keep correct.
 
 The plan is validated against the task as parsed here, in addition to the
 planner's own validation. The two can disagree only if the binary and the
-workspace were built from different sources, which is exactly the failure mode
-a separately built planner introduces.
+library were built from different Aletheia checkouts, which is exactly the
+failure mode a separately built planner introduces.
 
 ## Parameters
 
@@ -58,8 +59,8 @@ a separately built planner introduces.
 | `arguments` | empty | extra arguments, appended verbatim |
 | `output_dir` | system temp dir | where `task.json`, `plan.json` and `aletheia.log` are written; a leading `~` is expanded |
 | `task_file` | empty | grounded task JSON, when the `problem` string is not one |
-| `heuristic` | empty | `ug`, `ed`, `ks`, `wc`, `rpg`, `radd`; empty leaves it to the planner |
-| `strategy` | empty | `gbfs`, `ehc`, `aostar`; empty as above |
+| `heuristic` | empty | `ug`, `ed`, `ks`, `wc`, `rpg`, `radd`, `kadd`, `kff`; empty leaves it to the planner |
+| `strategy` | empty | `gbfs`, `ehc`, `aostar`, `replan`, `portfolio`; empty as above |
 | `policy_file` | empty | selection-policy JSON overriding the planner's built-in rules |
 | `action_mapping` | empty | JSON map from grounded names to PlanSys2 action expressions |
 | `conditional_plan` | `flatten` | `policy`, `flatten` or `reject` |
@@ -94,5 +95,9 @@ chain, a branching policy, a linear plan, an empty plan, a missing file, and
 three malformed files. That is the contract with a binary this package does not
 build.
 
-Not covered: the subprocess itself, which needs the planner installed, and the
-plugin inside a running planner node.
+`fleet_solver_test` runs the subprocess on the fleet tasks, and checks that
+`plansys2/EpistemicPlanSolver` returns the same policy for each. It finds the
+binary on `PATH`, where a sourced workspace with the `aletheia` package puts
+it, and skips when it is not there.
+
+Not covered: the plugin inside a running planner node.

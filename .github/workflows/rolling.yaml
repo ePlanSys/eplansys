@@ -61,7 +61,10 @@ jobs:
           # dependency on it: plansys2_epddl_grounder runs it as a subprocess
           # and finds it on PATH, so --packages-up-to would never reach it and
           # the grounder's end-to-end test would skip rather than run.
-          package-name: plank plansys2_aletheia_plan_solver plansys2_bringup plansys2_bt_actions plansys2_core plansys2_domain_expert plansys2_epddl_grounder plansys2_epistemic_bt_builder plansys2_epistemic_executor plansys2_epistemic_msgs plansys2_epistemic_perception plansys2_epistemic_planner plansys2_executor plansys2_lifecycle_manager plansys2_msgs plansys2_pddl_parser plansys2_planner plansys2_popf_plan_solver plansys2_problem_expert plansys2_support_py plansys2_terminal plansys2_tests plansys2_tools plansys2_tui_cli
+          # aletheia is reached through plansys2_epistemic_planner, and named
+          # anyway so the planner that is built is visible here. It is left out
+          # of lcov-result below: its coverage is its own repository's.
+          package-name: aletheia plank plansys2_aletheia_plan_solver plansys2_bringup plansys2_bt_actions plansys2_core plansys2_domain_expert plansys2_epddl_grounder plansys2_epistemic_bt_builder plansys2_epistemic_executor plansys2_epistemic_msgs plansys2_epistemic_perception plansys2_epistemic_planner plansys2_executor plansys2_lifecycle_manager plansys2_msgs plansys2_pddl_parser plansys2_planner plansys2_popf_plan_solver plansys2_problem_expert plansys2_support_py plansys2_terminal plansys2_tests plansys2_tools plansys2_tui_cli
           target-ros2-distro: rolling
           # Temporary diagnostic; see epistemic-humble.yaml for the rationale.
           colcon-extra-args: --executor sequential --event-handlers console_direct+
@@ -97,7 +100,7 @@ jobs:
               "lcov-result": {
                 "lcov-config-file": "/tmp/lcovrc",
                 "lcov-args": ["--ignore-errors", "inconsistent,corrupt,mismatch,unused,empty,negative,source,graph,gcov,deprecated"],
-                "packages-ignore": ["plansys2_bringup", "plansys2_tools", "plank"]
+                "packages-ignore": ["plansys2_bringup", "plansys2_tools", "plank", "aletheia"]
               }
             }
           vcs-repo-file-url: ${GITHUB_WORKSPACE}/dependency_repos.repos
