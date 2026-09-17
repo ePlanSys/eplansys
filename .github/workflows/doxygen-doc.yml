@@ -8,6 +8,15 @@ on:
     - cron: '0 0 * * 6'
   workflow_dispatch:
 
+# One run at a time. Every run checks gh-pages out, rewrites it and pushes, so
+# two merges close together raced and the second was rejected with "fetch
+# first" -- a red tick on a workflow that had nothing wrong with it. A run
+# already in progress is left to finish rather than cancelled, since the one
+# that wins is the one whose output is published.
+concurrency:
+  group: doxygen-gh-pages
+  cancel-in-progress: false
+
 jobs:
   doxygen_generation:
     runs-on: ubuntu-latest
