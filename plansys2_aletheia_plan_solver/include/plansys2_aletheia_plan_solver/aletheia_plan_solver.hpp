@@ -23,8 +23,8 @@
 #include <vector>
 
 #include "plansys2_core/PlanSolverBase.hpp"
-#include "plansys2_epistemic_planner/search.hpp"
-#include "plansys2_epistemic_planner/task.hpp"
+#include "aletheia/search.hpp"
+#include "aletheia/task.hpp"
 #include "plansys2_msgs/msg/plan.hpp"
 
 namespace plansys2

@@ -68,8 +68,17 @@ be installed with pip; the two ``python3-`` packages are what the vendored
 copy expects to find in the distribution, and are backfilled where Humble's
 are older than it wants.
 
+``plansys2_epistemic_planner`` links the planning core of
+`Aletheia <https://github.com/HanielUlises/Aletheia>`_, a source dependency
+in ``dependency_repos.repos`` pinned to a commit. Its
+checkout is a colcon package: it builds the core as a library and installs the
+``epistemic_planner`` binary into ``<prefix>/bin``, which is what
+``plansys2_aletheia_plan_solver`` runs. The binary is compiled with
+``-march=native``; pass ``--cmake-args -DALETHEIA_NATIVE=OFF`` when the
+workspace is built on one machine and run on another. The library never is.
+
 ``plansys2_epddl_grounder`` needs the ``plank`` EPDDL toolkit at run time,
-which is the third source dependency in ``dependency_repos.repos``. It is a
+another source dependency in ``dependency_repos.repos``. It is a
 plain CMake project, not a ROS package, so colcon builds it as one and
 installs its binary into ``<prefix>/bin``, which puts ``plank`` on PATH once
 the workspace is sourced; building it requires ``libboost-filesystem-dev``.

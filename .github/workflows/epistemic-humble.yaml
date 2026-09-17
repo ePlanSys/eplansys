@@ -15,7 +15,8 @@ name: epistemic-planner (humble)
 #     use rclcpp::experimental::executors, which does not exist in Humble.
 #     Widening the package list here will fail until those are ported.
 #
-# The one source dependency this chain has is plank, the EPDDL grounder that
+# The two source dependencies this chain has are Aletheia, whose planning core
+# plansys2_epistemic_planner links, and plank, the EPDDL grounder that
 # plansys2_epddl_grounder runs; popf and cascade_lifecycle are only required by
 # packages further down the graph, and rosdep skips them because nothing named
 # here depends on them.
@@ -80,7 +81,7 @@ jobs:
           # plansys2_tui_cli is here for the epistemic verbs it carries, which
           # are the only part of the command line that depends on the packages
           # above. It is pure Python and has no such link against the executor.
-          package-name: plank plansys2_epddl_grounder plansys2_epistemic_planner plansys2_epistemic_msgs plansys2_epistemic_executor plansys2_epistemic_perception plansys2_aletheia_plan_solver plansys2_tui_cli
+          package-name: aletheia plank plansys2_epddl_grounder plansys2_epistemic_planner plansys2_epistemic_msgs plansys2_epistemic_executor plansys2_epistemic_perception plansys2_aletheia_plan_solver plansys2_tui_cli
           vcs-repo-file-url: ${GITHUB_WORKSPACE}/dependency_repos.repos
           target-ros2-distro: humble
           # action-ros-ci runs 'colcon lcov-result' and 'colcon

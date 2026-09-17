@@ -24,11 +24,11 @@
 #include <vector>
 
 #include "plansys2_epistemic_planner/action_mapping.hpp"
-#include "plansys2_epistemic_planner/formula.hpp"
-#include "plansys2_epistemic_planner/heuristic.hpp"
-#include "plansys2_epistemic_planner/parser.hpp"
+#include "aletheia/formula.hpp"
+#include "aletheia/heuristic.hpp"
+#include "aletheia/parser.hpp"
 #include "plansys2_epistemic_planner/policy_plan.hpp"
-#include "plansys2_epistemic_planner/search.hpp"
+#include "aletheia/search.hpp"
 
 #include "task_fixtures.hpp"
 

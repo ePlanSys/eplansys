@@ -14,6 +14,8 @@
 
 #include "plansys2_epistemic_planner/state_json.hpp"
 
+#include <algorithm>
+#include <cstddef>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -71,11 +73,9 @@ std::string state_to_json(const PlanningTask & task, const EpistemicState & stat
     auto & rows = relations[task.agent_names[ag]] = nlohmann::json::object();
     for (std::uint32_t w = 0; w < state.num_worlds; ++w) {
       auto & targets = rows[world_name(w)] = nlohmann::json::array();
-      const auto row = state.succ(static_cast<AgentIdx>(ag), static_cast<WorldIdx>(w));
-      bits::for_each(
-        row, [&](std::size_t to) {
-          targets.push_back(world_name(static_cast<std::uint32_t>(to)));
-        });
+      for (const auto to : state.succ(static_cast<AgentIdx>(ag), static_cast<WorldIdx>(w))) {
+        targets.push_back(world_name(to));
+      }
     }
   }
 
@@ -153,6 +153,10 @@ bool state_from_json(
       state.set_designated(wit->second);
     }
 
+    // A relation is stored as each world's successor set, interned by content,
+    // so a row is collected whole before it is written.
+    SetInterner interner(state);
+    std::vector<WorldIdx> succ;
     for (const auto & [agent_name, rows] : j.at("relations").items()) {
       const auto agit = task.agent_index.find(agent_name);
       if (agit == task.agent_index.end()) {
@@ -165,6 +169,7 @@ bool state_from_json(
           error = "the relation of '" + agent_name + "' leaves unlisted world '" + src + "'";
           return false;
         }
+        succ.clear();
         for (const auto & t : targets) {
           const auto tname = t.get<std::string>();
           const auto tit = world_idx.find(tname);
@@ -172,10 +177,15 @@ bool state_from_json(
             error = "the relation of '" + agent_name + "' reaches unlisted world '" + tname + "'";
             return false;
           }
-          state.add_edge(agit->second, sit->second, tit->second);
+          succ.push_back(tit->second);
         }
+        std::sort(succ.begin(), succ.end());
+        succ.erase(std::unique(succ.begin(), succ.end()), succ.end());
+        state.set_of[std::size_t(agit->second) * state.num_worlds + sit->second] =
+          interner.intern(succ);
       }
     }
+    state.invalidate();
   } catch (const std::exception & e) {
     error = std::string("the model is malformed: ") + e.what();
     return false;
@@ -208,9 +218,8 @@ EpistemicState agent_perspective(const EpistemicState & state, AgentIdx agent)
     if (!state.is_designated(static_cast<WorldIdx>(w))) {
       continue;
     }
-    const auto row = state.succ(agent, static_cast<WorldIdx>(w));
-    for (std::uint32_t i = 0; i < state.rel_words; ++i) {
-      reachable[i] |= row[i];
+    for (const auto to : state.succ(agent, static_cast<WorldIdx>(w))) {
+      bits::set(reachable, to);
     }
   }
 

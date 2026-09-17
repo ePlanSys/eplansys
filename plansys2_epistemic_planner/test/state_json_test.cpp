@@ -20,12 +20,13 @@
 // is that the model surviving the round trip is the same model, since a plan
 // built for a subtly different one is a plan for a mission nobody is on.
 
+#include <algorithm>
 #include <string>
 
 #include "gtest/gtest.h"
 
-#include "plansys2_epistemic_planner/parser.hpp"
-#include "plansys2_epistemic_planner/product_update.hpp"
+#include "aletheia/parser.hpp"
+#include "aletheia/product_update.hpp"
 #include "plansys2_epistemic_planner/state_json.hpp"
 
 namespace
@@ -49,11 +50,10 @@ void expect_same_model(const EpistemicState & a, const EpistemicState & b)
       EXPECT_EQ(a.has_atom(w, at), b.has_atom(w, at)) << "atom " << at << " at w" << w;
     }
     for (std::uint32_t ag = 0; ag < a.num_agents; ++ag) {
-      for (std::uint32_t to = 0; to < a.num_worlds; ++to) {
-        EXPECT_EQ(
-          bits::test(a.succ(ag, w), to),
-          bits::test(b.succ(ag, w), to)) << "edge " << ag << ": w" << w << " -> w" << to;
-      }
+      const auto from_a = a.succ(ag, w);
+      const auto from_b = b.succ(ag, w);
+      EXPECT_TRUE(std::equal(from_a.begin(), from_a.end(), from_b.begin(), from_b.end()))
+        << "successors of w" << w << " for agent " << ag;
     }
   }
 }

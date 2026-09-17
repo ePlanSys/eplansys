@@ -27,7 +27,7 @@
 #include <nlohmann/json.hpp>
 
 #include "plansys2_epistemic_planner/mapping_draft.hpp"
-#include "plansys2_epistemic_planner/parser.hpp"
+#include "aletheia/parser.hpp"
 
 namespace
 {
