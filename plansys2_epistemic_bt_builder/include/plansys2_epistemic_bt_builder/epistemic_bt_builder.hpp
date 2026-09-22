@@ -19,13 +19,13 @@
 #include <memory>
 #include <string>
 
-#include "plansys2_domain_expert/DomainExpertClient.hpp"
 #include "plansys2_epistemic_executor/policy_bt.hpp"
-#include "plansys2_epistemic_executor/policy_parallel.hpp"
 #include "plansys2_executor/BTBuilder.hpp"
 
 namespace plansys2
 {
+
+class DomainExpertClient;
 
 /**
  * @class plansys2::EpistemicBTBuilder
@@ -59,6 +59,11 @@ class EpistemicBTBuilder : public BTBuilder
 {
 public:
   EpistemicBTBuilder() = default;
+
+  /// Out of line, because the domain client is only forward declared here:
+  /// this header is included by tests that have no domain to talk to, and
+  /// dragging its client in changes what they compile against.
+  ~EpistemicBTBuilder();
 
   void initialize(
     const std::string & bt_action_1 = "",

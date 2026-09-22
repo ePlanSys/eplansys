@@ -25,6 +25,7 @@
 #include <fstream>
 #include <sstream>
 
+#include "plansys2_domain_expert/DomainExpertClient.hpp"
 #include "plansys2_epistemic_executor/policy.hpp"
 #include "plansys2_epistemic_executor/policy_parallel.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
@@ -125,6 +126,8 @@ std::string dot_escape(const std::string & text)
 }
 
 }  // namespace
+
+EpistemicBTBuilder::~EpistemicBTBuilder() = default;
 
 void EpistemicBTBuilder::initialize(
   const std::string & bt_action_1, const std::string & bt_action_2, int precision)
