@@ -18,6 +18,7 @@
 #include <string>
 
 #include "plansys2_epistemic_executor/policy.hpp"
+#include "plansys2_epistemic_executor/policy_parallel.hpp"
 
 namespace plansys2
 {
@@ -98,6 +99,28 @@ std::string policy_to_bt(
   const Policy & policy,
   const std::string & action_bt = "",
   int precision = 3);
+
+/**
+ * @brief Render a policy whose independent runs are dispatched together.
+ *
+ * The same rendering, except that every group named here becomes one
+ * `Parallel` holding the members' blocks, and what followed the last member
+ * follows the group. A group of one, or none at all, renders exactly as the
+ * overload above: this is a strict extension, and the tree for a policy with
+ * no groups is byte for byte the tree that was rendered before there were any.
+ *
+ * The members keep their own guards and their own updates. A group whose
+ * members were not as independent as they were taken to be therefore fails a
+ * guard rather than running past it, which the executor answers by replanning.
+ *
+ * @param[in] groups Runs of policy nodes to dispatch together, as
+ *   `parallel_groups` computes them.
+ */
+std::string policy_to_bt(
+  const Policy & policy,
+  const std::string & action_bt,
+  int precision,
+  const ParallelGroups & groups);
 
 /// The action id the executor keys its action map by, for one policy node.
 /// This has to agree with plansys2::BTBuilder::to_action_id exactly: it is the

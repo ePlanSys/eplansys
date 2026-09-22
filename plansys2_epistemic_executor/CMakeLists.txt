@@ -23,6 +23,7 @@ find_package(nlohmann_json 3.10 REQUIRED)
 add_library(${PROJECT_NAME}_policy SHARED
   src/policy.cpp
   src/policy_bt.cpp
+  src/policy_parallel.cpp
 )
 target_include_directories(${PROJECT_NAME}_policy PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"

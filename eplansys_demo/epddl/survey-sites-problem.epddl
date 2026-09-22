@@ -1,0 +1,68 @@
+(define (problem two-site-survey)
+
+  ;; Four robots at the depot. `north` and `south` are the two scouts, `relay`
+  ;; is the team member the findings have to reach, and `observer` is the
+  ;; machine the team does not control and the mission excludes.
+  ;;
+  ;; Neither site's state is given. Two atoms are left open, so the model
+  ;; designates four worlds and the policy branches twice.
+  ;;
+  ;; Each scout carries the instrument its own site needs, and only the site's
+  ;; instrument reads it. That is what keeps the two halves in different hands:
+  ;; without it the cheapest policy sends one robot to both sites, which is a
+  ;; correct answer to the mission and not the one this problem is posed to
+  ;; produce.
+
+  (:domain survey-sites)
+
+  (:requirements
+    :equality :list-comprehensions
+    :finitary-S5-theories :modal-goals :knowing-whether
+    :multi-pointed-models :negative-preconditions
+  )
+
+  (:agents north south relay observer)
+
+  (:init
+    (:and
+      ;; Who carries what, settled and common knowledge. Every agent is named
+      ;; for every instrument: an atom the initial state leaves out is an atom
+      ;; the model has to be uncertain about, and eight such atoms would
+      ;; designate two hundred and fifty-six worlds to say what four say here.
+      ([C. All] (instrument-north north))
+      ([C. All] (not (instrument-north south)))
+      ([C. All] (not (instrument-north relay)))
+      ([C. All] (not (instrument-north observer)))
+      ([C. All] (instrument-south south))
+      ([C. All] (not (instrument-south north)))
+      ([C. All] (not (instrument-south relay)))
+      ([C. All] (not (instrument-south observer)))
+      (:forall (?i - agent)
+        ([C. All] (not (on-north ?i))))
+      (:forall (?i - agent)
+        ([C. All] (not (on-south ?i))))
+      (:forall (?i - agent)
+        ([C. All] (<Kw. ?i> (contaminated-north))))
+      (:forall (?i - agent)
+        ([C. All] (<Kw. ?i> (contaminated-south))))
+    )
+  )
+
+  ;; Six conjuncts, three per site, and the two triples share nothing. Each
+  ;; site has to be visited, its finding has to reach `relay` over a channel
+  ;; the observer cannot hear, and the observer has to end ignorant of it.
+  ;;
+  ;; The two halves are what this problem is for. They are independent in the
+  ;; model --- no action of one appears in a precondition of the other --- so
+  ;; any serial policy for the mission is twice as long as the work requires.
+  (:goal
+    (and
+      ([Kw. north] (contaminated-north))
+      ([Kw. relay] (contaminated-north))
+      (<Kw. observer> (contaminated-north))
+      ([Kw. south] (contaminated-south))
+      ([Kw. relay] (contaminated-south))
+      (<Kw. observer> (contaminated-south))
+    )
+  )
+)

@@ -14,6 +14,8 @@
 
 #include "plansys2_epistemic_executor/policy_bt.hpp"
 
+#include <map>
+
 #include <cmath>
 #include <sstream>
 #include <string>
@@ -104,67 +106,124 @@ std::string policy_action_id(const plansys2_msgs::msg::PlanItem & item, int prec
 
 std::string policy_to_bt(const Policy & policy, const std::string & action_bt, int precision)
 {
+  return policy_to_bt(policy, action_bt, precision, ParallelGroups{});
+}
+
+std::string policy_to_bt(
+  const Policy & policy, const std::string & action_bt, int precision,
+  const ParallelGroups & groups)
+{
   const std::string tmpl = action_bt.empty() ? kDefaultEpistemicActionBT : action_bt;
+
+  // Which group a node heads. The rest of a group's members are never rendered
+  // on their own: the chain that led to them is what the group replaces, and
+  // they are reached by the head.
+  std::map<std::uint32_t, const ParallelGroup *> heads;
+  for (const auto & group : groups) {
+    if (group.size() > 1) {
+      heads[group.front()] = &group;
+    }
+  }
 
   // Each node renders its own subtree and splices its continuations into it,
   // so the recursion returns a block rather than writing into a shared buffer.
+  // A node that heads a parallel group renders the whole group instead, with
+  // the continuation of its last member after the group rather than inside it:
+  // what follows a group follows all of it.
   const auto render = [&](std::uint32_t index, const auto & self) -> std::string {
-      const auto & item = policy.item(index);
-      const std::string action_id = policy_action_id(item, precision);
-      const std::string node_id = std::to_string(index);
-      // One blackboard entry per node: two sensing actions in flight on
-      // different branches never share a key, and the name says which node
-      // wrote it when reading a Groot trace.
-      const std::string outcome_key = "epistemic_outcome_" + node_id;
-      // Where the performer's report lands on its way from ExecuteAction to
-      // the update. Distinct from outcome_key: this is what the robot says it
-      // saw, and that one is what the epistemic state made of it. They agree
-      // whenever the report names an outcome the action defines, and keeping
-      // them apart is what lets the state disagree.
-      const std::string observed_key = "epistemic_observed_" + node_id;
+      // One blackboard entry per node, named after it: two sensing actions in
+      // flight never share a key, whether they are on different branches or in
+      // the same group, and the name says which node wrote it when reading a
+      // Groot trace. `epistemic_observed_N` is what the robot says it saw and
+      // `epistemic_outcome_N` is what the epistemic state made of it; they
+      // agree whenever the report names an outcome the action defines, and
+      // keeping them apart is what lets the state disagree.
 
-      std::string continuations;
+      // What follows this node once it has run: nothing, the next block, or a
+      // switch over what it observed.
+      const auto continuations_of = [&](std::uint32_t at) -> std::string {
+          const auto & node = policy.item(at);
 
-      const auto only = policy.only_successor(index);
-      if (only) {
-        // Nothing to choose: the continuation simply follows. This is what
-        // makes a classical plan render as the flat sequence PlanSys2 builds.
-        continuations = self(*only, self);
-      } else if (item.children.size() > 1) {
-        std::string branches;
-        for (std::size_t i = 0; i < item.children.size(); ++i) {
-          branches += indent(1) + "<!-- observed " + escape(item.outcomes[i]) + " -->\n";
-          if (item.children[i] == plansys2_msgs::msg::PlanItem::POLICY_DONE) {
-            // The policy is complete on this outcome. Saying so explicitly
-            // keeps the branch arity equal to the outcome list, so the switch
-            // can index one by the other.
-            branches += indent(1) + "<AlwaysSuccess/>\n";
-          } else {
-            branches += shift(self(item.children[i], self), 1);
+          const auto only = policy.only_successor(at);
+          if (only) {
+            // Nothing to choose: the continuation simply follows. This is what
+            // makes a classical plan render as the flat sequence PlanSys2
+            // builds.
+            return self(*only, self);
           }
+
+          if (node.children.size() <= 1) {
+            return "";      // this node ends the policy
+          }
+
+          std::string branches;
+          for (std::size_t i = 0; i < node.children.size(); ++i) {
+            branches += indent(1) + "<!-- observed " + escape(node.outcomes[i]) + " -->\n";
+            if (node.children[i] == plansys2_msgs::msg::PlanItem::POLICY_DONE) {
+              // The policy is complete on this outcome. Saying so explicitly
+              // keeps the branch arity equal to the outcome list, so the
+              // switch can index one by the other.
+              branches += indent(1) + "<AlwaysSuccess/>\n";
+            } else {
+              branches += shift(self(node.children[i], self), 1);
+            }
+          }
+
+          std::string outcome_list;
+          for (std::size_t i = 0; i < node.outcomes.size(); ++i) {
+            outcome_list += (i ? ";" : "") + node.outcomes[i];
+          }
+
+          return
+            "<EpistemicSwitch node=\"" + std::to_string(at) + "\" outcome=\"{epistemic_outcome_" +
+            std::to_string(at) + "}\" outcomes=\"" + escape(outcome_list) + "\">\n" +
+            branches +
+            "</EpistemicSwitch>\n";
+        };
+
+      // One node's own block, with whatever is to follow it spliced in.
+      const auto block_of =
+        [&](std::uint32_t at, const std::string & continuations) -> std::string {
+          const auto & node = policy.item(at);
+          const std::string at_id = std::to_string(at);
+
+          std::string block = tmpl;
+          replace_all(block, "NODE_NAME", escape("node_" + at_id + " " + node.action));
+          replace_all(block, "ACTION_ID", escape(policy_action_id(node, precision)));
+          replace_all(block, "NODE_ID", at_id);
+          replace_all(block, "OUTCOME_KEY", "epistemic_outcome_" + at_id);
+          replace_all(block, "OBSERVED_KEY", "epistemic_observed_" + at_id);
+          replace_all(block, "CONTINUATIONS", shift(continuations, 1));
+          return block + "\n";
+        };
+
+      const auto group = heads.find(index);
+      if (group != heads.end()) {
+        // The group runs as one, so no member carries a continuation: the
+        // chain that linked them is what the group replaces, and what follows
+        // the last of them follows the whole group.
+        std::string members;
+        for (const auto member : *group->second) {
+          members += shift(block_of(member, ""), 1);
         }
 
-        std::string outcome_list;
-        for (std::size_t i = 0; i < item.outcomes.size(); ++i) {
-          outcome_list += (i ? ";" : "") + item.outcomes[i];
-        }
+        // The group and what follows it are one element, not two. A node's
+        // rendering is spliced in wherever a single child is expected --- a
+        // switch branch is exactly that --- and two siblings there would give
+        // the switch more branches than the policy has outcomes.
+        const std::string after = continuations_of(group->second->back());
 
-        continuations =
-          "<EpistemicSwitch node=\"" + node_id + "\" outcome=\"{" + outcome_key +
-          "}\" outcomes=\"" + escape(outcome_list) + "\">\n" +
-          branches +
-          "</EpistemicSwitch>\n";
+        return
+          "<Sequence name=\"" + escape("group_" + std::to_string(index)) + "\">\n" +
+          indent(1) + "<Parallel success_count=\"" + std::to_string(group->second->size()) +
+          "\" failure_count=\"1\">\n" +
+          shift(members, 1) +
+          indent(1) + "</Parallel>\n" +
+          shift(after, 1) +
+          "</Sequence>\n";
       }
-      // Otherwise this node ends the policy and nothing follows it.
 
-      std::string block = tmpl;
-      replace_all(block, "NODE_NAME", escape("node_" + node_id + " " + item.action));
-      replace_all(block, "ACTION_ID", escape(action_id));
-      replace_all(block, "NODE_ID", node_id);
-      replace_all(block, "OUTCOME_KEY", outcome_key);
-      replace_all(block, "OBSERVED_KEY", observed_key);
-      replace_all(block, "CONTINUATIONS", shift(continuations, 1));
-      return block + "\n";
+      return block_of(index, continuations_of(index));
     };
 
   std::string body;

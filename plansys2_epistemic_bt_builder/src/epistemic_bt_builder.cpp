@@ -25,8 +25,11 @@
 #include <fstream>
 #include <sstream>
 
+#include "plansys2_domain_expert/DomainExpertClient.hpp"
 #include "plansys2_epistemic_executor/policy.hpp"
+#include "plansys2_epistemic_executor/policy_parallel.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
+#include "plansys2_problem_expert/Utils.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace plansys2
@@ -73,6 +76,43 @@ bool is_a_packaged_plansys2_template(const std::string & content)
   return false;
 }
 
+/// Every predicate a requirement or effect tree mentions, grounded, as the
+/// name and its arguments. Comparing these is what "touches the same fact"
+/// means: two actions that never name a common predicate cannot disturb each
+/// other whatever order they run in.
+std::set<std::string> predicates_of(const plansys2_msgs::msg::Tree & tree)
+{
+  std::set<std::string> named;
+  for (const auto & node : tree.nodes) {
+    if (node.node_type != plansys2_msgs::msg::Node::PREDICATE &&
+      node.node_type != plansys2_msgs::msg::Node::FUNCTION)
+    {
+      continue;
+    }
+    std::string key = node.name;
+    for (const auto & param : node.parameters) {
+      key += " " + param.name;
+    }
+    named.insert(key);
+  }
+  return named;
+}
+
+void merge(std::set<std::string> & into, const std::set<std::string> & from)
+{
+  into.insert(from.begin(), from.end());
+}
+
+bool disjoint(const std::set<std::string> & left, const std::set<std::string> & right)
+{
+  for (const auto & one : left) {
+    if (right.count(one)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 std::string dot_escape(const std::string & text)
 {
   std::string out;
@@ -87,11 +127,46 @@ std::string dot_escape(const std::string & text)
 
 }  // namespace
 
+EpistemicBTBuilder::~EpistemicBTBuilder() = default;
+
 void EpistemicBTBuilder::initialize(
   const std::string & bt_action_1, const std::string & bt_action_2, int precision)
 {
   (void)bt_action_2;   // there is one template here: a policy node is a policy node
   precision_ = precision;
+
+  // The parameter is read from a node of this builder's own name, which is how
+  // a parameters file reaches a plugin that the executor loads without passing
+  // it anything. Absent the file, and absent the parameter in it, the answer
+  // is false and the dispatch is the serial one.
+  //
+  // Absent a ROS context altogether there is no parameter to read and no
+  // domain to ask, which is the same answer. Rendering a tree is a pure
+  // transformation and is tested as one, so a builder that insisted on a
+  // context would be a builder that could not be tested.
+  if (rclcpp::ok()) {
+    try {
+      auto node = rclcpp::Node::make_shared("epistemic_bt_builder");
+      parallel_dispatch_ = node->declare_parameter<bool>("parallel_dispatch", false);
+      if (parallel_dispatch_) {
+        domain_client_ = std::make_shared<plansys2::DomainExpertClient>();
+      }
+    } catch (const std::exception & error) {
+      RCLCPP_WARN(
+        logger(), "could not read parallel_dispatch, dispatching one node at a time: %s",
+        error.what());
+      parallel_dispatch_ = false;
+      domain_client_.reset();
+    }
+  } else {
+    parallel_dispatch_ = false;
+  }
+
+  if (parallel_dispatch_) {
+    RCLCPP_INFO(
+      logger(),
+      "parallel_dispatch is on: independent runs of the policy are dispatched together");
+  }
 
   // The executor hands every builder the action template it is configured
   // with, and with the parameter unset that is PlanSys2's classical default —
@@ -142,7 +217,70 @@ std::string EpistemicBTBuilder::get_tree(const plansys2_msgs::msg::Plan & curren
     logger(), "building a tree for %zu policy nodes%s", policy.size(),
     policy.branches() ? ", branching" : "");
 
-  return policy_to_bt(policy, bt_action_, precision_);
+  if (!parallel_dispatch_) {
+    return policy_to_bt(policy, bt_action_, precision_);
+  }
+
+  const auto groups = parallel_groups(
+    policy,
+    [this](const plansys2_msgs::msg::PlanItem & a, const plansys2_msgs::msg::PlanItem & b) {
+      return classically_independent(a, b);
+    });
+
+  for (const auto & group : groups) {
+    std::string named;
+    for (const auto member : group) {
+      named += (named.empty() ? "" : ", ") + policy.item(member).action;
+    }
+    RCLCPP_INFO(logger(), "dispatching together: %s", named.c_str());
+  }
+
+  return policy_to_bt(policy, bt_action_, precision_, groups);
+}
+
+bool EpistemicBTBuilder::classically_independent(
+  const plansys2_msgs::msg::PlanItem & a, const plansys2_msgs::msg::PlanItem & b) const
+{
+  if (!domain_client_) {
+    return false;
+  }
+
+  const auto describe = [this](const std::string & expression) {
+      return domain_client_->getDurativeAction(
+        plansys2::get_action_name(expression), plansys2::get_action_params(expression));
+    };
+
+  const auto first = describe(a.action);
+  const auto second = describe(b.action);
+  if (!first || !second) {
+    // An action the domain does not describe is one nothing can be concluded
+    // about, and the conclusion that costs nothing is that it is not
+    // independent.
+    return false;
+  }
+
+  const auto effects = [](const plansys2_msgs::msg::DurativeAction & action) {
+      auto named = predicates_of(action.at_start_effects);
+      merge(named, predicates_of(action.at_end_effects));
+      return named;
+    };
+
+  const auto requirements = [](const plansys2_msgs::msg::DurativeAction & action) {
+      auto named = predicates_of(action.at_start_requirements);
+      merge(named, predicates_of(action.over_all_requirements));
+      merge(named, predicates_of(action.at_end_requirements));
+      return named;
+    };
+
+  const auto first_effects = effects(*first);
+  const auto second_effects = effects(*second);
+
+  // Three ways two actions can be ordered for a reason: one establishes or
+  // destroys what the other requires, either way round, or both write the same
+  // fact. None of the three, and the order between them was arbitrary.
+  return disjoint(first_effects, requirements(*second)) &&
+         disjoint(second_effects, requirements(*first)) &&
+         disjoint(first_effects, second_effects);
 }
 
 namespace

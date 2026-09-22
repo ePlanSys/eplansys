@@ -25,6 +25,8 @@
 namespace plansys2
 {
 
+class DomainExpertClient;
+
 /**
  * @class plansys2::EpistemicBTBuilder
  * @brief The BTBuilder that renders a policy rather than a sequence.
@@ -43,11 +45,25 @@ namespace plansys2
  * of them establish each other's preconditions; for a policy the ordering is
  * already fixed by the tree, and there is nothing left for a graph to decide.
  * get_graph() therefore returns nothing, as SequentialBTBuilder's does.
+ *
+ * With `parallel_dispatch` set it does use the domain for one thing. A policy
+ * fixes an order, and where two consecutive nodes had no reason to be ordered
+ * the mission waits for nothing. The runs where that is so are found by
+ * `parallel_groups`, whose classical half is answered here, from the domain:
+ * two actions are independent when neither one's effects touch a predicate the
+ * other's requirements or effects mention. Each such run is dispatched as one
+ * `Parallel`. Without the parameter the tree is exactly the one this builder
+ * rendered before the pass existed.
  */
 class EpistemicBTBuilder : public BTBuilder
 {
 public:
   EpistemicBTBuilder() = default;
+
+  /// Out of line, because the domain client is only forward declared here:
+  /// this header is included by tests that have no domain to talk to, and
+  /// dragging its client in changes what they compile against.
+  ~EpistemicBTBuilder();
 
   void initialize(
     const std::string & bt_action_1 = "",
@@ -78,8 +94,24 @@ public:
     bool enable_print_graph = false) override;
 
 private:
+  /// The classical half of the independence test, from the domain: whether
+  /// either action's effects touch anything the other requires or changes.
+  /// False whenever the domain cannot answer, since an unknown action is not
+  /// an independent one.
+  bool classically_independent(
+    const plansys2_msgs::msg::PlanItem & a, const plansys2_msgs::msg::PlanItem & b) const;
+
   std::string bt_action_;
   int precision_{3};
+
+  /// Off unless the deployment asks for it. A policy dispatched a group at a
+  /// time is a change in what runs when, and a system that was tuned around
+  /// the serial dispatch should not have it changed underneath it by an
+  /// upgrade.
+  bool parallel_dispatch_{false};
+
+  /// Consulted only by the independence test above.
+  std::shared_ptr<plansys2::DomainExpertClient> domain_client_;
   plansys2_msgs::msg::Plan plan_;
 
   /// Built by get_tree and handed out by get_graph, so that the two describe
