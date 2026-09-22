@@ -69,20 +69,19 @@ declared duration and the rest in dispatch.
 With it on, the builder looks for runs of the policy whose actions are
 independent --- classically, by asking the domain whether either one's effects
 touch what the other requires, and epistemically, by requiring that the agents
-they name be disjoint --- and renders each run as one ``Parallel``. In the
-policy this mission produces, the report from the north site and the drive to
-the south one are such a run, and the mission takes about twenty-one and a half
-seconds.
-
-The saving is the shorter of the two overlapped actions, and it is smaller than
-the halves of the mission would allow. A policy orders its nodes, and the two
-halves of this one are interleaved rather than adjacent: the drive south sits
-below the branch on what the north scan found, so only the pair that happens to
-be consecutive can be grouped. Lifting an independent action across a branch
-point, so that both halves run from the start, is what the pass does not yet do.
+they name be disjoint --- and renders each run as one ``Parallel``. It says
+which runs it found:
 
 .. code-block:: text
 
-   dispatching together: (relay_north north relay), (goto_south south)
+   dispatching together: (goto_north north), (goto_south south)
+   dispatching together: (relay_north north relay), (scan_south south)
 
-is what it says when it finds one.
+The two drives leave together, and the report from the north site overlaps the
+scan of the south one. The mission takes about seventeen seconds.
+
+Seventeen is not nine, which is what the two halves would take if each ran from
+the start. The scan of the north site is where the policy branches, and nothing
+below a branch can begin before the branch is resolved, so the south half waits
+for a scan it has no stake in. Lifting an independent action across a branch
+point is what the pass does not do.
