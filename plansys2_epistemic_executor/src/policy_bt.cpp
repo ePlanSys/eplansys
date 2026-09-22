@@ -15,7 +15,6 @@
 #include "plansys2_epistemic_executor/policy_bt.hpp"
 
 #include <map>
-#include <set>
 
 #include <cmath>
 #include <sstream>
@@ -116,18 +115,13 @@ std::string policy_to_bt(
 {
   const std::string tmpl = action_bt.empty() ? kDefaultEpistemicActionBT : action_bt;
 
-  // Which group a node heads, and which nodes are inside one. A node inside a
-  // group other than its head is never rendered on its own: it is reached by
-  // the group it belongs to.
+  // Which group a node heads. The rest of a group's members are never rendered
+  // on their own: the chain that led to them is what the group replaces, and
+  // they are reached by the head.
   std::map<std::uint32_t, const ParallelGroup *> heads;
-  std::set<std::uint32_t> inside;
   for (const auto & group : groups) {
-    if (group.size() < 2) {
-      continue;
-    }
-    heads[group.front()] = &group;
-    for (const auto member : group) {
-      inside.insert(member);
+    if (group.size() > 1) {
+      heads[group.front()] = &group;
     }
   }
 
