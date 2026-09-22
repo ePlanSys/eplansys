@@ -158,8 +158,10 @@ ParallelGroups parallel_groups(const Policy & policy, const Independence & indep
         group.begin(), group.end(),
         [&](std::uint32_t member) {
           const auto & held = policy.item(member);
-          return epistemically_independent(held, candidate) &&
-          (!independent || independent(held, candidate));
+          if (!epistemically_independent(held, candidate)) {
+            return false;
+          }
+          return !independent || independent(held, candidate);
         });
 
       if (!joins) {
