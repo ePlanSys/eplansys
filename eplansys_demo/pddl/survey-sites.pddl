@@ -32,7 +32,6 @@
   :condition (and
     (at start (at_depot ?r)))
   :effect (and
-    (at start (not (at_depot ?r)))
     (at end (on_north ?r)))
 )
 
@@ -42,7 +41,6 @@
   :condition (and
     (at start (at_depot ?r)))
   :effect (and
-    (at start (not (at_depot ?r)))
     (at end (on_south ?r)))
 )
 
