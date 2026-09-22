@@ -1,0 +1,297 @@
+(define (domain survey-sites)
+
+  ;; Two sites, and a team large enough to survey both at once.
+  ;;
+  ;; This is `survey-team` with the site made plural. Everything that domain
+  ;; says about audiences holds here unchanged: a scanning robot learns the
+  ;; answer, the others learn only that it scanned, the open channel reaches
+  ;; the observer and the team link does not.
+  ;;
+  ;; What the second site adds is independence. Nothing a robot does at the
+  ;; north site bears on the south one: the two findings are separate atoms,
+  ;; the two drives are separate effects, and no action at one site appears in
+  ;; any precondition at the other. A policy for this mission therefore holds
+  ;; two halves that could run at the same time and, dispatched a node at a
+  ;; time, do not.
+  ;;
+  ;; EPDDL parameters are agents, so a site cannot be one. The two halves are
+  ;; written out instead of quantified, which is verbose and exact.
+
+  (:requirements
+    :equality :partial-observability :list-comprehensions :lists
+    :ontic-actions :group-modalities
+    :negative-preconditions :modal-preconditions :knowing-whether
+  )
+
+  (:action-type-libraries intermediate)
+
+  (:predicates
+    (contaminated-north)         ; the north site is contaminated
+    (contaminated-south)         ; the south site is contaminated
+    (on-north ?i - agent)        ; ?i is close enough to scan the north site
+    (on-south ?i - agent)        ; ?i is close enough to scan the south site
+    (instrument-north ?i - agent); ?i carries the instrument the north site needs
+    (instrument-south ?i - agent); ?i carries the instrument the south site needs
+  )
+
+  (:event nil)
+
+  ;--------------------DRIVE TO A SITE------------------
+  ;
+  ; Ontic and public, as in the one-site mission: the team tracks its members
+  ; and the observer watches them move.
+
+  (:event e-goto-north
+    :parameters (?i - agent)
+    :precondition (not (on-north ?i))
+    :effects (on-north ?i)
+  )
+
+  (:action goto-north
+    :parameters (?i - agent)
+    :action-type (public-ontic (e-goto-north ?i))
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-goto-south
+    :parameters (?i - agent)
+    :precondition (not (on-south ?i))
+    :effects (on-south ?i)
+  )
+
+  (:action goto-south
+    :parameters (?i - agent)
+    :action-type (public-ontic (e-goto-south ?i))
+    :observability-conditions (default Fully)
+  )
+
+  ;--------------------SCAN A SITE------------------
+  ;
+  ; Semi-private sensing. The scanning robot learns whether that site is
+  ; contaminated; everyone else learns that it scanned.
+
+  (:event e-scan-north-dirty
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (instrument-north ?i)
+        (on-north ?i)
+        (contaminated-north)
+        (<Kw. ?i> (contaminated-north)) )
+  )
+
+  (:event e-scan-north-clean
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (instrument-north ?i)
+        (on-north ?i)
+        (not (contaminated-north))
+        (<Kw. ?i> (contaminated-north)) )
+  )
+
+  (:action scan-north
+    :parameters (?i - agent)
+    :action-type (semi-private-sensing
+      (e-scan-north-dirty ?i)
+      (e-scan-north-clean ?i) )
+    :observability-conditions
+      (:and
+        (?i Fully)
+        (default Partially) )
+  )
+
+  (:event e-scan-south-dirty
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (instrument-south ?i)
+        (on-south ?i)
+        (contaminated-south)
+        (<Kw. ?i> (contaminated-south)) )
+  )
+
+  (:event e-scan-south-clean
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (instrument-south ?i)
+        (on-south ?i)
+        (not (contaminated-south))
+        (<Kw. ?i> (contaminated-south)) )
+  )
+
+  (:action scan-south
+    :parameters (?i - agent)
+    :action-type (semi-private-sensing
+      (e-scan-south-dirty ?i)
+      (e-scan-south-clean ?i) )
+    :observability-conditions
+      (:and
+        (?i Fully)
+        (default Partially) )
+  )
+
+  ;--------------------REPORT ON THE OPEN CHANNEL------------------
+  ;
+  ; The trap, once per site: it informs the team in one step and hands the
+  ; finding to the observer, which the goal forbids.
+
+  (:event e-open-north-dirty
+    :parameters (?i - agent)
+    :precondition ([?i] (contaminated-north))
+  )
+
+  (:event e-not-open-north-dirty
+    :parameters (?i - agent)
+    :precondition (not ([?i] (contaminated-north)))
+  )
+
+  (:action broadcast-north-dirty
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-open-north-dirty ?i)
+      (e-not-open-north-dirty ?i) )
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-open-north-clean
+    :parameters (?i - agent)
+    :precondition ([?i] (not (contaminated-north)))
+  )
+
+  (:event e-not-open-north-clean
+    :parameters (?i - agent)
+    :precondition (not ([?i] (not (contaminated-north))))
+  )
+
+  (:action broadcast-north-clean
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-open-north-clean ?i)
+      (e-not-open-north-clean ?i) )
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-open-south-dirty
+    :parameters (?i - agent)
+    :precondition ([?i] (contaminated-south))
+  )
+
+  (:event e-not-open-south-dirty
+    :parameters (?i - agent)
+    :precondition (not ([?i] (contaminated-south)))
+  )
+
+  (:action broadcast-south-dirty
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-open-south-dirty ?i)
+      (e-not-open-south-dirty ?i) )
+    :observability-conditions (default Fully)
+  )
+
+  (:event e-open-south-clean
+    :parameters (?i - agent)
+    :precondition ([?i] (not (contaminated-south)))
+  )
+
+  (:event e-not-open-south-clean
+    :parameters (?i - agent)
+    :precondition (not ([?i] (not (contaminated-south))))
+  )
+
+  (:action broadcast-south-clean
+    :parameters (?i - agent)
+    :action-type (public-announcement
+      (e-open-south-clean ?i)
+      (e-not-open-south-clean ?i) )
+    :observability-conditions (default Fully)
+  )
+
+  ;--------------------REPORT ON THE TEAM CHANNEL------------------
+  ;
+  ; The action the mission needs, once per site and per polarity: the speaker
+  ; and the named listener learn, and nobody else learns that anything was
+  ; said.
+
+  (:event e-team-north-dirty
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (on-north ?i)
+        ([?i] (contaminated-north)) )
+  )
+
+  (:action relay-north-dirty
+    :parameters (?i ?j - agent)
+    :action-type (private-announcement
+      (e-team-north-dirty ?i)
+      (nil) )
+    :observability-conditions
+      (:and
+        (?i Fully)
+        (?j Fully)
+        (default Oblivious) )
+  )
+
+  (:event e-team-north-clean
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (on-north ?i)
+        ([?i] (not (contaminated-north))) )
+  )
+
+  (:action relay-north-clean
+    :parameters (?i ?j - agent)
+    :action-type (private-announcement
+      (e-team-north-clean ?i)
+      (nil) )
+    :observability-conditions
+      (:and
+        (?i Fully)
+        (?j Fully)
+        (default Oblivious) )
+  )
+
+  (:event e-team-south-dirty
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (on-south ?i)
+        ([?i] (contaminated-south)) )
+  )
+
+  (:action relay-south-dirty
+    :parameters (?i ?j - agent)
+    :action-type (private-announcement
+      (e-team-south-dirty ?i)
+      (nil) )
+    :observability-conditions
+      (:and
+        (?i Fully)
+        (?j Fully)
+        (default Oblivious) )
+  )
+
+  (:event e-team-south-clean
+    :parameters (?i - agent)
+    :precondition
+      (and
+        (on-south ?i)
+        ([?i] (not (contaminated-south))) )
+  )
+
+  (:action relay-south-clean
+    :parameters (?i ?j - agent)
+    :action-type (private-announcement
+      (e-team-south-clean ?i)
+      (nil) )
+    :observability-conditions
+      (:and
+        (?i Fully)
+        (?j Fully)
+        (default Oblivious) )
+  )
+)

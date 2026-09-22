@@ -1,0 +1,386 @@
+{
+  "broadcast-north-clean_north": {
+    "action": "(broadcast_north north)",
+    "duration": 2.0
+  },
+  "broadcast-north-clean_observer": {
+    "action": "(broadcast_north observer)",
+    "duration": 2.0
+  },
+  "broadcast-north-clean_relay": {
+    "action": "(broadcast_north relay)",
+    "duration": 2.0
+  },
+  "broadcast-north-clean_south": {
+    "action": "(broadcast_north south)",
+    "duration": 2.0
+  },
+  "broadcast-north-dirty_north": {
+    "action": "(broadcast_north north)",
+    "duration": 2.0
+  },
+  "broadcast-north-dirty_observer": {
+    "action": "(broadcast_north observer)",
+    "duration": 2.0
+  },
+  "broadcast-north-dirty_relay": {
+    "action": "(broadcast_north relay)",
+    "duration": 2.0
+  },
+  "broadcast-north-dirty_south": {
+    "action": "(broadcast_north south)",
+    "duration": 2.0
+  },
+  "broadcast-south-clean_north": {
+    "action": "(broadcast_south north)",
+    "duration": 2.0
+  },
+  "broadcast-south-clean_observer": {
+    "action": "(broadcast_south observer)",
+    "duration": 2.0
+  },
+  "broadcast-south-clean_relay": {
+    "action": "(broadcast_south relay)",
+    "duration": 2.0
+  },
+  "broadcast-south-clean_south": {
+    "action": "(broadcast_south south)",
+    "duration": 2.0
+  },
+  "broadcast-south-dirty_north": {
+    "action": "(broadcast_south north)",
+    "duration": 2.0
+  },
+  "broadcast-south-dirty_observer": {
+    "action": "(broadcast_south observer)",
+    "duration": 2.0
+  },
+  "broadcast-south-dirty_relay": {
+    "action": "(broadcast_south relay)",
+    "duration": 2.0
+  },
+  "broadcast-south-dirty_south": {
+    "action": "(broadcast_south south)",
+    "duration": 2.0
+  },
+  "goto-north_north": {
+    "action": "(goto_north north)",
+    "duration": 4.0
+  },
+  "goto-north_observer": {
+    "action": "(goto_north observer)",
+    "duration": 4.0
+  },
+  "goto-north_relay": {
+    "action": "(goto_north relay)",
+    "duration": 4.0
+  },
+  "goto-north_south": {
+    "action": "(goto_north south)",
+    "duration": 4.0
+  },
+  "goto-south_north": {
+    "action": "(goto_south north)",
+    "duration": 4.0
+  },
+  "goto-south_observer": {
+    "action": "(goto_south observer)",
+    "duration": 4.0
+  },
+  "goto-south_relay": {
+    "action": "(goto_south relay)",
+    "duration": 4.0
+  },
+  "goto-south_south": {
+    "action": "(goto_south south)",
+    "duration": 4.0
+  },
+  "relay-north-clean_north_north": {
+    "action": "(relay_north north north)",
+    "duration": 2.0
+  },
+  "relay-north-clean_north_observer": {
+    "action": "(relay_north north observer)",
+    "duration": 2.0
+  },
+  "relay-north-clean_north_relay": {
+    "action": "(relay_north north relay)",
+    "duration": 2.0
+  },
+  "relay-north-clean_north_south": {
+    "action": "(relay_north north south)",
+    "duration": 2.0
+  },
+  "relay-north-clean_observer_north": {
+    "action": "(relay_north observer north)",
+    "duration": 2.0
+  },
+  "relay-north-clean_observer_observer": {
+    "action": "(relay_north observer observer)",
+    "duration": 2.0
+  },
+  "relay-north-clean_observer_relay": {
+    "action": "(relay_north observer relay)",
+    "duration": 2.0
+  },
+  "relay-north-clean_observer_south": {
+    "action": "(relay_north observer south)",
+    "duration": 2.0
+  },
+  "relay-north-clean_relay_north": {
+    "action": "(relay_north relay north)",
+    "duration": 2.0
+  },
+  "relay-north-clean_relay_observer": {
+    "action": "(relay_north relay observer)",
+    "duration": 2.0
+  },
+  "relay-north-clean_relay_relay": {
+    "action": "(relay_north relay relay)",
+    "duration": 2.0
+  },
+  "relay-north-clean_relay_south": {
+    "action": "(relay_north relay south)",
+    "duration": 2.0
+  },
+  "relay-north-clean_south_north": {
+    "action": "(relay_north south north)",
+    "duration": 2.0
+  },
+  "relay-north-clean_south_observer": {
+    "action": "(relay_north south observer)",
+    "duration": 2.0
+  },
+  "relay-north-clean_south_relay": {
+    "action": "(relay_north south relay)",
+    "duration": 2.0
+  },
+  "relay-north-clean_south_south": {
+    "action": "(relay_north south south)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_north_north": {
+    "action": "(relay_north north north)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_north_observer": {
+    "action": "(relay_north north observer)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_north_relay": {
+    "action": "(relay_north north relay)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_north_south": {
+    "action": "(relay_north north south)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_observer_north": {
+    "action": "(relay_north observer north)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_observer_observer": {
+    "action": "(relay_north observer observer)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_observer_relay": {
+    "action": "(relay_north observer relay)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_observer_south": {
+    "action": "(relay_north observer south)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_relay_north": {
+    "action": "(relay_north relay north)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_relay_observer": {
+    "action": "(relay_north relay observer)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_relay_relay": {
+    "action": "(relay_north relay relay)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_relay_south": {
+    "action": "(relay_north relay south)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_south_north": {
+    "action": "(relay_north south north)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_south_observer": {
+    "action": "(relay_north south observer)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_south_relay": {
+    "action": "(relay_north south relay)",
+    "duration": 2.0
+  },
+  "relay-north-dirty_south_south": {
+    "action": "(relay_north south south)",
+    "duration": 2.0
+  },
+  "relay-south-clean_north_north": {
+    "action": "(relay_south north north)",
+    "duration": 2.0
+  },
+  "relay-south-clean_north_observer": {
+    "action": "(relay_south north observer)",
+    "duration": 2.0
+  },
+  "relay-south-clean_north_relay": {
+    "action": "(relay_south north relay)",
+    "duration": 2.0
+  },
+  "relay-south-clean_north_south": {
+    "action": "(relay_south north south)",
+    "duration": 2.0
+  },
+  "relay-south-clean_observer_north": {
+    "action": "(relay_south observer north)",
+    "duration": 2.0
+  },
+  "relay-south-clean_observer_observer": {
+    "action": "(relay_south observer observer)",
+    "duration": 2.0
+  },
+  "relay-south-clean_observer_relay": {
+    "action": "(relay_south observer relay)",
+    "duration": 2.0
+  },
+  "relay-south-clean_observer_south": {
+    "action": "(relay_south observer south)",
+    "duration": 2.0
+  },
+  "relay-south-clean_relay_north": {
+    "action": "(relay_south relay north)",
+    "duration": 2.0
+  },
+  "relay-south-clean_relay_observer": {
+    "action": "(relay_south relay observer)",
+    "duration": 2.0
+  },
+  "relay-south-clean_relay_relay": {
+    "action": "(relay_south relay relay)",
+    "duration": 2.0
+  },
+  "relay-south-clean_relay_south": {
+    "action": "(relay_south relay south)",
+    "duration": 2.0
+  },
+  "relay-south-clean_south_north": {
+    "action": "(relay_south south north)",
+    "duration": 2.0
+  },
+  "relay-south-clean_south_observer": {
+    "action": "(relay_south south observer)",
+    "duration": 2.0
+  },
+  "relay-south-clean_south_relay": {
+    "action": "(relay_south south relay)",
+    "duration": 2.0
+  },
+  "relay-south-clean_south_south": {
+    "action": "(relay_south south south)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_north_north": {
+    "action": "(relay_south north north)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_north_observer": {
+    "action": "(relay_south north observer)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_north_relay": {
+    "action": "(relay_south north relay)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_north_south": {
+    "action": "(relay_south north south)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_observer_north": {
+    "action": "(relay_south observer north)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_observer_observer": {
+    "action": "(relay_south observer observer)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_observer_relay": {
+    "action": "(relay_south observer relay)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_observer_south": {
+    "action": "(relay_south observer south)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_relay_north": {
+    "action": "(relay_south relay north)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_relay_observer": {
+    "action": "(relay_south relay observer)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_relay_relay": {
+    "action": "(relay_south relay relay)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_relay_south": {
+    "action": "(relay_south relay south)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_south_north": {
+    "action": "(relay_south south north)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_south_observer": {
+    "action": "(relay_south south observer)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_south_relay": {
+    "action": "(relay_south south relay)",
+    "duration": 2.0
+  },
+  "relay-south-dirty_south_south": {
+    "action": "(relay_south south south)",
+    "duration": 2.0
+  },
+  "scan-north_north": {
+    "action": "(scan_north north)",
+    "duration": 3.0
+  },
+  "scan-north_observer": {
+    "action": "(scan_north observer)",
+    "duration": 3.0
+  },
+  "scan-north_relay": {
+    "action": "(scan_north relay)",
+    "duration": 3.0
+  },
+  "scan-north_south": {
+    "action": "(scan_north south)",
+    "duration": 3.0
+  },
+  "scan-south_north": {
+    "action": "(scan_south north)",
+    "duration": 3.0
+  },
+  "scan-south_observer": {
+    "action": "(scan_south observer)",
+    "duration": 3.0
+  },
+  "scan-south_relay": {
+    "action": "(scan_south relay)",
+    "duration": 3.0
+  },
+  "scan-south_south": {
+    "action": "(scan_south south)",
+    "duration": 3.0
+  }
+}
