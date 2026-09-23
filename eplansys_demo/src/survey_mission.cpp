@@ -12,17 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Starts the corridor mission, so that the demo is one command.
+// Starts the site survey, so that the demo is one command.
 //
 // The same three steps anyone would type into `ros2 plansys2 terminal`: say
 // what exists, say what is wanted, run. Doing it from a node instead means the
 // demo has nothing to type and nothing to get wrong, and it is the shortest
 // honest description of how a mission is started.
+//
+// It does one thing more, and it is the thing a mission on hardware needs:
+// when an action fails it asks for a policy again rather than stopping. The
+// new policy is planned from the epistemic state the mission reached, so what
+// was learned before the failure is kept and only what is left is planned for.
+// An action can fail for a reason that outlives one attempt --- a fleet that
+// stopped answering, a door that will not open --- so the attempts are counted
+// and the mission gives up saying which action it was that kept failing.
 
+#include <chrono>
+#include <cstdlib>
 #include <memory>
 #include <string>
 
 #include "plansys2_msgs/action/execute_plan.hpp"
+#include "plansys2_msgs/msg/action_execution_info.hpp"
 #include "plansys2_msgs/msg/plan.hpp"
 #include "plansys2_executor/ExecutorClient.hpp"
 #include "plansys2_planner/PlannerClient.hpp"
@@ -67,43 +78,94 @@ int main(int argc, char ** argv)
   // travels with the EPDDL the planner grounds and solves.
   problem->setGoal(plansys2::Goal("(and(told scout))"));
 
-  RCLCPP_INFO(node->get_logger(), "planning");
-  const auto plan = planner->getPlan(domain->getDomain(), problem->getProblem());
-  if (!plan.has_value()) {
-    RCLCPP_ERROR(node->get_logger(), "no plan; is the epistemic solver configured?");
-    rclcpp::shutdown();
-    return 1;
+  // How many policies the mission is willing to ask for. One is the classical
+  // behaviour: plan, run, report. More than one is what makes a failure
+  // recoverable, and the bound is what keeps a permanent failure from being
+  // retried for ever.
+  int attempts = 3;
+  for (int i = 1; i + 1 < argc; ++i) {
+    if (std::string(argv[i]) == "--attempts") {
+      attempts = std::atoi(argv[i + 1]);
+    }
   }
 
-  bool branches = false;
-  for (const auto & item : plan->items) {
-    branches = branches || item.children.size() > 1;
-  }
-  RCLCPP_INFO(
-    node->get_logger(), "policy with %zu nodes, %s",
-    plan->items.size(), branches ? "branching" : "linear");
+  bool succeeded = false;
 
-  if (!executor->start_plan_execution(plan.value())) {
-    RCLCPP_ERROR(node->get_logger(), "the executor refused the policy");
-    rclcpp::shutdown();
-    return 1;
-  }
+  for (int attempt = 1; attempt <= attempts && rclcpp::ok() && !succeeded; ++attempt) {
+    RCLCPP_INFO(node->get_logger(), "planning (attempt %d of %d)", attempt, attempts);
 
-  RCLCPP_INFO(node->get_logger(), "executing");
-  rclcpp::Rate rate(4);
-  while (rclcpp::ok() && executor->execute_and_check_plan()) {
-    rclcpp::spin_some(node);
-    rate.sleep();
-  }
+    // On any attempt after the first this is a replan, and the planner reads
+    // the epistemic state as the mission left it: a scan that already happened
+    // is not planned for again.
+    const auto plan = planner->getPlan(domain->getDomain(), problem->getProblem());
+    if (!plan.has_value()) {
+      RCLCPP_ERROR(node->get_logger(), "no plan; is the epistemic solver configured?");
+      rclcpp::shutdown();
+      return 1;
+    }
 
-  const auto result = executor->getResult();
-  const bool succeeded =
-    result && result->result == plansys2_msgs::action::ExecutePlan::Result::SUCCESS;
+    bool branches = false;
+    for (const auto & item : plan->items) {
+      branches = branches || item.children.size() > 1;
+    }
+    RCLCPP_INFO(
+      node->get_logger(), "policy with %zu nodes, %s",
+      plan->items.size(), branches ? "branching" : "linear");
+
+    if (plan->items.empty()) {
+      // A replan returns nothing when the goal already holds, which is a
+      // mission that finished between the failure and the replan.
+      RCLCPP_INFO(node->get_logger(), "the goal already holds; nothing left to run");
+      succeeded = true;
+      break;
+    }
+
+    if (!executor->start_plan_execution(plan.value())) {
+      RCLCPP_ERROR(node->get_logger(), "the executor refused the policy");
+      rclcpp::shutdown();
+      return 1;
+    }
+
+    RCLCPP_INFO(node->get_logger(), "executing");
+    rclcpp::Rate rate(4);
+    while (rclcpp::ok() && executor->execute_and_check_plan()) {
+      rclcpp::spin_some(node);
+      rate.sleep();
+    }
+
+    const auto result = executor->getResult();
+    succeeded = result &&
+      result->result == plansys2_msgs::action::ExecutePlan::Result::SUCCESS;
+
+    if (succeeded) {
+      break;
+    }
+
+    // Which action died is the whole of what a reader needs afterwards, and
+    // the executor knows it: the result carries a status per action.
+    if (result) {
+      for (const auto & status : result->action_execution_status) {
+        if (status.status == plansys2_msgs::msg::ActionExecutionInfo::FAILED) {
+          RCLCPP_WARN(
+            node->get_logger(), "%s failed: %s",
+            status.action_full_name.c_str(), status.message_status.c_str());
+        }
+      }
+    }
+
+    if (attempt < attempts) {
+      RCLCPP_WARN(
+        node->get_logger(),
+        "the policy failed; replanning from the state the mission reached");
+      std::this_thread::sleep_for(2s);
+      rclcpp::spin_some(node);
+    }
+  }
 
   if (succeeded) {
     RCLCPP_INFO(node->get_logger(), "mission complete");
   } else {
-    RCLCPP_ERROR(node->get_logger(), "mission failed");
+    RCLCPP_ERROR(node->get_logger(), "mission failed after %d attempt(s)", attempts);
   }
 
   rclcpp::shutdown();

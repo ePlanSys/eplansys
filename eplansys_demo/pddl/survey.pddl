@@ -3,6 +3,10 @@
 ;; What the robots know lives in the epistemic task the planner solved; this
 ;; file is what the executor needs to drive the actions that task names.
 ;;
+;; A drive leaves `at_depot` alone. Consuming it would make the drive
+;; undispatchable a second time, and a mission that replans after a failure
+;; dispatches it a second time.
+;;
 ;; Deliberately thin, and deliberately blind. Nothing here distinguishes a
 ;; broadcast from an encrypted relay: both are a robot talking, they take the
 ;; same time and change the same facts, and a PDDL domain has no vocabulary
@@ -29,7 +33,6 @@
   :condition (and
     (at start (at_depot ?r)))
   :effect (and
-    (at start (not (at_depot ?r)))
     (at end (on_site ?r)))
 )
 
