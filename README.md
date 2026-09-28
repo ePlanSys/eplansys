@@ -31,6 +31,20 @@ into the Kripke model the planner searches over is done by
 Alessandro Burigana and Francesco Fabiano, which `plansys2_epddl_grounder`
 builds and runs for you.
 
+## Trying it
+
+The image builds the workspace on ROS 2 Humble, with the planner and the
+grounder at the commits this release pins, and runs the two-site survey: two
+scouts, two sites, and a policy that branches on what each one finds.
+
+```bash
+docker build -t eplansys .
+docker run --rm eplansys
+docker run --rm eplansys ros2 launch eplansys_demo survey_sites_launch.py north:=clean parallel:=true
+```
+
+The mission prints its elapsed time and exits when the goal holds.
+
 We want to invite you to contribute to this Open Source project!
 
 **Documentation: [eplansys.github.io/eplansys](https://eplansys.github.io/eplansys)**
