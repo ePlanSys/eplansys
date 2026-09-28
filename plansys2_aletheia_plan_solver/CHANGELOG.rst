@@ -2,6 +2,11 @@
 Changelog for package plansys2_aletheia_plan_solver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.0 (2026-09-28)
+------------------
+* consistent_beliefs, on by default, passes --consistent-beliefs and validates
+  the returned plan under it.
+
 0.2.0 (2026-09-17)
 ------------------
 * One Aletheia behind both plugins: the binary this package runs and the

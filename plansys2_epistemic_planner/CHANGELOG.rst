@@ -2,6 +2,11 @@
 Changelog for package plansys2_epistemic_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.0 (2026-09-28)
+------------------
+* consistent_beliefs, on by default: a plan that relies on an agent believing a
+  contradiction is refused.
+
 0.2.0 (2026-09-17)
 ------------------
 * Search with Aletheia itself, not a copy of it: the planning core is linked

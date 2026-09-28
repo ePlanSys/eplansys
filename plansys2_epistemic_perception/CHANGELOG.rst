@@ -2,6 +2,10 @@
 Changelog for package plansys2_epistemic_perception
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.0 (2026-09-28)
+------------------
+* No changes.
+
 0.2.0 (2026-09-17)
 ------------------
 * The map, read as knowledge
