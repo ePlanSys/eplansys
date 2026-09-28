@@ -142,11 +142,13 @@ private:
   /// state without polling a service on every change.
   void publish_state();
 
-  /// How the tracked model takes an action: repaired on a KD45 task, as it
-  /// always was, and never refused, since what it records has already happened.
+  /// How the tracked model takes an action: repaired only when the task asks
+  /// for repair, as the planner does, and never refused, since what it records
+  /// has already happened. A model repaired where the planner's was not would
+  /// refuse an action the policy had every reason to send.
   Seriality tracked_seriality() const
   {
-    return task_->kd45 ? Seriality::Repair : Seriality::Ignore;
+    return task_->repair_seriality() ? Seriality::Repair : Seriality::Ignore;
   }
 
   rclcpp::Service<plansys2_epistemic_msgs::srv::LoadTask>::SharedPtr load_task_service_;

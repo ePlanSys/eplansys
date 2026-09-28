@@ -342,6 +342,17 @@ protected:
 ///
 /// This is where a belief and a sensor reading can disagree in the ordinary
 /// way, which is what recovery is for.
+/// backdoor-revealed: a KD45 task in which Alice hides the key where Bob cannot
+/// see, and then shows it to both of them.
+class BackdoorRevealedTest : public EpistemicStateNodeTest
+{
+protected:
+  std::string task_for_test() const override
+  {
+    return std::string(EPISTEMIC_TASK_DIR) + "/backdoor-revealed.json";
+  }
+};
+
 class StalePriorTest : public EpistemicStateNodeTest
 {
 protected:
@@ -490,6 +501,23 @@ TEST_F(EpistemicFleetDomainTest, TheModelItselfIsUnchangedByAskingForAView)
 
   EXPECT_EQ(before->goal, after->goal);
   EXPECT_EQ(before->holds, after->holds);
+}
+
+TEST_F(BackdoorRevealedTest, AnAnnouncementAgainstABeliefIsTrackedAsThePlannerPredictsIt)
+{
+  // Bob believes the key is not at the back when Alice shows it, and is left
+  // with no world. The planner does not repair a KD45 task unless asked to,
+  // and the model that follows execution has to agree with it: repairing here
+  // deletes the only world there is and refuses the announcement.
+  for (const std::string action : {"alice-hides-key_alice", "alice-shows-key_alice"}) {
+    auto request = std::make_shared<plansys2_epistemic_msgs::srv::ApplyAction::Request>();
+    request->epistemic_action = action;
+
+    auto response = call<plansys2_epistemic_msgs::srv::ApplyAction>(
+      "epistemic_state/apply_action", request);
+    ASSERT_NE(response, nullptr);
+    EXPECT_TRUE(response->success) << action << ": " << response->error;
+  }
 }
 
 // Recovery.

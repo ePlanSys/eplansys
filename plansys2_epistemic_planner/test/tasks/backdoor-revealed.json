@@ -1,0 +1,185 @@
+{
+ "planning-task-info": {
+  "problem": "backdoor-revealed",
+  "domain": "backdoor",
+  "libraries": [
+   "intermediate"
+  ],
+  "requirements": [
+   ":KD45-frames",
+   ":disjunctive-list-formulas",
+   ":disjunctive-preconditions",
+   ":equality",
+   ":events-conditions",
+   ":list-comprehensions",
+   ":lists",
+   ":modal-goals",
+   ":multi-pointed-models",
+   ":negative-list-formulas",
+   ":negative-preconditions",
+   ":ontic-actions",
+   ":partial-observability"
+  ],
+  "agents-number": 2,
+  "atoms-number": 1,
+  "facts-number": 0,
+  "actions-number": 2,
+  "initial-worlds-number": 1,
+  "goal-modal-depth": 1,
+  "goal-size": 5
+ },
+ "language": {
+  "atoms": [
+   "key-at-back"
+  ],
+  "agents": [
+   "alice",
+   "bob"
+  ]
+ },
+ "facts": [],
+ "initial-state": {
+  "worlds": [
+   "w0"
+  ],
+  "relations": {
+   "alice": {
+    "w0": [
+     "w0"
+    ]
+   },
+   "bob": {
+    "w0": [
+     "w0"
+    ]
+   }
+  },
+  "labels": {
+   "w0": []
+  },
+  "designated": [
+   "w0"
+  ]
+ },
+ "actions": {
+  "alice-hides-key_alice": {
+   "action-type": "private-ontic",
+   "events": [
+    "e-hide",
+    "nil"
+   ],
+   "relations": {
+    "Fully": {
+     "e-hide": [
+      "e-hide"
+     ],
+     "nil": [
+      "nil"
+     ]
+    },
+    "Oblivious": {
+     "e-hide": [
+      "nil"
+     ],
+     "nil": [
+      "nil"
+     ]
+    }
+   },
+   "designated": [
+    "e-hide"
+   ],
+   "preconditions": {
+    "e-hide": {
+     "formula": {
+      "connective": "and",
+      "formulas": [
+       "true",
+       {
+        "connective": "not",
+        "formula": "key-at-back"
+       }
+      ]
+     }
+    },
+    "nil": {
+     "formula": "true"
+    }
+   },
+   "effects": {
+    "e-hide": {
+     "key-at-back": {
+      "formula": "true"
+     }
+    },
+    "nil": null
+   },
+   "observability-conditions": {
+    "alice": {
+     "Fully": {
+      "formula": "true"
+     }
+    },
+    "bob": {
+     "Oblivious": {
+      "formula": "true"
+     }
+    }
+   }
+  },
+  "alice-shows-key_alice": {
+   "action-type": "public-announcement",
+   "events": [
+    "e-show"
+   ],
+   "relations": {
+    "Fully": {
+     "e-show": [
+      "e-show"
+     ]
+    }
+   },
+   "designated": [
+    "e-show"
+   ],
+   "preconditions": {
+    "e-show": {
+     "formula": "key-at-back"
+    }
+   },
+   "effects": {
+    "e-show": null
+   },
+   "observability-conditions": {
+    "alice": {
+     "Fully": {
+      "formula": "true"
+     }
+    },
+    "bob": {
+     "Fully": {
+      "formula": "true"
+     }
+    }
+   }
+  }
+ },
+ "goal": {
+  "formula": {
+   "connective": "and",
+   "formulas": [
+    "key-at-back",
+    {
+     "modality-name": "box",
+     "modality-index": [
+      "bob"
+     ],
+     "formula": {
+      "connective": "not",
+      "formula": "key-at-back"
+     }
+    }
+   ]
+  }
+ }
+}
