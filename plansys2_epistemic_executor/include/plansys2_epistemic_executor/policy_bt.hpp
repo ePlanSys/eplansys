@@ -19,6 +19,7 @@
 
 #include "plansys2_epistemic_executor/policy.hpp"
 #include "plansys2_epistemic_executor/policy_parallel.hpp"
+#include "plansys2_epistemic_executor/policy_schedule.hpp"
 
 namespace plansys2
 {
@@ -121,6 +122,21 @@ std::string policy_to_bt(
   const std::string & action_bt,
   int precision,
   const ParallelGroups & groups);
+
+/**
+ * @brief Render a policy as `schedule_policy` arranged it.
+ *
+ * The overload above is this one given the policy as written, with its groups
+ * marked. A schedule may render one policy node at several places, one per
+ * branch it was copied into, and a group may hold members that branch: the
+ * members run together and their outcomes then choose the continuation, one
+ * switch per member that branches.
+ */
+std::string policy_to_bt(
+  const Policy & policy,
+  const Schedule & schedule,
+  const std::string & action_bt,
+  int precision);
 
 /// The action id the executor keys its action map by, for one policy node.
 /// This has to agree with plansys2::BTBuilder::to_action_id exactly: it is the

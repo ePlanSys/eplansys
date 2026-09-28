@@ -28,6 +28,7 @@
 #include "plansys2_domain_expert/DomainExpertClient.hpp"
 #include "plansys2_epistemic_executor/policy.hpp"
 #include "plansys2_epistemic_executor/policy_parallel.hpp"
+#include "plansys2_epistemic_executor/policy_schedule.hpp"
 #include "plansys2_pddl_parser/AmentIndexCompat.hpp"
 #include "plansys2_problem_expert/Utils.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -221,21 +222,25 @@ std::string EpistemicBTBuilder::get_tree(const plansys2_msgs::msg::Plan & curren
     return policy_to_bt(policy, bt_action_, precision_);
   }
 
-  const auto groups = parallel_groups(
+  const auto schedule = schedule_policy(
     policy,
     [this](const plansys2_msgs::msg::PlanItem & a, const plansys2_msgs::msg::PlanItem & b) {
       return classically_independent(a, b);
     });
 
-  for (const auto & group : groups) {
+  // A group copied into several branches is one group to whoever reads this.
+  std::set<std::string> reported;
+  for (const auto & group : scheduled_groups(schedule)) {
     std::string named;
     for (const auto member : group) {
       named += (named.empty() ? "" : ", ") + policy.item(member).action;
     }
-    RCLCPP_INFO(logger(), "dispatching together: %s", named.c_str());
+    if (reported.insert(named).second) {
+      RCLCPP_INFO(logger(), "dispatching together: %s", named.c_str());
+    }
   }
 
-  return policy_to_bt(policy, bt_action_, precision_, groups);
+  return policy_to_bt(policy, schedule, bt_action_, precision_);
 }
 
 bool EpistemicBTBuilder::classically_independent(

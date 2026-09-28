@@ -48,12 +48,13 @@ class DomainExpertClient;
  *
  * With `parallel_dispatch` set it does use the domain for one thing. A policy
  * fixes an order, and where two consecutive nodes had no reason to be ordered
- * the mission waits for nothing. The runs where that is so are found by
- * `parallel_groups`, whose classical half is answered here, from the domain:
- * two actions are independent when neither one's effects touch a predicate the
- * other's requirements or effects mention. Each such run is dispatched as one
- * `Parallel`. Without the parameter the tree is exactly the one this builder
- * rendered before the pass existed.
+ * the mission waits for nothing. `schedule_policy` moves each action as early
+ * as the actions it depends on allow, above a branch when every branch begins
+ * with it, and dispatches each run of independent actions as one `Parallel`.
+ * Its classical half of independence is answered here, from the domain: two
+ * actions are independent when neither one's effects touch a predicate the
+ * other's requirements or effects mention. Without the parameter the tree is
+ * exactly the one this builder rendered before the pass existed.
  */
 class EpistemicBTBuilder : public BTBuilder
 {

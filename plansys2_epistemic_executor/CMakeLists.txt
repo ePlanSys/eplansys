@@ -24,6 +24,7 @@ add_library(${PROJECT_NAME}_policy SHARED
   src/policy.cpp
   src/policy_bt.cpp
   src/policy_parallel.cpp
+  src/policy_schedule.cpp
 )
 target_include_directories(${PROJECT_NAME}_policy PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
