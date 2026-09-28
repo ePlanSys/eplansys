@@ -11,7 +11,7 @@
     it reuses that package's parser, validator and policy serialisation rather
     than reimplementing them.
   </description>
-  <maintainer email="thesis@eplansys.dev">Thesis Dev</maintainer>
+  <maintainer email="hanielulises2003@gmail.com">Haniel Ulises Vasquez Morales</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
