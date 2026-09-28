@@ -7,6 +7,15 @@ repositories:
     type: git
     url: https://github.com/fmrico/popf.git
     version: rolling-devel
+  # The epistemic planner. plansys2_epistemic_planner links its planning core
+  # as a library, and its epistemic_planner binary is what
+  # plansys2_aletheia_plan_solver runs; colcon installs it into <prefix>/bin.
+  # Pinned to a commit, because the plugins validate and serialise plans with
+  # this library and a moving branch would change what they accept.
+  aletheia:
+    type: git
+    url: https://github.com/HanielUlises/del-planner.git
+    version: 314bc29f55ed8c0b62778b4b2954a55480a29428
   # The EPDDL grounder plansys2_epddl_grounder runs. It is a plain CMake
   # project rather than a ROS package, so colcon builds it as one and installs
   # the binary into <prefix>/bin, which puts `plank` on PATH once the workspace
@@ -15,15 +24,6 @@ repositories:
   #
   # Pinned like Aletheia above: grounding decides what the planner searches
   # over, so which grounder produced a task is part of what a release is.
-  # The epistemic planner. plansys2_epistemic_planner links its planning core
-  # as a library, and its epistemic_planner binary is what
-  # plansys2_aletheia_plan_solver runs; colcon installs it into <prefix>/bin.
-  # Pinned to a commit, because the plugins validate and serialise plans with
-  # this library and a moving branch would change what they accept.
-  aletheia:
-    type: git
-    url: https://github.com/HanielUlises/Aletheia.git
-    version: 32036843b1277f68f62b61aaa6fa58233894a779
   plank:
     type: git
     url: https://github.com/HanielUlises/plank.git
