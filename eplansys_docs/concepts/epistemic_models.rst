@@ -213,8 +213,9 @@ accepts:
 
 The search records why branches were discarded, not merely how many.
 ``PlannerStats`` separates dead ends, duplicates, updates rejected by the world
-cap, updates whose designated set was emptied by KD45 seriality repair, and
-truly inapplicable actions. Only the last is a property of the domain, and
+cap, updates whose designated set was emptied by KD45 seriality repair,
+updates refused because an agent was left believing a contradiction, and truly
+inapplicable actions. Only the last is a property of the domain, and
 collapsing them makes a failed run unreadable.
 
 Selection policy

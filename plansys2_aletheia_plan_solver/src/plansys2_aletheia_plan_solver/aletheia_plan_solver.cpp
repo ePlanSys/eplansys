@@ -235,6 +235,7 @@ void AletheiaPlanSolver::configure(
   policy_file_parameter_name_ = plugin_name + ".policy_file";
   action_mapping_parameter_name_ = plugin_name + ".action_mapping";
   conditional_parameter_name_ = plugin_name + ".conditional_plan";
+  consistent_beliefs_parameter_name_ = plugin_name + ".consistent_beliefs";
 
   const auto declare = [&](const std::string & name, const std::string & def) {
       if (!lc_node_->has_parameter(name)) {
@@ -251,6 +252,18 @@ void AletheiaPlanSolver::configure(
   declare(policy_file_parameter_name_, "");
   declare(action_mapping_parameter_name_, "");   // empty: naming convention
   declare(conditional_parameter_name_, "flatten");
+
+  // On by default, as in plansys2_epistemic_planner: a robot whose beliefs
+  // collapse satisfies every goal about them.
+  if (!lc_node_->has_parameter(consistent_beliefs_parameter_name_)) {
+    lc_node_->declare_parameter<bool>(consistent_beliefs_parameter_name_, true);
+  }
+}
+
+bool AletheiaPlanSolver::consistent_beliefs() const
+{
+  return lc_node_ && lc_node_->has_parameter(consistent_beliefs_parameter_name_) &&
+         lc_node_->get_parameter(consistent_beliefs_parameter_name_).as_bool();
 }
 
 std::string AletheiaPlanSolver::parameter(const std::string & name) const
@@ -369,6 +382,10 @@ std::string AletheiaPlanSolver::build_command(
   // solution rather than being killed mid-write.
   cmd << " --timeout " << static_cast<std::int64_t>(solver_timeout.seconds());
 
+  if (consistent_beliefs()) {
+    cmd << " --consistent-beliefs";
+  }
+
   const auto arguments = parameter(arguments_parameter_name_);
   if (!arguments.empty()) {
     cmd << " " << arguments;
@@ -413,6 +430,7 @@ std::optional<plansys2_msgs::msg::Plan> AletheiaPlanSolver::getPlan(
       task_path->string().c_str(), e.what());
     return std::nullopt;
   }
+  task.consistent_beliefs = consistent_beliefs();
 
   ActionMapping mapping = ActionMapping::conventional();
   const auto mapping_file = parameter(action_mapping_parameter_name_);

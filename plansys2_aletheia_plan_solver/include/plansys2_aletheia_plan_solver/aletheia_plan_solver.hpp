@@ -156,6 +156,7 @@ private:
     std::string & error) const;
 
   std::string parameter(const std::string & name) const;
+  bool consistent_beliefs() const;
 
   std::string command_parameter_name_;
   std::string arguments_parameter_name_;
@@ -166,6 +167,7 @@ private:
   std::string policy_file_parameter_name_;
   std::string action_mapping_parameter_name_;
   std::string conditional_parameter_name_;
+  std::string consistent_beliefs_parameter_name_;
 };
 
 }  // namespace plansys2

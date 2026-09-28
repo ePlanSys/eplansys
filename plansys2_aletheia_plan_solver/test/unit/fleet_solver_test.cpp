@@ -160,6 +160,36 @@ TEST_F(FleetSolverTest, TheInProcessPluginReturnsTheSamePolicy)
   }
 }
 
+// coin4's shortest plan works because B hears A announce what B believes A
+// cannot know, and is left believing everything, the goal included. With
+// consistent_beliefs on, which is the default, both plugins refuse that and
+// find the plan in which B and C look for themselves; off, both return the
+// short one plank would accept.
+TEST_F(FleetSolverTest, BothPluginsKeepBeliefsConsistentUnlessToldOtherwise)
+{
+  plansys2::EpistemicPlanSolver in_process;
+  in_process.configure(node_, "EPISTEMIC");
+  node_->set_parameter(rclcpp::Parameter("ALETHEIA.task_file", task("coin-in-the-box-4")));
+  node_->set_parameter(rclcpp::Parameter("EPISTEMIC.task_file", task("coin-in-the-box-4")));
+
+  for (const bool consistent : {true, false}) {
+    SCOPED_TRACE(consistent ? "consistent_beliefs on" : "consistent_beliefs off");
+    node_->set_parameter(rclcpp::Parameter("ALETHEIA.consistent_beliefs", consistent));
+    node_->set_parameter(rclcpp::Parameter("EPISTEMIC.consistent_beliefs", consistent));
+
+    const auto through_binary = solver_.getPlan("", "");
+    if (!through_binary) {
+      GTEST_SKIP() << "the epistemic_planner binary is not available";
+    }
+    const auto linked = in_process.getPlan("", "");
+    ASSERT_TRUE(linked.has_value());
+
+    const std::size_t steps = consistent ? 9u : 6u;
+    EXPECT_EQ(through_binary->items.size(), steps);
+    EXPECT_EQ(linked->items.size(), steps);
+  }
+}
+
 // Leave through _exit, so the DDS threads never outlive the process.
 //
 // rclcpp::shutdown() does not finalise the global context; that happens in
