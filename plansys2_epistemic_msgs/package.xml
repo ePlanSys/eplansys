@@ -7,7 +7,7 @@
     Service interfaces for querying and advancing an epistemic state: the
     knowledge-level counterpart of what the problem expert offers for facts.
   </description>
-  <maintainer email="thesis@eplansys.dev">Thesis Dev</maintainer>
+  <maintainer email="hanielulises2003@gmail.com">Haniel Ulises Vasquez Morales</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
