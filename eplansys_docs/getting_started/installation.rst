@@ -1,12 +1,32 @@
 Installation
 ============
 
-ePlanSys is built as a ROS 2 workspace with ``colcon``. The whole repository,
-including the classical PlanSys2 packages, builds on ROS 2 Rolling; the
-epistemic packages that do not depend on ``plansys2_executor`` also build on
-Humble. Both configurations are the ones exercised in continuous integration
-by ``.github/workflows/rolling.yaml`` and
-``.github/workflows/epistemic-humble.yaml``.
+ePlanSys is built as a ROS 2 workspace with ``colcon``, or installed from the
+Debian packages each release carries for Humble. The whole repository,
+including the classical PlanSys2 packages, builds on Rolling and on Humble.
+Continuous integration builds all of it on Rolling
+(``.github/workflows/rolling.yaml``) and the epistemic chain on Humble
+(``.github/workflows/epistemic-humble.yaml``); the Docker image and the release
+packages are built from the whole repository on Humble.
+
+From the release packages
+-------------------------
+
+On Ubuntu 22.04 with ROS 2 Humble, a release is an apt repository:
+
+.. code-block:: bash
+
+   echo "deb [trusted=yes] https://github.com/ePlanSys/eplansys/releases/download/v0.3.0 ./" |
+     sudo tee /etc/apt/sources.list.d/eplansys.list
+   sudo apt update
+   sudo apt install ros-humble-eplansys ros-humble-eplansys-demo
+
+``ros-humble-eplansys`` brings the epistemic packages, the planner
+(``ros-humble-aletheia``, built from del-planner) and the grounder
+(``ros-humble-plank``) at the commits the release pins. The PlanSys2 packages
+are this repository's fork, released under the upstream names at 3.0.0, and
+replace the upstream 2.0.x packages. ``.github/workflows/debs.yaml`` builds
+them with ``packaging/build-debs.sh`` when a release is tagged.
 
 Supported distributions
 -----------------------
@@ -30,6 +50,10 @@ Supported distributions
        and ``plansys2_tui_cli``. ``plansys2_epistemic_bt_builder`` is absent
        because it is the one epistemic package that depends on
        ``plansys2_executor``.
+   * - Humble
+     - ``debs.yaml``
+     - Every package the release carries, as Debian packages, on a release
+       tag.
 
 Two differences between the distributions are what the list above turns on,
 and both are posed as questions about the API, not about the distribution's
