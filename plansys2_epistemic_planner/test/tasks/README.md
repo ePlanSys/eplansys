@@ -16,6 +16,7 @@ tests assert).
 | `muddy-children-2.json` | `muddy-children/out/muddy-children-problem.json` | smallest solvable task; the default for search tests |
 | `muddy-children-3.json` | `muddy-children/out/muddy-children-problem-3.json` | asymmetric variant, used for the determinism check |
 | `coin-in-the-box.json` | `coin-in-the-box/out/problem_1.json` | sensing domain with a `box` (not `Kw`) goal |
+| `coin-in-the-box-4.json` | del-planner `benchmarks/coin4/problem_4.json` | its shortest plan leaves B believing a contradiction; the `consistent_beliefs` test |
 | `active-muddy-child.json` | `Active-Muddy-Child/out/problem_1.json` | 32 initial worlds; the canonical partial-observability case |
 | `coin-in-the-box-multipointed.json` | derived, see below | hand-made branching fixture, kept for the parser tests |
 

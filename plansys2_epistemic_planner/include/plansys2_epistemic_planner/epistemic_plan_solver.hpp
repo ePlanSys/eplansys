@@ -171,6 +171,7 @@ private:
 
   std::string goal_from_state_parameter_name_;
   std::string initial_from_state_parameter_name_;
+  std::string consistent_beliefs_parameter_name_;
 
   /// The last goal the epistemic state published, as text. Latched by the
   /// subscription rather than fetched, so reading it costs nothing and cannot

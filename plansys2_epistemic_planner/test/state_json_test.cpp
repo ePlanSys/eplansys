@@ -88,7 +88,9 @@ TEST(StateJsonTest, AModelAdvancedByAnActionSurvivesTheRoundTrip)
     if (!action.applicable(task.init)) {
       continue;
     }
-    auto result = product_update(task.init, action, task.kd45);
+    auto result = product_update(
+      task.init, action,
+      task.kd45 ? Seriality::Repair : Seriality::Ignore);
     if (!result) {
       continue;   // capped or pruned; another action will do
     }

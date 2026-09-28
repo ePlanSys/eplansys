@@ -183,6 +183,7 @@ void EpistemicPlanSolver::configure(
   epddl_parameter_names_ = EpddlParameterNames(plugin_name);
   goal_from_state_parameter_name_ = plugin_name + ".goal_from_state";
   initial_from_state_parameter_name_ = plugin_name + ".initial_from_state";
+  consistent_beliefs_parameter_name_ = plugin_name + ".consistent_beliefs";
 
   const auto declare = [&](const std::string & name, const std::string & def) {
       if (!lc_node_->has_parameter(name)) {
@@ -202,6 +203,11 @@ void EpistemicPlanSolver::configure(
   }
   if (!lc_node_->has_parameter(initial_from_state_parameter_name_)) {
     lc_node_->declare_parameter<bool>(initial_from_state_parameter_name_, true);
+  }
+  // On by default: a robot whose beliefs collapse satisfies every goal about
+  // them, and a policy credited that way has nothing to execute.
+  if (!lc_node_->has_parameter(consistent_beliefs_parameter_name_)) {
+    lc_node_->declare_parameter<bool>(consistent_beliefs_parameter_name_, true);
   }
 
   declare_epddl_parameters(lc_node_, epddl_parameter_names_);
@@ -423,6 +429,8 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
       task_opt->symmetry = std::move(symmetry);
     }
   }
+  task_opt->consistent_beliefs =
+    lc_node_->get_parameter(consistent_beliefs_parameter_name_).as_bool();
   const PlanningTask & task = *task_opt;
 
   // Selection policy: explicit parameters win, otherwise the rule table

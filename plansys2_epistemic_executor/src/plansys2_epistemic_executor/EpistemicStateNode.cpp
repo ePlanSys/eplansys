@@ -762,7 +762,7 @@ void EpistemicStateNode::apply_action_callback(
   }
 
   if (action.is_ontic()) {
-    auto updated = product_update(*state_, action, task_->kd45);
+    auto updated = product_update(*state_, action, tracked_seriality());
     if (!updated) {
       response->success = false;
       response->error =
@@ -775,7 +775,7 @@ void EpistemicStateNode::apply_action_callback(
     response->outcome = "";   // an ontic action has nothing to observe
     applied_outcomes_[request->epistemic_action] = "";
   } else {
-    auto outcomes = product_update_split(*state_, action, task_->kd45);
+    auto outcomes = product_update_split(*state_, action, tracked_seriality());
     if (outcomes.empty()) {
       response->success = false;
       response->error = "the sensing action produced no outcome at all";
@@ -810,7 +810,7 @@ void EpistemicStateNode::apply_action_callback(
 
         std::string gave_up;
         if (target && redesignate_for_event(*state_, *target, gave_up)) {
-          outcomes = product_update_split(*state_, action, task_->kd45);
+          outcomes = product_update_split(*state_, action, tracked_seriality());
           for (std::size_t i = 0; i < outcomes.size(); ++i) {
             if (outcomes[i].first < action.events.size() &&
               action.events[outcomes[i].first].name == request->observed_outcome)

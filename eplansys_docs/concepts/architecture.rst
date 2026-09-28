@@ -98,7 +98,8 @@ are strings except where noted:
      - empty
      - Action-type libraries the domain declares. Empty supplies the
        ``intermediate`` library packaged with ``plansys2_epddl_grounder``.
-       This one is a string array; the rest are strings.
+       This one is a string array, ``consistent_beliefs`` is a boolean, and
+       the rest are strings.
    * - ``plank_command``
      - empty
      - Path to the plank binary. Empty takes ``$PLANK``, then PATH.
@@ -129,6 +130,12 @@ are strings except where noted:
      - What to do with a branching solution: ``policy``, ``flatten`` or
        ``reject``. The parameters file shipped by ``plansys2_bringup`` sets
        ``policy``.
+   * - ``consistent_beliefs``
+     - ``true``
+     - Refuses any state in which an agent believes a contradiction. An agent
+       that observes an event its beliefs rule out is left with no accessible
+       world, and every goal about what it believes then holds without it
+       believing anything. ``false`` accepts those plans, as plank does.
 
 The solver validates a solution before returning it, and a plan that fails
 validation is not returned at all.
@@ -161,10 +168,10 @@ file, runs a process under the solver timeout, and reads its output back.
          command: "/abs/path/to/epistemic_planner"
          conditional_plan: "policy"
 
-It adds three parameters to the six above: ``command``, the binary, which
+It adds three parameters to the seven above: ``command``, the binary, which
 defaults to ``epistemic_planner`` on the path; ``arguments``, appended
 verbatim; and ``output_dir``, where the task, the plan and the planner's log
-are written. The other six keep their names and meanings, so a parameters file
+are written. The other seven keep their names and meanings, so a parameters file
 moves between the two plugins by changing ``plugin`` alone.
 
 The plan file names actions and event indices only. What a branch is taken on,

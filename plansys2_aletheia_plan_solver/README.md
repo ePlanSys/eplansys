@@ -64,6 +64,7 @@ failure mode a separately built planner introduces.
 | `policy_file` | empty | selection-policy JSON overriding the planner's built-in rules |
 | `action_mapping` | empty | JSON map from grounded names to PlanSys2 action expressions |
 | `conditional_plan` | `flatten` | `policy`, `flatten` or `reject` |
+| `consistent_beliefs` | `true` | passes `--consistent-beliefs`, refusing any state in which an agent believes a contradiction |
 
 The last six are the in-process plugin's parameters under the same names, so a
 parameters file moves between the two plugins by changing `plugin:` alone.
