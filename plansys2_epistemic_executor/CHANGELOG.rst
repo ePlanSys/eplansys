@@ -2,6 +2,14 @@
 Changelog for package plansys2_epistemic_executor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.0 (2026-09-28)
+------------------
+* The tracked model is repaired only when the task asks for repair, as the
+  planner's is, and is never refused.
+* Independent runs of a policy can be dispatched together (parallel_groups).
+* schedule_policy moves an independent action above a branch point when every
+  branch begins with it, and groups sensing actions that run side by side.
+
 0.2.0 (2026-09-17)
 ------------------
 * Execution of epistemic policies as behavior trees
