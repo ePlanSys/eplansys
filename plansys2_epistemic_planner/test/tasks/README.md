@@ -19,6 +19,7 @@ tests assert).
 | `coin-in-the-box-4.json` | del-planner `benchmarks/coin4/problem_4.json` | its shortest plan leaves B believing a contradiction; the `consistent_beliefs` test |
 | `active-muddy-child.json` | `Active-Muddy-Child/out/problem_1.json` | 32 initial worlds; the canonical partial-observability case |
 | `coin-in-the-box-multipointed.json` | derived, see below | hand-made branching fixture, kept for the parser tests |
+| `backdoor-revealed.json` | derived, see below | KD45: an announcement leaves Bob no world; the executor's update test |
 
 The puzzle instances come from the `epddl-workspace/` of
 [Epistemic-Robotics](https://github.com/HanielUlises/epistemic-robotics); the
@@ -46,3 +47,10 @@ path `EpistemicPlanSolver` flattens away when it converts a policy into a
 That is the textbook multi-pointed coin-in-the-box, and its solution branches.
 If the EPDDL instance is ever written and grounded, replace this file with the
 grounder's output.
+
+`backdoor-revealed.json` is del-planner's `benchmarks/backdoor/backdoor-problem.json`
+with one action added, `alice-shows-key_alice`, a public announcement that the
+key is at the back. After Alice hides the key where Bob cannot see, Bob believes
+it is not there, and the announcement leaves him no accessible world. Updating
+without repair keeps that one world; seriality repair deletes it and refuses
+the update.
