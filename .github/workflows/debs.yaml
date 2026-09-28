@@ -1,0 +1,58 @@
+name: debian packages (humble)
+
+# On a release tag, builds every eplansys package for ROS 2 Humble with bloom
+# and attaches the .debs, with the index apt reads, to that tag's GitHub
+# release. The release is then an apt repository:
+#
+#   echo "deb [trusted=yes] https://github.com/ePlanSys/eplansys/releases/download/v0.3.0 ./" |
+#     sudo tee /etc/apt/sources.list.d/eplansys.list
+#   sudo apt update && sudo apt install ros-humble-eplansys
+#
+# workflow_dispatch builds the same packages and keeps them as a workflow
+# artifact, without a release, for trying a change to the packaging.
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  debs:
+    runs-on: ubuntu-22.04
+    container:
+      image: ros:humble
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ws/src/eplansys
+
+      - name: Install the packaging tools
+        run: |
+          apt-get update
+          apt-get install -y python3-bloom python3-vcstool fakeroot debhelper dh-python python3-all dpkg-dev apt-utils
+          rosdep update --rosdistro humble
+
+      - name: Import the pinned sources
+        run: vcs import ws/src < ws/src/eplansys/dependency_repos.repos
+
+      - name: Build the packages
+        run: ws/src/eplansys/packaging/build-debs.sh ws debs
+
+      - name: Keep them as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: debs-humble
+          path: debs/
+
+      - name: Attach them to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            debs/*.deb
+            debs/Packages
+            debs/Packages.gz
+            debs/Release
