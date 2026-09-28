@@ -63,25 +63,28 @@ What the dispatch changes
 -------------------------
 
 With ``parallel_dispatch`` off, which is the default, the policy is dispatched
-one node at a time and the mission takes about twenty-four seconds: eighteen of
-declared duration and the rest in dispatch.
+one node at a time and the mission takes about twenty-two and a half seconds:
+eighteen of declared duration and the rest in dispatch.
 
-With it on, the builder looks for runs of the policy whose actions are
-independent --- classically, by asking the domain whether either one's effects
-touch what the other requires, and epistemically, by requiring that the agents
-they name be disjoint --- and renders each run as one ``Parallel``. It says
-which runs it found:
+With it on, the builder moves each action as early as the actions it depends on
+allow, and dispatches each run of independent actions as one ``Parallel``. Two
+actions are independent classically when neither one's effects touch what the
+other requires, which the domain answers, and epistemically when the agents they
+name are disjoint. It says which runs it found:
 
 .. code-block:: text
 
    dispatching together: (goto_north north), (goto_south south)
-   dispatching together: (relay_north north relay), (scan_south south)
+   dispatching together: (scan_north north), (scan_south south)
 
-The two drives leave together, and the report from the north site overlaps the
-scan of the south one. The mission takes about seventeen seconds.
+The south scan is written under both outcomes of the north one, and depends on
+neither. Every branch of the north scan begins with it once the north report
+has been moved below it, so it moves above the branch point and runs beside the
+north scan; the two outcomes then choose the way on, one after the other. The
+mission takes about fifteen seconds, from eleven of declared duration: the
+drives, the scans, and the two reports.
 
-Seventeen is not nine, which is what the two halves would take if each ran from
-the start. The scan of the north site is where the policy branches, and nothing
-below a branch can begin before the branch is resolved, so the south half waits
-for a scan it has no stake in. Lifting an independent action across a branch
-point is what the pass does not do.
+Each half takes nine seconds of declared duration on its own. The two together
+take eleven because both reports go to ``relay``: two actions that name the
+same agent run one after the other, so the south report waits for the north
+one.
