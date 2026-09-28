@@ -118,6 +118,13 @@ bool epistemically_independent(
 
 }  // namespace
 
+bool may_overlap(
+  const plansys2_msgs::msg::PlanItem & a, const plansys2_msgs::msg::PlanItem & b,
+  const Independence & independent)
+{
+  return epistemically_independent(a, b) && (!independent || independent(a, b));
+}
+
 std::vector<std::string> item_agents(const plansys2_msgs::msg::PlanItem & item)
 {
   std::vector<std::string> names;
@@ -157,11 +164,7 @@ ParallelGroups parallel_groups(const Policy & policy, const Independence & indep
       const bool joins = std::all_of(
         group.begin(), group.end(),
         [&](std::uint32_t member) {
-          const auto & held = policy.item(member);
-          if (!epistemically_independent(held, candidate)) {
-            return false;
-          }
-          return !independent || independent(held, candidate);
+          return may_overlap(policy.item(member), candidate, independent);
         });
 
       if (!joins) {

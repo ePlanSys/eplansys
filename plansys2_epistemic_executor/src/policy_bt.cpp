@@ -113,122 +113,150 @@ std::string policy_to_bt(
   const Policy & policy, const std::string & action_bt, int precision,
   const ParallelGroups & groups)
 {
+  return policy_to_bt(policy, policy_schedule(policy, groups), action_bt, precision);
+}
+
+std::string policy_to_bt(
+  const Policy & policy, const Schedule & schedule, const std::string & action_bt,
+  int precision)
+{
   const std::string tmpl = action_bt.empty() ? kDefaultEpistemicActionBT : action_bt;
 
-  // Which group a node heads. The rest of a group's members are never rendered
-  // on their own: the chain that led to them is what the group replaces, and
-  // they are reached by the head.
-  std::map<std::uint32_t, const ParallelGroup *> heads;
-  for (const auto & group : groups) {
-    if (group.size() > 1) {
-      heads[group.front()] = &group;
-    }
-  }
+  // One node's own block, with whatever is to follow it spliced in.
+  //
+  // One blackboard entry per node, named after it: two sensing actions in
+  // flight never share a key, whether they are on different branches or in the
+  // same group, and the name says which node wrote it when reading a Groot
+  // trace. `epistemic_observed_N` is what the robot says it saw and
+  // `epistemic_outcome_N` is what the epistemic state made of it; they agree
+  // whenever the report names an outcome the action defines, and keeping them
+  // apart is what lets the state disagree.
+  const auto block_of =
+    [&](std::uint32_t at, const std::string & continuations) -> std::string {
+      const auto & node = policy.item(at);
+      const std::string at_id = std::to_string(at);
+
+      std::string block = tmpl;
+      replace_all(block, "NODE_NAME", escape("node_" + at_id + " " + node.action));
+      replace_all(block, "ACTION_ID", escape(policy_action_id(node, precision)));
+      replace_all(block, "NODE_ID", at_id);
+      replace_all(block, "OUTCOME_KEY", "epistemic_outcome_" + at_id);
+      replace_all(block, "OBSERVED_KEY", "epistemic_observed_" + at_id);
+      replace_all(block, "CONTINUATIONS", shift(continuations, 1));
+      return block + "\n";
+    };
+
+  // A switch over what `decided_by` observed, with one child per outcome of
+  // `at`. They are the same node unless `at` is a copy of a group member,
+  // which never runs itself: the member it copies ran, and its outcome is the
+  // one to read.
+  const auto switch_of =
+    [&](const ScheduledNode & at, std::uint32_t decided_by, const auto & child) -> std::string {
+      const auto & node = policy.item(at.item);
+
+      std::string branches;
+      for (std::size_t i = 0; i < at.next.size(); ++i) {
+        branches += indent(1) + "<!-- observed " + escape(node.outcomes[i]) + " -->\n";
+        if (!at.next[i]) {
+          // The policy is complete on this outcome. Saying so explicitly keeps
+          // the branch arity equal to the outcome list, so the switch can
+          // index one by the other.
+          branches += indent(1) + "<AlwaysSuccess/>\n";
+        } else {
+          branches += shift(child(at.next[i]), 1);
+        }
+      }
+
+      std::string outcome_list;
+      for (std::size_t i = 0; i < node.outcomes.size(); ++i) {
+        outcome_list += (i ? ";" : "") + node.outcomes[i];
+      }
+
+      return
+        "<EpistemicSwitch node=\"" + std::to_string(decided_by) +
+        "\" outcome=\"{epistemic_outcome_" + std::to_string(decided_by) +
+        "}\" outcomes=\"" + escape(outcome_list) + "\">\n" +
+        branches +
+        "</EpistemicSwitch>\n";
+    };
 
   // Each node renders its own subtree and splices its continuations into it,
   // so the recursion returns a block rather than writing into a shared buffer.
-  // A node that heads a parallel group renders the whole group instead, with
-  // the continuation of its last member after the group rather than inside it:
-  // what follows a group follows all of it.
-  const auto render = [&](std::uint32_t index, const auto & self) -> std::string {
-      // One blackboard entry per node, named after it: two sensing actions in
-      // flight never share a key, whether they are on different branches or in
-      // the same group, and the name says which node wrote it when reading a
-      // Groot trace. `epistemic_observed_N` is what the robot says it saw and
-      // `epistemic_outcome_N` is what the epistemic state made of it; they
-      // agree whenever the report names an outcome the action defines, and
-      // keeping them apart is what lets the state disagree.
-
-      // What follows this node once it has run: nothing, the next block, or a
+  const auto render = [&](const Schedule & at, const auto & self) -> std::string {
+      // What follows a node once it has run: nothing, the next block, or a
       // switch over what it observed.
-      const auto continuations_of = [&](std::uint32_t at) -> std::string {
-          const auto & node = policy.item(at);
-
-          const auto only = policy.only_successor(at);
-          if (only) {
+      const auto continuations_of =
+        [&](const ScheduledNode & node, std::uint32_t decided_by) -> std::string {
+          if (node.next.size() == 1) {
             // Nothing to choose: the continuation simply follows. This is what
             // makes a classical plan render as the flat sequence PlanSys2
             // builds.
-            return self(*only, self);
+            return node.next.front() ? self(node.next.front(), self) : "";
           }
-
-          if (node.children.size() <= 1) {
+          if (node.next.empty()) {
             return "";      // this node ends the policy
           }
-
-          std::string branches;
-          for (std::size_t i = 0; i < node.children.size(); ++i) {
-            branches += indent(1) + "<!-- observed " + escape(node.outcomes[i]) + " -->\n";
-            if (node.children[i] == plansys2_msgs::msg::PlanItem::POLICY_DONE) {
-              // The policy is complete on this outcome. Saying so explicitly
-              // keeps the branch arity equal to the outcome list, so the
-              // switch can index one by the other.
-              branches += indent(1) + "<AlwaysSuccess/>\n";
-            } else {
-              branches += shift(self(node.children[i], self), 1);
-            }
-          }
-
-          std::string outcome_list;
-          for (std::size_t i = 0; i < node.outcomes.size(); ++i) {
-            outcome_list += (i ? ";" : "") + node.outcomes[i];
-          }
-
-          return
-            "<EpistemicSwitch node=\"" + std::to_string(at) + "\" outcome=\"{epistemic_outcome_" +
-            std::to_string(at) + "}\" outcomes=\"" + escape(outcome_list) + "\">\n" +
-            branches +
-            "</EpistemicSwitch>\n";
+          return switch_of(
+            node, decided_by, [&](const Schedule & next) {return self(next, self);});
         };
 
-      // One node's own block, with whatever is to follow it spliced in.
-      const auto block_of =
-        [&](std::uint32_t at, const std::string & continuations) -> std::string {
-          const auto & node = policy.item(at);
-          const std::string at_id = std::to_string(at);
-
-          std::string block = tmpl;
-          replace_all(block, "NODE_NAME", escape("node_" + at_id + " " + node.action));
-          replace_all(block, "ACTION_ID", escape(policy_action_id(node, precision)));
-          replace_all(block, "NODE_ID", at_id);
-          replace_all(block, "OUTCOME_KEY", "epistemic_outcome_" + at_id);
-          replace_all(block, "OBSERVED_KEY", "epistemic_observed_" + at_id);
-          replace_all(block, "CONTINUATIONS", shift(continuations, 1));
-          return block + "\n";
-        };
-
-      const auto group = heads.find(index);
-      if (group != heads.end()) {
-        // The group runs as one, so no member carries a continuation: the
-        // chain that linked them is what the group replaces, and what follows
-        // the last of them follows the whole group.
-        std::string members;
-        for (const auto member : *group->second) {
-          members += shift(block_of(member, ""), 1);
-        }
-
-        // The group and what follows it are one element, not two. A node's
-        // rendering is spliced in wherever a single child is expected --- a
-        // switch branch is exactly that --- and two siblings there would give
-        // the switch more branches than the policy has outcomes.
-        const std::string after = continuations_of(group->second->back());
-
-        return
-          "<Sequence name=\"" + escape("group_" + std::to_string(index)) + "\">\n" +
-          indent(1) + "<Parallel success_count=\"" + std::to_string(group->second->size()) +
-          "\" failure_count=\"1\">\n" +
-          shift(members, 1) +
-          indent(1) + "</Parallel>\n" +
-          shift(after, 1) +
-          "</Sequence>\n";
+      if (at->group <= 1) {
+        return block_of(at->item, continuations_of(*at, at->item));
       }
 
-      return block_of(index, continuations_of(index));
+      // A group runs as one, so no member carries a continuation: the chain
+      // that linked them is what the group replaces, and what follows the last
+      // of them follows the whole group.
+      std::vector<std::uint32_t> members;
+      const ScheduledNode * member = at.get();
+      for (std::size_t i = 0; i < at->group; ++i) {
+        members.push_back(member->item);
+        if (i + 1 < at->group) {
+          member = member->next.front().get();
+        }
+      }
+
+      std::string blocks;
+      for (const auto item : members) {
+        blocks += shift(block_of(item, ""), 1);
+      }
+
+      // Once every member has finished, their outcomes choose the way on, one
+      // member after another. A member that branches is present as the same
+      // action on each of its branches, so the walk reaches a copy of the next
+      // member whichever outcome it takes.
+      const auto after_member =
+        [&](const ScheduledNode & node, std::size_t position, const auto & again) -> std::string {
+          if (position + 1 == members.size()) {
+            return continuations_of(node, members[position]);
+          }
+          if (node.next.size() == 1) {
+            return again(*node.next.front(), position + 1, again);
+          }
+          return switch_of(
+            node, members[position],
+            [&](const Schedule & next) {return again(*next, position + 1, again);});
+        };
+
+      // The group and what follows it are one element, not two. A node's
+      // rendering is spliced in wherever a single child is expected --- a
+      // switch branch is exactly that --- and two siblings there would give the
+      // switch more branches than the policy has outcomes.
+      const std::string after = after_member(*at, 0, after_member);
+
+      return
+        "<Sequence name=\"" + escape("group_" + std::to_string(at->item)) + "\">\n" +
+        indent(1) + "<Parallel success_count=\"" + std::to_string(members.size()) +
+        "\" failure_count=\"1\">\n" +
+        shift(blocks, 1) +
+        indent(1) + "</Parallel>\n" +
+        shift(after, 1) +
+        "</Sequence>\n";
     };
 
   std::string body;
-  if (!policy.empty()) {
-    body = shift(render(Policy::root(), render), 3);
+  if (!policy.empty() && schedule) {
+    body = shift(render(schedule, render), 3);
   }
 
   // The goal check is outside the policy rather than at each leaf. A leaf is

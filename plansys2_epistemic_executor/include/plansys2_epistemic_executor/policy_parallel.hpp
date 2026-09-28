@@ -75,6 +75,13 @@ using Independence =
  */
 ParallelGroups parallel_groups(const Policy & policy, const Independence & independent);
 
+/// Whether two items may run at the same time: the test `parallel_groups`
+/// applies to every pair it groups, in both of its halves. `independent` may be
+/// empty, which leaves the epistemic half alone.
+bool may_overlap(
+  const plansys2_msgs::msg::PlanItem & a, const plansys2_msgs::msg::PlanItem & b,
+  const Independence & independent);
+
 /// The agents an item's action names, from the grounded epistemic name and the
 /// PDDL expression alike. Exposed because it is the whole of the epistemic
 /// half of the independence test and is worth testing on its own.
