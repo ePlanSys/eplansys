@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>plank</name>
+  <version>1.0.0</version>
+  <description>
+    plank, the DEL-based epistemic planning toolkit by Alessandro Burigana and
+    Francesco Fabiano: the EPDDL parser and grounder plansys2_epddl_grounder runs.
+    Packaged here from the commit dependency_repos.repos pins; plank itself is a
+    plain CMake project.
+  </description>
+  <maintainer email="hanielulises2003@gmail.com">Haniel Ulises Vasquez Morales</maintainer>
+  <license>MIT</license>
+  <author>Alessandro Burigana</author>
+  <author>Francesco Fabiano</author>
+
+  <buildtool_depend>cmake</buildtool_depend>
+  <depend>boost</depend>
+
+  <export>
+    <build_type>cmake</build_type>
+  </export>
+</package>
