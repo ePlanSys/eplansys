@@ -161,7 +161,7 @@ Directories</h2></td></tr>
 <tr class="memitem:test" id="r_test"><td class="memItemLeft"><span class="iconfolder"><div class="folder-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="dir_3915729d9fefabcb3841d9bed13e0dbb.html">test</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md13"></a>
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md14"></a>
 Executor</h1>
 <p>The Executor module is responsible for requesting a plan to the Planner, and carry it out, calling to the nodes in the client application that implements the actions. While executing each action, it checks the requisites (<em>At Start, At End and Over all</em>, in case of durative Actions). If the requirements are not meet, it cancels the plan execution. It also is responsible for applying the effects of the actions, requesting updates to the Problem Expert.</p>
 <p>The main class of Executor is <a href="include/include/plansys2_executor/ExcutorNode.hpp"><span class="tt">plansys2::ExecutorNode</span></a>, which is instantiated from <a href="src/executor_node.cpp"><span class="tt">executor_node.cpp</span></a>.</p>
@@ -170,7 +170,7 @@ Executor</h1>
 <p>Using the feedback information from <span class="tt">plansys2_msgs::action::ExecuteAction</span>, feedback for <span class="tt"><a class="el" href="classplansys2_1_1ExecutorNode.html" title="ROS2 Lifecycle node that manages plan execution.">plansys2::ExecutorNode</a></span> is composed and returned to <span class="tt"><a class="el" href="classplansys2_1_1ExecutorClient.html" title="Client interface for the plansys2 executor node.">plansys2::ExecutorClient</a></span>. It contains the current action in the plan and the progress in the currently executing action.</p>
 <p>Next graph shows an example of the execution flow:</p>
 <p><img src="../plansys2_docs/Executor_graph.png" alt="Executor Flow" class="inline"/></p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md14"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md15"></a>
 Actions:</h1>
 <ul>
 <li><span class="tt">/execute_plan</span> [<a href="../plansys2_msgs/action/ExecutePlan.action"><span class="tt">plansys2_msgs::action::ExecutePlan</span></a>]</li>
@@ -179,18 +179,18 @@ Actions:</h1>
 <ul>
 <li><span class="tt">/${ACTION_NAME</span>}[<a href="../plansys2_msgs/action/ExecuteAction.action"><span class="tt">plansys2_msgs::action::ExecuteAction</span></a>]</li>
 </ul>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md15"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md16"></a>
 Services:</h1>
 <ul>
 <li><span class="tt">/executor/get_ordered_sub_goals</span> [<a href="../plansys2_msgs/srv/GetOrderedSubGoals.srv"><span class="tt">plansys2_msgs::srv::GetOrderedSubGoals</span></a>]</li>
 </ul>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md16"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md17"></a>
 Subscribed topics:</h1>
 <p>(in ActionExecutor)</p>
 <ul>
 <li><span class="tt">/problem_expert/update_notify</span> [<span class="tt">std_msgs::msg::Empty</span>]</li>
 </ul>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md17"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md18"></a>
 Parameters:</h1>
 <p>(in ExecutorNode)</p>
 <ul>

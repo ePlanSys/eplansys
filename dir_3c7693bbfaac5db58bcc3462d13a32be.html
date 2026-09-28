@@ -151,13 +151,13 @@ Directories</h2></td></tr>
 <tr class="memitem:test" id="r_test"><td class="memItemLeft"><span class="iconfolder"><div class="folder-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="dir_79bf3c7fb30a2c08ed1ae95ff0a2d1db.html">test</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md24"></a>
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md25"></a>
 Planner</h1>
 <p>The Planner module is responsible for creating plans. By default, it uses <a href="https://github.com/fmrico/popf">popf</a>, that is a PDDL solver.</p>
 <p>This module is very simple, as its only task is calling the popf binary and parsing the result.</p>
 <p>The main class is <a href="include/include/plansys2_planner/PlannerNode.hpp"><span class="tt">plansys2::PlannerNode</span></a>, which is instantiated from <a href="src/planner_node.cpp"><span class="tt">planner_node.cpp</span></a>. <span class="tt"><a class="el" href="classplansys2_1_1PlannerNode.html" title="ROS2 Lifecycle Node that manages the planning system and handles planning requests.">plansys2::PlannerNode</a></span> is a also <span class="tt">rclcpp_lifecycle::LifecycleNode</span>, but currently the functionality is in the active phase.</p>
 <p>Plan solvers are specified in the <span class="tt">plan_solver_plugins</span> parameter. In case of more than one specified, the first one will be used. If this parameter is not specified, POPF will be used by default.</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md25"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md26"></a>
 Services</h1>
 <ul>
 <li><span class="tt">/planner/get_plan</span> [<a href="../plansys2_msgs/srv/GetPlan.srv"><span class="tt">plansys2_msgs::srv::GetPlan</span></a>] </li>

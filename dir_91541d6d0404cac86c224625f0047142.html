@@ -106,9 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md18"></a>
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md19"></a>
 PlanSys2 Messages</h1>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md19"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md20"></a>
 Representing PDDL Expressions as Trees</h1>
 <p>PDDL expressions are conveniently represented as trees. To see this, consider the following PDDL expression. </p><pre class="fragment">(and (robot_at r2d2 millennium_falcon)(not (robot_at r2d2 death_star)))
 </pre><p>The root node of the tree corresponds to the outer parentheses encompassing the "and" statement. The "and" statement then has two children. The first child corresponds to the predicate <span class="tt">(robot_at r2d2 millennium_falcon)</span> and the second child corresponds to the "not" expression <span class="tt">(not (robot_at r2d2 death_star))</span>. Similarly, the "not" expression has one child corresponding to the predicate <span class="tt">(robot_at r2d2 death_star)</span>.</p>
@@ -117,7 +117,7 @@ Representing PDDL Expressions as Trees</h1>
   public Node[] children;
 }
 </pre><p>Thus, the node contains the data relevant to the node as well as the links to its children. A tree is then stored as a list of nodes.</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md20"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md21"></a>
 Representing PDDL Expressions with ROS Messages</h1>
 <p>PlanSys2 requires that the PDDL construct trees be passed back and forth between the various nodes of the system. To define a PDDL tree in ROS, we use two custom messages, <span class="tt">plansys2_msgs/Tree</span> and <span class="tt">plansys2_msgs/Node</span>. The contents of <span class="tt">plansys2_msgs/Tree</span> is simply an array of type <span class="tt">plansys2_msgs/Node</span>. </p><pre class="fragment">plansys2_msgs/Node[] nodes
 </pre><p>The contents of <span class="tt">plansys2_msgs/Node</span> contains the data relevant to the node as well as links to its children. </p><pre class="fragment">uint8 node_type
@@ -158,13 +158,13 @@ uint8 SCALE_DOWN = 22
 <p>The <span class="tt">name</span> string and <span class="tt">parameters</span> list are used by predicate and function nodes, which are defined by a name and a list of parameters.</p>
 <p>The <span class="tt">value</span> field is used by PDDL functions and stores a numeric value.</p>
 <p>Finally, the <span class="tt">negate</span> field tracks whether the inverse truth value should be used. For example, if a <span class="tt">NOT</span> node is the parent of a <span class="tt">PREDICATE</span> node, then the <span class="tt">PREDICATE</span> node will have a <span class="tt">negate</span> value opposite that of the <span class="tt">NOT</span> node's value.</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md21"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md22"></a>
 Actions</h1>
 <p><a href="../plansys2_msgs/action/ExecutePlan.action"><span class="tt">plansys2_msgs::action::ExecutePlan</span></a></p>
 <ul>
 <li>Used to start and continuously monitor the execution of a plan.</li>
 </ul>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md22"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md23"></a>
 Messages</h1>
 <p><a href="../plansys2_msgs/msg/Action.msg"><span class="tt">plansys2_msgs::msg::Action</span></a></p>
 <ul>
@@ -203,7 +203,7 @@ Messages</h1>
 <ul>
 <li>Consists of a list of <a href="../plansys2_msgs/msg/Node.msg"><span class="tt">plansys2_msgs::msg::Node</span></a> and defines a PDDL construct tree. See discussion above for details.</li>
 </ul>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md23"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md24"></a>
 Services</h1>
 <p><a href="../plansys2_msgs/srv/AddProblemGoal.srv"><span class="tt">plansys2_msgs::srv::AddProblemGoal</span></a></p>
 <ul>
