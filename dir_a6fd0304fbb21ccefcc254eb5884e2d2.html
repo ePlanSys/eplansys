@@ -141,11 +141,11 @@ Files</h2></td></tr>
 <tr class="memitem:test_5F5_2Ecpp" id="r_test_5F5_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="test__5_8cpp.html">test_5.cpp</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md57"></a>
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md58"></a>
 Test 5</h1>
 <p>A branching policy, executed end to end: the corridor mission, run twice with the corridor in different states.</p>
 <p>Nobody knows whether the corridor is blocked, so there is no plan to make — only a policy. The robot drives to the junction, looks, and reports what it found, and which report it makes is decided while it runs.</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md58"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md59"></a>
 PlanSys2</h1>
 <ul class="check">
 <li class="checked">Regular PlanSys2 actions</li>
@@ -157,7 +157,7 @@ PlanSys2</h1>
 <ul class="check">
 <li class="unchecked">PlanSys2 <a class="el" href="namespaceBT.html">BT</a> actions with ROS2 action client</li>
 </ul>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md59"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md60"></a>
 Epistemic</h1>
 <ul class="check">
 <li class="checked">Epistemic plan solver, returning a policy rather than a flattened branch</li>
@@ -180,7 +180,7 @@ Epistemic</h1>
 <ul class="check">
 <li class="checked"><span class="tt">CheckEpistemicGoal</span> at the end of the policy</li>
 </ul>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md60"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md61"></a>
 PDDL</h1>
 <ul class="check">
 <li class="checked">Types</li>
@@ -204,11 +204,11 @@ PDDL</h1>
 </ul>
 </li>
 </ul>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md61"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md62"></a>
 The mission</h1>
 <p>The epistemic half is the grounded task <span class="tt">plansys2_epistemic_planner/test/tasks/robot-fleet.json</span>: two agents, an atom for the corridor being blocked, and an initial model that designates both a blocked and a clear world — the corridor genuinely is one or the other, and no one knows which. <span class="tt">inspect</span> is semi-private sensing: <span class="tt">r1</span> sees the outcome, <span class="tt">r2</span> only sees that <span class="tt">r1</span> looked. The goal is that both know whether the corridor is blocked, which is why <span class="tt">r1</span> has to announce what it found.</p>
 <p>The PDDL half, <span class="tt">pddl/test_5.pddl</span>, is only what the executor needs to drive the four actions the mapping translates into. It records nothing about the corridor: a predicate for "blocked" would be recording knowledge as a fact, which is the thing the epistemic state exists to avoid.</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md62"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md63"></a>
 What stands in for a sensor</h1>
 <p>The epistemic state can name the outcome of a sensing action only when its model designates a single world. Here it designates two, so the observation must come from the agent that performed the sensing: the performer running <span class="tt">inspect_corridor</span>.</p>
 <p>It reports the result the way any performer reports anything, on finishing, in the <span class="tt">outcome</span> field of <span class="tt">ActionExecution</span> alongside its status. <span class="tt">ExecuteAction</span> writes it to the blackboard and the packaged action template passes it to <span class="tt">ApplyEpistemicUpdate</span>, so this mission runs on the executor's defaults with no action template and no additional node library.</p>

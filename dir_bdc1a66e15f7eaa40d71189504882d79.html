@@ -141,10 +141,10 @@ Directories</h2></td></tr>
 <tr class="memitem:test" id="r_test"><td class="memItemLeft"><span class="iconfolder"><div class="folder-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="dir_a84a55a8e5213b1205b98693174fb7ae.html">test</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md2"></a>
+<div class="textblock"><h1 class="doxsection"><a class="anchor" id="autotoc_md3"></a>
 BT Actions</h1>
 <p>The purpose of this package is to provide built-in support for <span class="tt"><a class="el" href="namespaceplansys2.html">plansys2</a></span> actions which use <a href="https://github.com/BehaviorTree/BehaviorTree.CPP">Behavior Trees</a> (BTs) for their implementation. A drop-in replacement for a vanilla <span class="tt"><a class="el" href="classplansys2_1_1ActionExecutorClient.html" title="Base class for implementing action executors in the planning system.">plansys2::ActionExecutorClient</a></span> is provided in the form of a ROS2 node, which will execute an arbitrary <a class="el" href="namespaceBT.html">BT</a> passed in as a ROS parameter. A BehaviorTree.CPP node, <span class="tt"><a class="el" href="classplansys2_1_1BtActionNode.html" title="Abstract class representing an action based BT node.">plansys2::BtActionNode</a></span>, is also included to provide a convenient wrapper around a ROS2 action client (a common application for <a class="el" href="namespaceBT.html">BT</a> nodes).</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md3"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md4"></a>
 ROS2 node for implementing <span class="tt">plansys2</span> actions</h2>
 <p>The <span class="tt">bt_action_node</span> ROS node takes in several parameters to set up its execution. These parameters are</p><ol type="1">
 <li><span class="tt">action_name</span>: The name of the <span class="tt"><a class="el" href="namespaceplansys2.html">plansys2</a></span> action to implement. Note that this name must match what is in your pddl domain file.</li>
@@ -156,7 +156,7 @@ ROS2 node for implementing <span class="tt">plansys2</span> actions</h2>
 <li><span class="tt">bt_minitrace_logging</span>: a boolean which enables logging of <span class="tt">.json</span> files for recording the execution time of each node (default is <span class="tt">false</span>)</li>
 </ol>
 <p>Files created by the <span class="tt">.btlog</span> and minitrace loggers are stored in <span class="tt">/tmp/&lt;node_name&gt;/</span>, with names containing a timestamp.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md4"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md5"></a>
 BT node for calling ROS2 action servers</h2>
 <p>The <span class="tt">BtActionNode</span> template class provides a convenient means of calling ROS2 action servers from within a <a class="el" href="namespaceBT.html">BT</a>. It takes care of the details of setting up and handling a ROS action client, reducing code duplication and providing a simple API.</p>
 <p>The template parameter for the class is the type of ROS action (e.g. <span class="tt">action_tutorials_interfaces::action::Fibonacci</span>) to be used. The node's constructor takes in three arguments: the XML tag name, the ROS topic for the action server (e.g. <span class="tt">/namepace/server_name</span>), and a <span class="tt">BT::NodeConfig</span>. Note that the XML name and <span class="tt">NodeConfig</span> are the same as any other BT.CPP node.</p>
