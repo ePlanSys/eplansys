@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef EPLANSYS_DEMO__LEAVE_HPP_
-#define EPLANSYS_DEMO__LEAVE_HPP_
+#ifndef LEAVE_HPP_
+#define LEAVE_HPP_
 
 #include <unistd.h>
 
@@ -24,14 +24,16 @@
 namespace eplansys_demo
 {
 
-/// End the process once its work is done, without static destruction.
+/// End the process once its work is done, without destroying the performers.
 ///
-/// rclcpp::shutdown() does not finalise the global context; that happens in
-/// static destruction, inside _dl_fini, while Fast DDS listener threads are
-/// still running in libraries the loader is unmapping. A performer interrupted
-/// by the launch file at the end of a mission segfaulted in about one run in
-/// five that way, after every action had finished. plansys2_tests leaves
-/// through _exit for the same reason.
+/// A performer interrupted by the launch file at the end of a mission
+/// segfaulted in about one run in five, after every action had finished. The
+/// fault is in the performer's destructor, run from main after
+/// rclcpp::shutdown(), while CascadeLifecycleNode frees its activators_state_
+/// map through a pointer that is no longer valid; no thread of this process was
+/// using the node by then. Nothing is left to do at that point, so the process
+/// leaves through _exit and skips the teardown, as plansys2_tests does for its
+/// own exit-time fault.
 [[noreturn]] inline void leave(int status)
 {
   rclcpp::shutdown();
@@ -42,4 +44,4 @@ namespace eplansys_demo
 
 }  // namespace eplansys_demo
 
-#endif  // EPLANSYS_DEMO__LEAVE_HPP_
+#endif  // LEAVE_HPP_
