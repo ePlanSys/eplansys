@@ -31,6 +31,8 @@
 
 #include "rclcpp/rclcpp.hpp"
 
+#include "leave.hpp"
+
 namespace eplansys_demo
 {
 
@@ -133,6 +135,5 @@ int main(int argc, char ** argv)
   }
 
   executor.spin();
-  rclcpp::shutdown();
-  return 0;
+  eplansys_demo::leave(0);
 }
