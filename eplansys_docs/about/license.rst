@@ -79,3 +79,9 @@ Copyright
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+The link preview image carries the ROS logo, from
+`ros-infrastructure/artwork <https://github.com/ros-infrastructure/artwork>`_,
+which is licensed under the Creative Commons Attribution-NonCommercial 4.0
+International License and used unmodified under the ROS trademark policy. ROS
+is a trademark of Open Robotics.
