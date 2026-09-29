@@ -30,6 +30,11 @@ ogp_image_alt = 'ePlanSys, an epistemic planning system for ROS 2'
 ogp_description_length = 200
 ogp_type = 'website'
 ogp_enable_meta_description = True
+# X reads og: tags for the title and the image, but draws the large card only
+# when told to; without this it shows a thumbnail beside the title.
+ogp_custom_meta_tags = [
+    '<meta name="twitter:card" content="summary_large_image">',
+]
 
 # Where the site is served from. The theme emits <link rel="canonical"> only
 # when this is set, and sphinx_sitemap builds every sitemap URL from it, so a
