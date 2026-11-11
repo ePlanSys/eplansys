@@ -103,6 +103,7 @@ document.addEventListener('DOMContentLoaded', codefold.init);
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#pro-static-attribs">Static Protected Attributes</a> &#124;
 <a href="classplansys2_1_1ActionExecutor-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ActionExecutor Class Reference</div></div>
 </div><!--header-->
@@ -117,27 +118,29 @@ Collaboration diagram for ActionExecutor:</div>
 <div class="dyncontent">
 <div class="center"><img src="classplansys2_1_1ActionExecutor__coll__graph.png" border="0" usemap="#aActionExecutor_coll__map" loading="lazy" alt="Collaboration graph"/></div>
 <map name="aActionExecutor_coll__map" id="aActionExecutor_coll__map">
-<area shape="rect" title="Class that manages the execution of a PDDL action by communicating with action performers." alt="" coords="299,387,407,413"/>
-<area shape="rect" title=" " alt="" coords="33,23,113,49"/>
-<area shape="poly" title=" " alt="" coords="128,26,165,26,204,30,243,42,277,64,294,89,309,126,332,221,346,319,353,387,348,387,341,319,326,222,304,128,289,91,273,68,241,47,203,35,165,31,128,32"/>
-<area shape="rect" title=" " alt="" coords="33,77,113,102"/>
-<area shape="poly" title=" " alt="" coords="129,88,213,96,251,105,276,117,292,138,306,168,328,247,344,328,352,387,347,387,338,329,323,248,300,170,287,140,273,121,249,110,213,102,128,94"/>
-<area shape="rect" title=" " alt="" coords="43,130,103,156"/>
-<area shape="poly" title=" " alt="" coords="119,141,208,149,249,158,276,170,299,194,317,223,331,254,341,285,351,344,354,387,349,387,346,345,336,286,326,255,313,225,295,198,273,174,247,163,207,155,118,147"/>
-<area shape="rect" title=" " alt="" coords="48,205,98,230"/>
-<area shape="poly" title=" " alt="" coords="114,212,151,213,193,218,237,230,276,252,307,283,329,321,343,358,351,386,346,388,338,360,324,323,303,286,273,256,235,235,192,224,150,218,114,218"/>
-<area shape="rect" title=" " alt="" coords="46,361,100,386"/>
-<area shape="poly" title=" " alt="" coords="115,375,298,393,298,398,115,380"/>
-<area shape="rect" title=" " alt="" coords="5,414,141,440"/>
-<area shape="poly" title=" " alt="" coords="156,426,214,424,274,418,307,411,308,416,275,423,215,429,156,431"/>
-<area shape="rect" title=" " alt="" coords="50,467,96,493"/>
-<area shape="poly" title=" " alt="" coords="111,479,188,474,231,467,274,454,309,434,336,411,340,416,312,439,276,459,233,472,188,480,111,484"/>
-<area shape="rect" title=" " alt="" coords="33,521,113,546"/>
-<area shape="poly" title=" " alt="" coords="128,535,200,530,238,521,273,505,298,485,318,459,344,412,349,415,323,462,302,488,276,510,240,526,201,535,128,540"/>
-<area shape="rect" title=" " alt="" coords="33,574,113,600"/>
-<area shape="poly" title=" " alt="" coords="129,592,164,593,202,589,239,580,273,562,291,547,305,528,327,486,340,445,347,413,352,414,346,446,332,488,310,531,295,551,276,567,241,585,203,595,164,598,128,597"/>
-<area shape="rect" title=" " alt="" coords="33,627,113,653"/>
-<area shape="poly" title=" " alt="" coords="128,648,164,650,202,648,240,639,273,621,295,599,313,572,326,543,336,513,346,455,349,413,354,414,351,456,341,514,331,545,318,575,300,602,276,625,241,644,203,654,164,656,128,653"/>
+<area shape="rect" title="Class that manages the execution of a PDDL action by communicating with action performers." alt="" coords="299,455,407,480"/>
+<area shape="rect" title=" " alt="" coords="33,24,113,50"/>
+<area shape="poly" title=" " alt="" coords="128,26,165,26,205,30,243,42,277,64,297,95,313,140,326,196,336,257,349,374,354,454,348,454,343,375,331,257,321,197,308,142,292,97,273,68,241,47,203,35,165,31,128,32"/>
+<area shape="rect" title=" " alt="" coords="33,77,113,103"/>
+<area shape="poly" title=" " alt="" coords="129,89,214,97,251,106,276,119,295,145,310,184,332,283,346,384,353,454,348,454,341,384,327,284,304,185,290,147,273,123,249,111,213,103,128,94"/>
+<area shape="rect" title=" " alt="" coords="43,131,103,156"/>
+<area shape="poly" title=" " alt="" coords="119,143,208,152,249,161,276,175,292,196,306,228,328,310,344,394,353,454,347,455,339,395,323,311,301,230,288,199,273,179,247,166,207,157,118,148"/>
+<area shape="rect" title=" " alt="" coords="48,245,98,271"/>
+<area shape="poly" title=" " alt="" coords="114,258,205,269,247,279,276,292,295,310,310,331,333,376,346,420,352,454,347,455,341,422,328,378,306,333,291,313,273,296,246,284,204,275,114,264"/>
+<area shape="rect" title=" " alt="" coords="46,401,100,427"/>
+<area shape="poly" title=" " alt="" coords="115,416,190,425,275,441,313,451,312,457,274,446,189,430,114,421"/>
+<area shape="rect" title=" " alt="" coords="5,455,141,480"/>
+<area shape="poly" title=" " alt="" coords="156,465,298,465,298,470,156,470"/>
+<area shape="rect" title=" " alt="" coords="50,508,96,534"/>
+<area shape="poly" title=" " alt="" coords="111,516,187,509,274,493,319,478,321,483,275,498,188,514,112,521"/>
+<area shape="rect" title=" " alt="" coords="33,561,113,587"/>
+<area shape="poly" title=" " alt="" coords="128,572,199,564,237,554,273,540,294,527,313,511,340,479,344,482,316,514,297,531,276,545,239,559,200,569,128,577"/>
+<area shape="rect" title=" " alt="" coords="33,615,113,640"/>
+<area shape="poly" title=" " alt="" coords="128,630,163,629,201,625,239,615,273,598,301,571,322,538,337,506,346,480,351,482,342,508,327,541,305,574,276,602,241,620,202,630,163,634,128,635"/>
+<area shape="rect" title=" " alt="" coords="33,668,113,694"/>
+<area shape="poly" title=" " alt="" coords="128,687,163,688,202,685,239,676,273,658,293,639,309,616,331,566,343,517,348,480,353,481,349,518,336,567,314,619,297,642,276,662,241,681,203,690,164,693,128,692"/>
+<area shape="rect" title=" " alt="" coords="43,721,103,747"/>
+<area shape="poly" title=" " alt="" coords="118,741,155,745,196,744,237,736,273,716,298,691,317,660,330,627,340,592,349,527,349,481,355,481,354,527,345,593,335,628,321,663,302,694,276,721,239,741,197,750,155,750,117,746"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -216,6 +219,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="memdesc:af9ce797ffb5bdddd3b17d35494193449"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reject a performer for this action.  <br /></td></tr>
 <tr class="memitem:afd4b7b4e683aeb9b1e4a945e259fc84d" id="r_afd4b7b4e683aeb9b1e4a945e259fc84d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afd4b7b4e683aeb9b1e4a945e259fc84d">request_for_performers</a> ()</td></tr>
 <tr class="memdesc:afd4b7b4e683aeb9b1e4a945e259fc84d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send a request for performers to execute this action.  <br /></td></tr>
+<tr class="memitem:aa36f9a7a4c1953aedc1146ab7bede1d2" id="r_aa36f9a7a4c1953aedc1146ab7bede1d2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa36f9a7a4c1953aedc1146ab7bede1d2">stop_waiting</a> ()</td></tr>
+<tr class="memdesc:aa36f9a7a4c1953aedc1146ab7bede1d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel and drop the timer that re-requests performers.  <br /></td></tr>
 <tr class="memitem:abd9674941ed850b6293b9ef7afc28711" id="r_abd9674941ed850b6293b9ef7afc28711"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abd9674941ed850b6293b9ef7afc28711">wait_timeout</a> ()</td></tr>
 <tr class="memdesc:abd9674941ed850b6293b9ef7afc28711"><td class="mdescLeft">&#160;</td><td class="mdescRight">Timeout handler for performer requests.  <br /></td></tr>
 </table><table class="memberdecls">
@@ -229,12 +234,17 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:a97975743e6350eace511cd5f32b6e519" id="r_a97975743e6350eace511cd5f32b6e519"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a97975743e6350eace511cd5f32b6e519">completion_</a></td></tr>
 <tr class="memitem:ace7299f933b7836f0f2ebd2f4f1d0e49" id="r_ace7299f933b7836f0f2ebd2f4f1d0e49"><td class="memItemLeft">std::string&#160;</td><td class="memItemRight"><a class="el" href="#ace7299f933b7836f0f2ebd2f4f1d0e49">current_performer_id_</a></td></tr>
 <tr class="memitem:af8d71489a623ea9a24ccd35c2d45501f" id="r_af8d71489a623ea9a24ccd35c2d45501f"><td class="memItemLeft">std::string&#160;</td><td class="memItemRight"><a class="el" href="#af8d71489a623ea9a24ccd35c2d45501f">feedback_</a></td></tr>
+<tr class="memitem:a23d8d710ad43f751d79926851d320e02" id="r_a23d8d710ad43f751d79926851d320e02"><td class="memItemLeft">rclcpp::Time&#160;</td><td class="memItemRight"><a class="el" href="#a23d8d710ad43f751d79926851d320e02">last_tick_</a></td></tr>
 <tr class="memitem:a03f07b03c033ac40026387718371ca62" id="r_a03f07b03c033ac40026387718371ca62"><td class="memItemLeft">rclcpp_lifecycle::LifecycleNode::SharedPtr&#160;</td><td class="memItemRight"><a class="el" href="#a03f07b03c033ac40026387718371ca62">node_</a></td></tr>
 <tr class="memitem:a0c063b31de1f957e890a091bc80946d9" id="r_a0c063b31de1f957e890a091bc80946d9"><td class="memItemLeft">std::string&#160;</td><td class="memItemRight"><a class="el" href="#a0c063b31de1f957e890a091bc80946d9">outcome_</a></td></tr>
 <tr class="memitem:afcc12f1b92a193808235ae8026e4627e" id="r_afcc12f1b92a193808235ae8026e4627e"><td class="memItemLeft">rclcpp::Time&#160;</td><td class="memItemRight"><a class="el" href="#afcc12f1b92a193808235ae8026e4627e">start_execution_</a></td></tr>
 <tr class="memitem:a4330663436004fd8536be1f82c3680a0" id="r_a4330663436004fd8536be1f82c3680a0"><td class="memItemLeft"><a class="el" href="#a67a0db04d321a74b7e7fcfd3f1a3f70b">Status</a>&#160;</td><td class="memItemRight"><a class="el" href="#a4330663436004fd8536be1f82c3680a0">state_</a></td></tr>
 <tr class="memitem:a6823bf8f6298b3c86ec1b12bc32db631" id="r_a6823bf8f6298b3c86ec1b12bc32db631"><td class="memItemLeft">rclcpp::Time&#160;</td><td class="memItemRight"><a class="el" href="#a6823bf8f6298b3c86ec1b12bc32db631">state_time_</a></td></tr>
 <tr class="memitem:ad13b88ecadf94f81a6507579e5d71054" id="r_ad13b88ecadf94f81a6507579e5d71054"><td class="memItemLeft">rclcpp::TimerBase::SharedPtr&#160;</td><td class="memItemRight"><a class="el" href="#ad13b88ecadf94f81a6507579e5d71054">waiting_timer_</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pro-static-attribs" class="groupheader"><a id="pro-static-attribs" name="pro-static-attribs"></a>
+Static Protected Attributes</h2></td></tr>
+<tr class="memitem:a3ec29fd1075a960dba1306482c97ff0e" id="r_a3ec29fd1075a960dba1306482c97ff0e"><td class="memItemLeft">static constexpr double&#160;</td><td class="memItemRight"><a class="el" href="#a3ec29fd1075a960dba1306482c97ff0e">untick_limit_</a> = 3.0</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Class that manages the execution of a PDDL action by communicating with action performers. </p>
@@ -866,6 +876,33 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="aa36f9a7a4c1953aedc1146ab7bede1d2" name="aa36f9a7a4c1953aedc1146ab7bede1d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa36f9a7a4c1953aedc1146ab7bede1d2">&#9670;&#160;</a></span>stop_waiting()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void stop_waiting </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Cancel and drop the timer that re-requests performers. </p>
+
+</div>
+</div>
 <a id="a4ff25f0b1c905ad70441062105594822" name="a4ff25f0b1c905ad70441062105594822"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4ff25f0b1c905ad70441062105594822">&#9670;&#160;</a></span>tick()</h2>
 
@@ -1116,6 +1153,28 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a23d8d710ad43f751d79926851d320e02" name="a23d8d710ad43f751d79926851d320e02"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23d8d710ad43f751d79926851d320e02">&#9670;&#160;</a></span>last_tick_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">rclcpp::Time last_tick_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a03f07b03c033ac40026387718371ca62" name="a03f07b03c033ac40026387718371ca62"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a03f07b03c033ac40026387718371ca62">&#9670;&#160;</a></span>node_</h2>
 
@@ -1220,6 +1279,28 @@ Protected Attributes</h2></td></tr>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3ec29fd1075a960dba1306482c97ff0e" name="a3ec29fd1075a960dba1306482c97ff0e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ec29fd1075a960dba1306482c97ff0e">&#9670;&#160;</a></span>untick_limit_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double untick_limit_ = 3.0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel static">static</span><span class="mlabel constexpr">constexpr</span><span class="mlabel protected">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

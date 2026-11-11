@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', codefold.init);
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="keyword">public</span>:</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  <a class="code hl_function" href="classplansys2_1_1WaitAtStartReq.html#a7f47971e66e96c75260a71c88be76af2">WaitAtStartReq</a>(<span class="keyword">const</span> std::string &amp; xml_tag_name, <span class="keyword">const</span> BT::NodeConfig &amp; conf);</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span></div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno"><a class="line" href="classplansys2_1_1WaitAtStartReq.html#ade0430439247877006d7df950f94918a">   51</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classplansys2_1_1WaitAtStartReq.html#ade0430439247877006d7df950f94918a">halt</a>() {}</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno"><a class="line" href="classplansys2_1_1WaitAtStartReq.html#ade0430439247877006d7df950f94918a">   51</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classplansys2_1_1WaitAtStartReq.html#ade0430439247877006d7df950f94918a">halt</a>() {waiting_ = <span class="keyword">false</span>;}</div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span></div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>  BT::NodeStatus <a class="code hl_function" href="classplansys2_1_1WaitAtStartReq.html#ad1ad196c7c6fc6353381e3e557e43c20">tick</a>() <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span></div>
@@ -154,12 +154,18 @@ document.addEventListener('DOMContentLoaded', codefold.init);
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><span class="keyword">private</span>:</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>  std::shared_ptr&lt;std::map&lt;std::string, ActionExecutionInfo&gt;&gt; action_map_;</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>  std::shared_ptr&lt;plansys2::ProblemExpertClient&gt; problem_client_;</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>};</div>
-</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span> </div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>}  <span class="comment">// namespace plansys2</span></div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span> </div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>  BT::NodeStatus keep_waiting(</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <span class="keyword">const</span> rclcpp_lifecycle::LifecycleNode::SharedPtr &amp; node, <span class="keyword">const</span> std::string &amp; action);</div>
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span><span class="preprocessor">#endif  </span><span class="comment">// PLANSYS2_EXECUTOR__BEHAVIOR_TREE__WAIT_ATSTART_REQ_NODE_HPP_</span></div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>  <span class="keywordtype">bool</span> waiting_ {<span class="keyword">false</span>};</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>  rclcpp::Time waiting_since_;</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>};</div>
+</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>}  <span class="comment">// namespace plansys2</span></div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span><span class="preprocessor">#endif  </span><span class="comment">// PLANSYS2_EXECUTOR__BEHAVIOR_TREE__WAIT_ATSTART_REQ_NODE_HPP_</span></div>
 <div class="ttc" id="aActionExecutor_8hpp_html"><div class="ttname"><a href="ActionExecutor_8hpp.html">ActionExecutor.hpp</a></div></div>
 <div class="ttc" id="aProblemExpertClient_8hpp_html"><div class="ttname"><a href="ProblemExpertClient_8hpp.html">ProblemExpertClient.hpp</a></div></div>
 <div class="ttc" id="aclassplansys2_1_1WaitAtStartReq_html_a7f47971e66e96c75260a71c88be76af2"><div class="ttname"><a href="classplansys2_1_1WaitAtStartReq.html#a7f47971e66e96c75260a71c88be76af2">plansys2::WaitAtStartReq::WaitAtStartReq</a></div><div class="ttdeci">WaitAtStartReq(const std::string &amp;xml_tag_name, const BT::NodeConfig &amp;conf)</div><div class="ttdoc">Constructor for the WaitAtStartReq node.</div><div class="ttdef"><b>Definition</b> wait_atstart_req_node.cpp:26</div></div>
