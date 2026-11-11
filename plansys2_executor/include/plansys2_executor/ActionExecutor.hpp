@@ -273,6 +273,11 @@ protected:
    */
   void wait_timeout();
 
+  /**
+   * @brief Cancel and drop the timer that re-requests performers.
+   */
+  void stop_waiting();
+
   rclcpp_lifecycle::LifecycleNode::SharedPtr node_;
 
   Status state_;
@@ -293,6 +298,13 @@ protected:
   rclcpp::Subscription<plansys2_msgs::msg::ActionExecution>::SharedPtr action_hub_sub_;
 
   rclcpp::TimerBase::SharedPtr waiting_timer_;
+
+  // When the behavior tree last ticked this executor. A node ticked once and
+  // then left (its branch abandoned, its group done) would otherwise keep
+  // requesting performers every second for the rest of the mission, and a
+  // performer that answers it is held from the action that is actually due.
+  rclcpp::Time last_tick_;
+  static constexpr double untick_limit_ = 3.0;
 };
 
 /**

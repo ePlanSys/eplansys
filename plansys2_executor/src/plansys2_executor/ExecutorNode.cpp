@@ -85,6 +85,9 @@ ExecutorNode::ExecutorNode(const rclcpp::NodeOptions & options)
   // the executor keeps driving the robot into the same failure. Zero means no
   // limit, for a deployment that would rather keep trying.
   this->declare_parameter<int>("max_replans_without_progress", 3);
+  // Seconds an action may wait for its at-start and over-all requirements
+  // before it is failed; zero waits for as long as it takes (WaitAtStartReq).
+  this->declare_parameter<double>("at_start_req_timeout", 0.0);
   this->declare_parameter("action_timeouts.actions", std::vector<std::string>{});
   // Declaring individual action parameters so they can be queried on the command line
   auto action_timeouts_actions = this->get_parameter("action_timeouts.actions").as_string_array();

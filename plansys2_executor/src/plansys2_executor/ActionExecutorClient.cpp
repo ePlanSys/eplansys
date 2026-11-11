@@ -136,10 +136,17 @@ ActionExecutorClient::action_hub_callback(const plansys2_msgs::msg::ActionExecut
 {
   switch (msg->type) {
     case plansys2_msgs::msg::ActionExecution::REQUEST:
+      if (committed_ && (now() - committed_at_).seconds() > commitment_timeout_) {
+        RCLCPP_WARN(
+          get_logger(), "[%s] answered a request %.1fs ago and was neither confirmed "
+          "nor rejected; letting that answer go", get_name(), commitment_timeout_);
+        committed_ = false;
+      }
       if (get_current_state().id() == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE &&
         !committed_ && should_execute(msg->action, msg->arguments))
       {
         committed_ = true;
+        committed_at_ = now();
         send_response(msg);
       }
       break;

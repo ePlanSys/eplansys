@@ -48,7 +48,7 @@ public:
   /**
    * @brief Halt method (required by the BT framework).
    */
-  void halt() {}
+  void halt() {waiting_ = false;}
 
   /**
    * @brief Main execution method for the BT node.
@@ -72,6 +72,12 @@ public:
 private:
   std::shared_ptr<std::map<std::string, ActionExecutionInfo>> action_map_;
   std::shared_ptr<plansys2::ProblemExpertClient> problem_client_;
+
+  BT::NodeStatus keep_waiting(
+    const rclcpp_lifecycle::LifecycleNode::SharedPtr & node, const std::string & action);
+
+  bool waiting_ {false};
+  rclcpp::Time waiting_since_;
 };
 
 }  // namespace plansys2
