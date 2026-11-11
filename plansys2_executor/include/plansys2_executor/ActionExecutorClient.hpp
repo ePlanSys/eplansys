@@ -200,6 +200,11 @@ protected:
   std::chrono::nanoseconds period_;
   std::string action_managed_;
   bool committed_;
+  // When this performer last answered a request. An answer that is neither
+  // confirmed nor rejected within commitment_timeout_ is let go, or a single
+  // lost reply would leave the performer deaf to every later request.
+  rclcpp::Time committed_at_;
+  static constexpr double commitment_timeout_ = 2.0;
 
   std::vector<std::string> current_arguments_;
   std::vector<std::string> specialized_arguments_;

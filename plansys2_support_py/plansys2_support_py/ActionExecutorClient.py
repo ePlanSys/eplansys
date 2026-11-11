@@ -49,6 +49,7 @@ class ActionExecutorClient(LifecycleNode):
         self.status.status_stamp = self.get_clock().now().to_msg()
         self.status.node_name = self.get_name()
         self.commited = False
+        self._commited_at = self.get_clock().now()
 
     def on_configure(
         self, state: LifecycleState
@@ -173,8 +174,17 @@ class ActionExecutorClient(LifecycleNode):
             curr_state = self._state_machine.current_state[0]
             state_inactive = curr_state == State.PRIMARY_STATE_INACTIVE
             should_exec = self.should_execute(msg.action, msg.arguments)
+            # An answer that is neither confirmed nor rejected expires, as in
+            # the C++ client, or the performer stays deaf to every later request.
+            now = self.get_clock().now()
+            if self.commited and (now - self._commited_at).nanoseconds * 1e-9 > 2.0:
+                self.get_logger().warn(
+                    f'[{self.get_name()}] answered a request 2.0s ago and was neither '
+                    'confirmed nor rejected; letting that answer go')
+                self.commited = False
             if state_inactive and not self.commited and should_exec:
                 self.commited = True
+                self._commited_at = now
                 self.send_response(msg)
         elif msg.type == ActionExecution.CONFIRM:
             curr_state = self._state_machine.current_state[0]

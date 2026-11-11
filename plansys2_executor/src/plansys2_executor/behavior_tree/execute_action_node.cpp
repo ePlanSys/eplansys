@@ -35,6 +35,20 @@ ExecuteAction::ExecuteAction(
 void
 ExecuteAction::halt()
 {
+  // Halted by a ReactiveSequence whose over-all check failed, or by a branch
+  // that was abandoned. Left alone, its executor would go on requesting a
+  // performer, or the performer would go on driving, for an action the tree
+  // no longer runs.
+  std::string action;
+  getInput("action", action);
+  auto found = action_map_->find(action);
+  if (found == action_map_->end() || found->second.action_executor == nullptr) {
+    return;
+  }
+  const auto status = found->second.action_executor->get_internal_status();
+  if (status == ActionExecutor::DEALING || status == ActionExecutor::RUNNING) {
+    found->second.action_executor->cancel();
+  }
 }
 
 BT::NodeStatus

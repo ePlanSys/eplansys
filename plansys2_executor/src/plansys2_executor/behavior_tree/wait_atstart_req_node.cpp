@@ -63,7 +63,7 @@ WaitAtStartReq::tick()
       "[" << action << "]" << (*action_map_)[action].execution_error_info << ": " <<
         parser::pddl::toString(reqs_as));
 
-    return BT::NodeStatus::RUNNING;
+    return keep_waiting(node, action);
   }
 
   bool check_oa = check(reqs_oa, problem_client_);
@@ -75,10 +75,37 @@ WaitAtStartReq::tick()
       "[" << action << "]" << (*action_map_)[action].execution_error_info << ": " <<
         parser::pddl::toString(reqs_oa));
 
-    return BT::NodeStatus::RUNNING;
+    return keep_waiting(node, action);
   }
 
+  waiting_ = false;
   return BT::NodeStatus::SUCCESS;
+}
+
+BT::NodeStatus
+WaitAtStartReq::keep_waiting(
+  const rclcpp_lifecycle::LifecycleNode::SharedPtr & node, const std::string & action)
+{
+  // In a concurrent plan another action may yet bring the requirements about,
+  // which is why PlanSys2 waits. In a sequential policy nothing else is
+  // running, and the wait never ends: the mission sits at its time limit with
+  // nothing reported. A positive at_start_req_timeout bounds it, and the
+  // action fails, so the failure reaches the client and can be replanned.
+  // Zero, the default, keeps the unbounded wait.
+  if (!waiting_) {
+    waiting_ = true;
+    waiting_since_ = node->now();
+  }
+  const double limit = node->get_parameter("at_start_req_timeout").as_double();
+  if (limit > 0.0 && (node->now() - waiting_since_).seconds() > limit) {
+    waiting_ = false;
+    (*action_map_)[action].execution_error_info += " (gave up after the wait limit)";
+    RCLCPP_ERROR_STREAM(
+      node->get_logger(),
+      "[" << action << "] requirements still unmet after " << limit << "s; failing it");
+    return BT::NodeStatus::FAILURE;
+  }
+  return BT::NodeStatus::RUNNING;
 }
 
 }  // namespace plansys2

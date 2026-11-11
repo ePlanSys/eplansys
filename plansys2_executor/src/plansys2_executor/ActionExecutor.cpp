@@ -77,7 +77,7 @@ ActionExecutor::action_hub_callback(plansys2_msgs::msg::ActionExecution::SharedP
           confirm_performer(last_msg_->node_id);
           current_performer_id_ = last_msg_->node_id;
           state_ = RUNNING;
-          waiting_timer_ = nullptr;
+          stop_waiting();
           start_execution_ = node_->now();
           state_time_ = node_->now();
         } else {
@@ -209,6 +209,7 @@ BT::NodeStatus
 ActionExecutor::tick(const rclcpp::Time & now)
 {
   (void)now;
+  last_tick_ = node_->now();
   switch (state_) {
     case IDLE:
       state_ = DEALING;
@@ -231,6 +232,7 @@ ActionExecutor::tick(const rclcpp::Time & now)
             node_->get_logger(),
             "Aborting %s. Timeout after requesting for 30 seconds", action_.c_str());
           state_ = FAILURE;
+          stop_waiting();
         }
       }
       break;
@@ -271,6 +273,7 @@ void
 ActionExecutor::cancel()
 {
   state_ = CANCELLED;
+  stop_waiting();
   plansys2_msgs::msg::ActionExecution msg;
   msg.type = plansys2_msgs::msg::ActionExecution::CANCEL;
   msg.node_id = current_performer_id_;
@@ -318,8 +321,34 @@ ActionExecutor::get_params(const std::string & action_expr)
 }
 
 void
+ActionExecutor::stop_waiting()
+{
+  // Dropping the pointer alone has left timers firing after a performer was
+  // confirmed, re-requesting an action already running. A performer answering
+  // one of those stale requests commits to an executor that will never
+  // confirm it, and then answers no one else.
+  if (waiting_timer_) {
+    waiting_timer_->cancel();
+  }
+  waiting_timer_ = nullptr;
+}
+
+void
 ActionExecutor::wait_timeout()
 {
+  // Only an executor that is still dealing, and still being ticked, asks again.
+  if (state_ != DEALING) {
+    stop_waiting();
+    return;
+  }
+  if ((node_->now() - last_tick_).seconds() > untick_limit_) {
+    stop_waiting();
+    state_ = IDLE;
+    RCLCPP_WARN(
+      node_->get_logger(), "%s is no longer ticked; it stops asking for performers",
+      action_.c_str());
+    return;
+  }
   RCLCPP_WARN(node_->get_logger(), "No action performer for %s. retrying", action_.c_str());
   request_for_performers();
 }
