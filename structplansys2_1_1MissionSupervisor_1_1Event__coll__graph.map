@@ -1,0 +1,11 @@
+<map id="MissionSupervisor::Event" name="MissionSupervisor::Event">
+<area shape="rect" id="Node000001" title="What happened during run(), for a caller that wants to log or react." alt="" coords="70,117,204,158"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,13,53,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="37,53,45,73,56,91,87,114,84,119,52,95,40,75,32,55"/>
+<area shape="rect" id="Node000003" href="$classint.html" title=" " alt="" coords="76,13,115,38"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="95,54,95,73,99,92,115,115,111,118,95,94,90,74,89,54"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="151,13,206,38"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="171,54,147,117,142,116,166,52"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="230,5,401,46"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="272,57,170,119,167,114,269,52"/>
+</map>

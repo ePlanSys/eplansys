@@ -18,11 +18,13 @@ var searchData=
   ['lifted_2ecpp_15',['Lifted.cpp',['../Lifted_8cpp.html',1,'']]],
   ['lifted_2ehpp_16',['Lifted.hpp',['../Lifted_8hpp.html',1,'']]],
   ['liftedvec_17',['LiftedVec',['../namespaceparser_1_1pddl.html#a7c7bfecbb6c7554ebc5bbba91abc3993',1,'parser::pddl']]],
-  ['lines_18',['lines',['../classparser_1_1pddl_1_1Stringreader.html#a3ba903187d7ce56233f6e022013c811d',1,'parser::pddl::Stringreader']]],
-  ['list_19',['Deprecated List',['../deprecated.html',1,'']]],
-  ['load_20',['load',['../classplansys2__support__py_1_1core_1_1PluginProvider_1_1PluginProvider.html#ae2b8a46a1e66e38184dc8ecd84d2b2a9',1,'plansys2_support_py::core::PluginProvider::PluginProvider']]],
-  ['logger_2ecpp_21',['logger.cpp',['../logger_8cpp.html',1,'']]],
-  ['loggernode_22',['LoggerNode',['../classplansys2__logger_1_1LoggerNode.html',1,'LoggerNode'],['../classplansys2__logger_1_1LoggerNode.html#af72e7652692bb7218ec0fbc54ce7ac7d',1,'plansys2_logger::LoggerNode::LoggerNode()']]],
-  ['loggernode_2ecpp_23',['LoggerNode.cpp',['../LoggerNode_8cpp.html',1,'']]],
-  ['loggernode_2ehpp_24',['LoggerNode.hpp',['../LoggerNode_8hpp.html',1,'']]]
+  ['limits_18',['Limits',['../structMissionRetryPolicy_1_1Limits.html',1,'MissionRetryPolicy::Limits'],['../structplansys2_1_1MissionRetryPolicy_1_1Limits.html',1,'MissionRetryPolicy::Limits']]],
+  ['limits_19',['limits',['../structplansys2_1_1MissionSupervisor_1_1Options.html#a8c86568d85c6f21c716487e1b71b1ee2',1,'plansys2::MissionSupervisor::Options::limits'],['../classplansys2_1_1MissionRetryPolicy.html#a0f3b4facc4fbb6875b19a7dbf1718393',1,'plansys2::MissionRetryPolicy::limits()'],['../classMissionRetryPolicy.html#a0f3b4facc4fbb6875b19a7dbf1718393',1,'MissionRetryPolicy::limits()']]],
+  ['lines_20',['lines',['../classparser_1_1pddl_1_1Stringreader.html#a3ba903187d7ce56233f6e022013c811d',1,'parser::pddl::Stringreader']]],
+  ['list_21',['Deprecated List',['../deprecated.html',1,'']]],
+  ['load_22',['load',['../classplansys2__support__py_1_1core_1_1PluginProvider_1_1PluginProvider.html#ae2b8a46a1e66e38184dc8ecd84d2b2a9',1,'plansys2_support_py::core::PluginProvider::PluginProvider']]],
+  ['logger_2ecpp_23',['logger.cpp',['../logger_8cpp.html',1,'']]],
+  ['loggernode_24',['LoggerNode',['../classplansys2__logger_1_1LoggerNode.html',1,'LoggerNode'],['../classplansys2__logger_1_1LoggerNode.html#af72e7652692bb7218ec0fbc54ce7ac7d',1,'plansys2_logger::LoggerNode::LoggerNode()']]],
+  ['loggernode_2ecpp_25',['LoggerNode.cpp',['../LoggerNode_8cpp.html',1,'']]],
+  ['loggernode_2ehpp_26',['LoggerNode.hpp',['../LoggerNode_8hpp.html',1,'']]]
 ];

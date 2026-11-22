@@ -1,0 +1,5 @@
+<map id="MissionSupervisor::Failure" name="MissionSupervisor::Failure">
+<area shape="rect" id="Node000001" title="One failed action, as the executor reported it." alt="" coords="5,122,140,163"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="46,5,99,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="75,47,75,122,70,122,70,47"/>
+</map>

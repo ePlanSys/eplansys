@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['action_0',['action',['../structplansys2_1_1ActionNode.html#adc3387d815c7ef4a4a7e8832e1218cf7',1,'plansys2::ActionNode::action'],['../structplansys2_1_1ActionStamped.html#ac6d553017eecbea1f4ea22d666035879',1,'plansys2::ActionStamped::action'],['../structplansys2_1_1Node.html#adc3387d815c7ef4a4a7e8832e1218cf7',1,'plansys2::Node::action']]],
+  ['action_0',['action',['../structplansys2_1_1ActionNode.html#adc3387d815c7ef4a4a7e8832e1218cf7',1,'plansys2::ActionNode::action'],['../structplansys2_1_1ActionStamped.html#ac6d553017eecbea1f4ea22d666035879',1,'plansys2::ActionStamped::action'],['../structplansys2_1_1Node.html#adc3387d815c7ef4a4a7e8832e1218cf7',1,'plansys2::Node::action'],['../structplansys2_1_1MissionSupervisor_1_1Failure.html#a057699cf114942bd42087102f39351f4',1,'plansys2::MissionSupervisor::Failure::action']]],
   ['action_5f_1',['action_',['../classplansys2_1_1ActionExecutor.html#a82106584781bac3ff5a6a9f1366edd84',1,'plansys2::ActionExecutor']]],
   ['action_5fbt_5fxml_5f_2',['action_bt_xml_',['../classplansys2_1_1ExecutorNode.html#ae01600e5bb882da7d3c0748b011b54dd',1,'plansys2::ExecutorNode']]],
   ['action_5fclient_5f_3',['action_client_',['../classplansys2_1_1BtActionNode.html#ac0a2014d0b05bf080d60af0565ec1746',1,'plansys2::BtActionNode']]],
@@ -21,5 +21,7 @@ var searchData=
   ['at_5fend_5feffects_5fapplied_18',['at_end_effects_applied',['../structplansys2_1_1ActionExecutionInfo.html#aa4dfef57ee227f83fa217c5db7592c5a',1,'plansys2::ActionExecutionInfo']]],
   ['at_5fend_5feffects_5fapplied_5ftime_19',['at_end_effects_applied_time',['../structplansys2_1_1ActionExecutionInfo.html#a777f0a8056f4eac217d1e8163ac318a1',1,'plansys2::ActionExecutionInfo']]],
   ['at_5fstart_5feffects_5fapplied_20',['at_start_effects_applied',['../structplansys2_1_1ActionExecutionInfo.html#a19eba18809d8f4a244e13097765fd83d',1,'plansys2::ActionExecutionInfo']]],
-  ['at_5fstart_5feffects_5fapplied_5ftime_21',['at_start_effects_applied_time',['../structplansys2_1_1ActionExecutionInfo.html#ac20ef741e1a7e38b38e485caa0af2890',1,'plansys2::ActionExecutionInfo']]]
+  ['at_5fstart_5feffects_5fapplied_5ftime_21',['at_start_effects_applied_time',['../structplansys2_1_1ActionExecutionInfo.html#ac20ef741e1a7e38b38e485caa0af2890',1,'plansys2::ActionExecutionInfo']]],
+  ['attempt_22',['attempt',['../structplansys2_1_1MissionSupervisor_1_1Event.html#a2e0c451bdb326fc276979768c86734d4',1,'plansys2::MissionSupervisor::Event']]],
+  ['attempts_23',['attempts',['../structplansys2_1_1MissionSupervisor_1_1Report.html#a8e1de2175d8aeda26c2b0725b91632a8',1,'plansys2::MissionSupervisor::Report']]]
 ];
