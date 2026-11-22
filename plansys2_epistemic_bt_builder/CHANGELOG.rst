@@ -2,6 +2,10 @@
 Changelog for package plansys2_epistemic_bt_builder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.5 (2026-11-22)
+------------------
+* No changes.
+
 0.3.0 (2026-09-28)
 ------------------
 * parallel_dispatch renders the policy as schedule_policy arranges it.

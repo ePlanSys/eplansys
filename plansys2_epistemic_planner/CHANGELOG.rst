@@ -2,6 +2,10 @@
 Changelog for package plansys2_epistemic_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.5 (2026-11-22)
+------------------
+* A stale-prior task for test_7 (robot-fleet-stale-prior-lone.json).
+
 0.3.0 (2026-09-28)
 ------------------
 * consistent_beliefs, on by default: a plan that relies on an agent believing a
