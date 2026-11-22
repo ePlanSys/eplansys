@@ -56,3 +56,8 @@ target_compile_definitions(replan_guard_test
 target_link_libraries(replan_guard_test
   ${PROJECT_NAME}
 )
+
+ament_add_gtest(mission_retry_policy_test mission_retry_policy_test.cpp)
+target_link_libraries(mission_retry_policy_test
+  ${PROJECT_NAME}
+)

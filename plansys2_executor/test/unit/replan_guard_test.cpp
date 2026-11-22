@@ -67,6 +67,28 @@ TEST(ReplanGuard, CountsOnlyActionsThatFinished)
   EXPECT_EQ(node->completed_actions(action_map), 0u);
 }
 
+TEST(ReplanGuard, TheInitialStateIsNotACompletedAction)
+{
+  auto node = std::make_shared<CountingExecutor>();
+
+  auto action_map =
+    std::make_shared<std::map<std::string, plansys2::ActionExecutionInfo>>();
+
+  // Every plan's runtime info carries a synthetic (INIT) node under ":0",
+  // already marked successful. It is the initial state, not something the
+  // mission did, and a replan with only it behind it has made no progress.
+  (*action_map)[":0"].action_executor = plansys2::ActionExecutor::make_shared("(INIT)", node);
+  (*action_map)[":0"].action_executor->set_internal_status(
+    plansys2::ActionExecutor::Status::SUCCESS);
+  EXPECT_EQ(node->completed_actions(action_map), 0u);
+
+  (*action_map)["(move r1 a b):0"].action_executor =
+    plansys2::ActionExecutor::make_shared("(move r1 a b)", node);
+  (*action_map)["(move r1 a b):0"].action_executor->set_internal_status(
+    plansys2::ActionExecutor::Status::SUCCESS);
+  EXPECT_EQ(node->completed_actions(action_map), 1u);
+}
+
 TEST(ReplanGuard, StopsAfterReplanningWithNothingCompleting)
 {
   auto node = std::make_shared<CountingExecutor>();

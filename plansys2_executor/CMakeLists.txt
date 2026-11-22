@@ -29,6 +29,7 @@ find_package(std_srvs REQUIRED)
 
 set(EXECUTOR_SOURCES
   src/plansys2_executor/ExecutorClient.cpp
+  src/plansys2_executor/MissionSupervisor.cpp
   src/plansys2_executor/ActionExecutor.cpp
   src/plansys2_executor/ActionExecutorClient.cpp
   src/plansys2_executor/ExecutorNode.cpp
