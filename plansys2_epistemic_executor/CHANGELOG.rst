@@ -2,6 +2,10 @@
 Changelog for package plansys2_epistemic_executor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.5 (2026-11-22)
+------------------
+* The README describes MissionSupervisor and how a contradicted policy fails.
+
 0.3.0 (2026-09-28)
 ------------------
 * The tracked model is repaired only when the task asks for repair, as the
