@@ -2,6 +2,15 @@
 Changelog for package eplansys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (Forthcoming)
+-------------------
+* Temporal policies: actions overlap where their updates commute, and each
+  starts when the actions it waits for have ended, on the branch observed.
+* plansys2_msgs: Plan.temporal, and PlanItem.starts_after, given_items and
+  given_outcomes. The messages changed, so everything built against them has
+  to be rebuilt.
+* del-planner is pinned at 346f520, which has the temporal search.
+
 0.3.5 (2026-11-22)
 ------------------
 * MissionSupervisor (plansys2_executor) plans again when a mission fails, from

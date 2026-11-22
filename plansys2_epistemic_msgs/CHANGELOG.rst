@@ -2,6 +2,10 @@
 Changelog for package plansys2_epistemic_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (Forthcoming)
+-------------------
+* No changes.
+
 0.3.5 (2026-11-22)
 ------------------
 * No changes.
