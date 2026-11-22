@@ -10,16 +10,18 @@ name: epistemic-planner (humble)
 #
 #   - rolling removed ament_index_cpp/get_package_share_directory.hpp, which
 #     plansys2_pddl_parser's test still includes. Humble still ships it.
-#   - the fork's sources are the rolling branch, so packages outside this
-#     dependency chain (plansys2_lifecycle_manager and everything after it)
-#     use rclcpp::experimental::executors, which does not exist in Humble.
-#     Widening the package list here will fail until those are ported.
 #
-# The two source dependencies this chain has are Aletheia, whose planning core
-# plansys2_epistemic_planner links, and plank, the EPDDL grounder that
-# plansys2_epddl_grounder runs; popf and cascade_lifecycle are only required by
-# packages further down the graph, and rosdep skips them because nothing named
-# here depends on them.
+# The executor side runs here too: plansys2_executor, the epistemic BT
+# builder, plansys2_tests (the end-to-end policy tests 5-7) and the demos.
+# They once could not, because the fork's sources used
+# rclcpp::experimental::executors; plansys2_core/Compat.hpp has since given them
+# an executor both distributions have, and the release packages are built on
+# Humble. Verified in a ros:humble container: 461 tests, the only failures
+# uncrustify's (see colcon-defaults below).
+#
+# The source dependencies are Aletheia, whose planning core
+# plansys2_epistemic_planner links; plank, the EPDDL grounder; and popf and
+# cascade_lifecycle, which the executor side needs.
 
 on:
   push:
@@ -68,20 +70,20 @@ jobs:
       - name: Install plank's build dependencies
         # plank is a plain CMake project with no package.xml, so rosdep has
         # nothing to resolve for it and Boost has to be installed by hand.
-        run: apt-get update && apt-get install -y libboost-filesystem-dev
+        # libfl-dev is popf's, for the same reason.
+        run: apt-get update && apt-get install -y libboost-filesystem-dev libfl-dev
 
       - name: Build and test
         uses: ros-tooling/action-ros-ci@0.4.5
         with:
-          # The executor-side packages build here too: they depend on
-          # plansys2_msgs and the planner, not on plansys2_executor. Only
-          # plansys2_epistemic_bt_builder does, which is why it is a separate
-          # package and why it is absent from this list — see rolling.yaml.
+          # The epistemic executor packages depend on plansys2_msgs and the
+          # planner, not on plansys2_executor; plansys2_epistemic_bt_builder
+          # does, and plansys2_executor now builds here, so it is listed too.
           #
           # plansys2_tui_cli is here for the epistemic verbs it carries, which
           # are the only part of the command line that depends on the packages
           # above. It is pure Python and has no such link against the executor.
-          package-name: aletheia plank plansys2_epddl_grounder plansys2_epistemic_planner plansys2_epistemic_msgs plansys2_epistemic_executor plansys2_epistemic_perception plansys2_aletheia_plan_solver plansys2_tui_cli
+          package-name: aletheia plank plansys2_epddl_grounder plansys2_epistemic_planner plansys2_epistemic_msgs plansys2_epistemic_executor plansys2_epistemic_perception plansys2_aletheia_plan_solver plansys2_tui_cli plansys2_executor plansys2_epistemic_bt_builder plansys2_tests eplansys_demo
           vcs-repo-file-url: ${GITHUB_WORKSPACE}/dependency_repos.repos
           target-ros2-distro: humble
           # action-ros-ci runs 'colcon lcov-result' and 'colcon
@@ -102,9 +104,15 @@ jobs:
           #                              and thereby scrambles apparent order
           # Remove both once the cause is known; sequential builds are slower.
           colcon-extra-args: --executor sequential --event-handlers console_direct+
+          # uncrustify is excluded here and only here. Humble's uncrustify
+          # formats two lines of plansys2_executor (a wrapped call argument,
+          # a continued string literal) differently from rolling's, and the
+          # two cannot both be satisfied; the rolling job remains the style
+          # gate.
           colcon-defaults: |
             {
               "test": {
-                "parallel-workers" : 1
+                "parallel-workers" : 1,
+                "ctest-args": ["-E", "uncrustify"]
               }
             }
