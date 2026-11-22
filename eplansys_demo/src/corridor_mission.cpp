@@ -12,51 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 // Starts the corridor mission, so that the demo is one command.
 //
 // The same three steps anyone would type into `ros2 plansys2 terminal`: say
 // what exists, say what is wanted, run. Doing it from a node instead means the
 // demo has nothing to type and nothing to get wrong, and it is the shortest
 // honest description of how a mission is started.
+//
+// Running it is a MissionSupervisor's job: when an action fails it asks for a
+// policy again, planned from the epistemic state the mission reached, and the
+// mission.* parameters bound how often.
 
 #include <memory>
 #include <string>
 
-#include "plansys2_msgs/action/execute_plan.hpp"
-#include "plansys2_msgs/msg/plan.hpp"
-#include "plansys2_executor/ExecutorClient.hpp"
-#include "plansys2_planner/PlannerClient.hpp"
-#include "plansys2_problem_expert/ProblemExpertClient.hpp"
-#include "plansys2_domain_expert/DomainExpertClient.hpp"
+#include "plansys2_executor/MissionSupervisor.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 
-using namespace std::chrono_literals;   // NOLINT (build/namespaces)
+#include "mission_log.hpp"
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
   auto node = rclcpp::Node::make_shared("corridor_mission");
+  plansys2::MissionSupervisor supervisor(node);
 
-  auto problem = std::make_shared<plansys2::ProblemExpertClient>();
-  auto planner = std::make_shared<plansys2::PlannerClient>();
-  auto domain = std::make_shared<plansys2::DomainExpertClient>();
-  auto executor = std::make_shared<plansys2::ExecutorClient>();
-
-  // The bringup is lifecycle-managed and comes up on its own schedule. Waiting
-  // for the domain to answer is the cheapest way to know it has.
   RCLCPP_INFO(node->get_logger(), "waiting for the planning system");
-  for (int i = 0; i < 120 && rclcpp::ok(); ++i) {
-    if (!domain->getDomain().empty()) {
-      break;
-    }
-    rclcpp::spin_some(node);
-    std::this_thread::sleep_for(500ms);
-  }
+  supervisor.wait_for_system();
 
   // What exists. Nothing here says anything about the corridor: whether it is
   // blocked is not a fact the problem expert holds, which is the whole reason
   // the mission needs an epistemic layer at all.
+  auto problem = supervisor.problem();
   problem->addInstance(plansys2::Instance{"r1", "robot"});
   problem->addInstance(plansys2::Instance{"r2", "robot"});
   problem->addPredicate(plansys2::Predicate("(at_base r1)"));
@@ -67,45 +56,14 @@ int main(int argc, char ** argv)
   // blocked --- travels with the grounded task the planner solves.
   problem->setGoal(plansys2::Goal("(and(reported r1))"));
 
-  RCLCPP_INFO(node->get_logger(), "planning");
-  const auto plan = planner->getPlan(domain->getDomain(), problem->getProblem());
-  if (!plan.has_value()) {
-    RCLCPP_ERROR(node->get_logger(), "no plan; is the epistemic solver configured?");
-    rclcpp::shutdown();
-    return 1;
-  }
+  const auto report = supervisor.run(eplansys_demo::log_events(node));
 
-  bool branches = false;
-  for (const auto & item : plan->items) {
-    branches = branches || item.children.size() > 1;
-  }
-  RCLCPP_INFO(
-    node->get_logger(), "policy with %zu nodes, %s",
-    plan->items.size(), branches ? "branching" : "linear");
-
-  if (!executor->start_plan_execution(plan.value())) {
-    RCLCPP_ERROR(node->get_logger(), "the executor refused the policy");
-    rclcpp::shutdown();
-    return 1;
-  }
-
-  RCLCPP_INFO(node->get_logger(), "executing");
-  rclcpp::Rate rate(4);
-  while (rclcpp::ok() && executor->execute_and_check_plan()) {
-    rclcpp::spin_some(node);
-    rate.sleep();
-  }
-
-  const auto result = executor->getResult();
-  const bool succeeded =
-    result && result->result == plansys2_msgs::action::ExecutePlan::Result::SUCCESS;
-
-  if (succeeded) {
+  if (report.succeeded()) {
     RCLCPP_INFO(node->get_logger(), "mission complete");
   } else {
-    RCLCPP_ERROR(node->get_logger(), "mission failed");
+    RCLCPP_ERROR(node->get_logger(), "%s", report.message.c_str());
   }
 
   rclcpp::shutdown();
-  return succeeded ? 0 : 1;
+  return report.succeeded() ? 0 : 1;
 }
