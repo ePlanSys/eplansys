@@ -219,9 +219,10 @@ void EpistemicPlanSolver::configure(
 
   // The epistemic state latches its state, so subscribing here is enough to
   // have the current goal before the first planning request arrives. A goal
-  // set later arrives the same way. Nothing is asked of the state: getPlan
-  // runs inside the planner's own service callback, and a service call from
-  // there can deadlock on a single-threaded executor.
+  // set later arrives the same way. Nothing is asked of the state, so the
+  // search never waits on another node; getPlan runs on the planner's planning
+  // thread, and a service call from it would stall the search on whatever the
+  // state's executor is doing.
   const bool want_goal = lc_node_->get_parameter(goal_from_state_parameter_name_).as_bool();
   const bool want_initial =
     lc_node_->get_parameter(initial_from_state_parameter_name_).as_bool();

@@ -13,7 +13,7 @@ possible worlds, one accessibility relation per agent, a valuation assigning
 atoms to worlds, and a set of designated worlds, the ones that may be the
 actual one.
 
-The implementation stores exactly three flat word arrays:
+The implementation stores five flat arrays:
 
 .. list-table::
    :header-rows: 1
@@ -25,19 +25,29 @@ The implementation stores exactly three flat word arrays:
    * - ``valuation``
      - ``num_worlds`` × ``val_words``
      - :math:`V : W \to 2^P` as a bit matrix
-   * - ``relation``
-     - ``num_agents`` × ``num_worlds`` × ``rel_words``
-     - each :math:`R_i \subseteq W \times W`, row-major by source world
+   * - ``set_of``
+     - ``num_agents`` × ``num_worlds``
+     - :math:`R_i(w)` as an index into the set table
+   * - ``set_begin``
+     - ``num_sets + 1``
+     - offsets into ``members``
+   * - ``members``
+     - :math:`\sum` set sizes
+     - successor sets, as sorted world lists
    * - ``designated``
      - ``rel_words``
      - :math:`W^* \subseteq W`
 
-Two consequences follow. Modal operators become word-parallel:
-:math:`[i]\varphi` holds at :math:`w` exactly when
-:math:`R_i(w) \wedge \neg\mathrm{sat}(\varphi)` is empty, which costs
-:math:`\lceil |W|/64 \rceil` tests regardless of how many successors :math:`w`
-has. And the whole model is three contiguous allocations, so copying a state is
-three block copies and hashing it is a linear scan.
+Accessibility is a table of successor sets rather than a bit matrix, because
+epistemic models repeat successor sets heavily. On K45 frames (transitive and
+Euclidean, which covers S5 and KD45) two successor sets of one agent are equal
+or disjoint, and both the product update and the bisimulation quotient
+preserve the frame, so an agent's sets hold at most :math:`|W|` entries
+together. A bit matrix costs :math:`|Ag| \cdot |W|^2` bits whatever the
+frame. Modal operators read the table once per distinct set:
+:math:`[i]\varphi` holds at :math:`w` exactly when every member of
+:math:`R_i(w)` is in :math:`\mathrm{sat}(\varphi)`, which is decided once per
+set.
 
 Formulas
 --------
@@ -115,21 +125,16 @@ instead, reducing comparison to two integer tests in place of a graph walk.
 World cap policies
 ------------------
 
-A world cap policy decides at run time whether a proposed product update may
-proceed, given the raw pre-contraction world count :math:`|W| \cdot |E|`. It is
-constructed once per search from the task and consulted on every update.
-
-``BoundedWorldCap``
-   Rejects an update whose raw product exceeds the cap. Used where nil-event
-   accumulation causes exponential growth.
-
-``UnboundedWorldCap``
-   Always allows. Used for partial-observability domains, where the world count
-   grows roughly linearly per step and contraction keeps it bounded in
-   practice.
-
-The mapping from task properties to a policy lives in one function,
+A world cap policy decides whether a proposed product update may proceed,
+given the raw pre-contraction world count :math:`|W| \cdot |E|`. The mapping
+from task properties to a policy lives in one function,
 ``make_world_cap_policy``, not at each call site.
+
+In the Aletheia version eplansys pins, the policy is unbounded for every task.
+A cap prunes branches silently, which loses plans and turned exhaustion into
+false proofs of unsolvability: an IεPC muddy-children instance has an 8-step
+plan through 1024 raw worlds. The trade-off is that nothing in the search
+bounds a model's size, so memory is limited only by the machine.
 
 Heuristics
 ----------

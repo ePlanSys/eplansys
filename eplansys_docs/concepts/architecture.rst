@@ -262,12 +262,17 @@ than a scheduling choice: ``CheckKnowledge`` on a continuation is evaluated
 against the state that ``ApplyEpistemicUpdate`` produced for its parent, so the
 two overlapping would check a guard against a model that does not exist yet.
 
-The consequence is that the epistemic builder runs one action at a time, where
-SimpleBTBuilder can run independent actions concurrently. Recovering that would
-mean proving, for each pair, both that their PDDL effects do not interfere and
-that neither one's knowledge guard depends on the other's epistemic update. The
-second condition has no counterpart in classical planning and is not checked
-anywhere today, so the builder sequences rather than assume it.
+An action and its own continuation therefore never overlap. Runs of the
+policy that are not ordered with respect to each other can, and the builder
+dispatches them in a ``Parallel`` group (``schedule_policy``), lifting
+independent actions above a branch point when every branch starts with them.
+Two actions may share a group when their PDDL effects do not interfere and the
+epistemic test in ``policy_parallel.cpp`` passes: they act for disjoint agents,
+and neither one's knowledge requirements mention the other's agents. That test
+is syntactic. It does not establish that the two epistemic updates commute,
+and a group applies its updates in the order its members finish: an
+announcement that writes no atom can still disable another agent's sensing
+action whose precondition is that it does not yet know.
 
 Reporting an observation
 ------------------------
@@ -310,7 +315,7 @@ integration tests; see :doc:`../reports/epistemic_end_to_end`.
 Epistemic nodes
 ---------------
 
-Four node types are registered by the plugin library
+Five node types are registered by the plugin library
 ``libplansys2_epistemic_bt_nodes.so``.
 
 ``CheckKnowledge``
@@ -483,9 +488,10 @@ way; that needs an event model, which an action supplies.
 The goal it holds is what the plan solver plans for. The solver subscribes to
 ``epistemic_state/state``, where the goal travels latched, and replaces the
 task's goal with it when the two differ. It subscribes instead of calling a
-service because planning runs inside the planner's own service callback, and a
-service call
-from there can deadlock a single-threaded executor. Setting
+service so the search never waits on another node: planning runs on the
+planner's own thread, and the latest goal is already there when it starts.
+(Before 0.2.0 planning ran inside the planner's service callback, where a
+service call could deadlock a single-threaded executor.) Setting
 ``goal_from_state`` to false plans for the problem exactly as written.
 
 When information arrives from outside the plan
@@ -521,9 +527,8 @@ A plan that fails, is replanned, and fails the same way is a loop. The planner
 is being asked the same question and answering it the same way, and the
 executor would keep driving the robot into the same failure until someone
 stopped it. Epistemic missions reach this more easily than classical ones,
-because ``EpistemicSwitch`` fails on any outcome the policy did not plan for,
-and a domain that cannot express the outcome will not plan for it next time
-either.
+because an observation the model cannot represent fails the update, and a
+domain that cannot express the outcome will not plan for it next time either.
 
 The executor counts replans that arrive with no action having completed since
 the last one. Counting replans alone would be wrong: a mission that replans
@@ -536,6 +541,31 @@ zero asks the executor to keep trying however long the loop runs.
 Recovery and this guard pull in opposite directions on purpose. Repairing the
 model is what lets a contradicted belief be corrected and the next plan be a
 different one; the guard is what stops the case where it is not.
+
+Asking for the next plan
+------------------------
+
+Replanning from the reached belief only helps if something asks for a new
+plan. ``plansys2::MissionSupervisor``, in ``plansys2_executor``, is that
+something: it plans, executes, and when execution fails plans again against
+the problem and the belief as the failed attempt left them.
+
+.. code-block:: cpp
+
+   plansys2::MissionSupervisor supervisor(node);   // reads mission.* parameters
+   supervisor.wait_for_system();
+   supervisor.problem()->setGoal(plansys2::Goal("(and(reported r1))"));
+   const auto report = supervisor.run();           // Succeeded, GaveUp, NoPlan, ...
+
+It gives up on the same evidence the executor's own guard uses: an attempt in
+which some action completed has moved the mission, and one in which nothing
+did is the same question asked again. ``mission.max_attempts_without_progress``
+(3) bounds the second kind; ``mission.max_attempts`` (0, no bound) bounds the
+total. An empty plan from a replan means the goal already holds, and the
+mission ends successfully. All three demo missions run on it, and
+``plansys2_tests/test_7`` runs it over a stale map: the first policy is stopped
+by its knowledge guard, and the second, planned from the repaired belief, tells
+the other robot the truth.
 
 When the world contradicts the model
 ------------------------------------
@@ -576,9 +606,14 @@ The same topic carries the model itself, under ``model``, in the shape the task
 format gives an initial state. The solver reads it and plans from it, which is
 controlled by ``initial_from_state`` and on by default.
 
-This is what makes a replan start from where the mission got to. The executor's
-answer to a failed plan is to replan, and an epistemic policy usually fails
-because ``EpistemicSwitch`` saw an outcome the policy did not plan for. Planning
+This is what makes a replan start from where the mission got to. An epistemic
+policy usually fails because the world contradicted the belief it was built
+against. With recovery on, the update accepts the observation and repairs the
+model, and the failure comes one step later, from the next action's
+``CheckKnowledge``: the action was planned for a belief the repaired model no
+longer holds. (``EpistemicSwitch`` refuses an unplanned outcome too, but only a
+node that branches has a switch, and one that branches on every outcome of its
+action has nothing unplanned to see.) Planning
 again from the model grounding produced would begin at a belief that divergence
 has already disproved: the robot would be sent to find out what it has just
 found out, or told to act on a possibility it has ruled out.

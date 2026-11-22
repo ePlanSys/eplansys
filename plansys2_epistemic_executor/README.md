@@ -91,7 +91,7 @@ comes out as the same flat sequence PlanSys2 would have built.
 ## The epistemic state
 
 `epistemic_state_node` is to knowledge what the problem expert is to facts. It
-holds a pointed Kripke model and answers three things:
+holds a pointed Kripke model. Its main services:
 
 | service | question |
 | --- | --- |
@@ -196,7 +196,7 @@ already publishes the plan it is running.
 | package | what it is | depends on plansys2_executor |
 | --- | --- | --- |
 | `plansys2_epistemic_msgs` | the three service definitions | no |
-| `plansys2_epistemic_executor` | policy, tree rendering, the four nodes, the state | no |
+| `plansys2_epistemic_executor` | policy, tree rendering, the five nodes, the state | no |
 | `plansys2_epistemic_bt_builder` | the `BTBuilder` plugin | yes |
 
 The builder is a separate package because it is the only piece that needs the
@@ -209,7 +209,7 @@ The policy reading, the tree rendering, and the formula round trip between the
 planner and the state are covered by tests that run anywhere — including the
 check that every rendered tree parses in the real BehaviorTree.CPP.
 
-Not covered: the four nodes ticking against a live state node, and the builder
-inside a running executor. Both need a full PlanSys2 stack up, which this
-fork's rolling sources cannot build on Humble; they are exercised in CI on
-rolling.
+The nodes ticking against a live state node, and the builder inside a running
+executor, need a full PlanSys2 stack. They are covered end to end by
+`plansys2_tests/test_5`, `test_6` and `test_7`, which pass on rolling and on
+Humble.
