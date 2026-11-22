@@ -161,16 +161,18 @@ one.
 Known gaps
 ----------
 
-.. todo::
-
-   The negative case is not covered: an outcome the policy does not plan for,
-   where ``EpistemicSwitch`` must fail instead of guessing. It needs a performer
-   that reports something the model cannot account for.
+* The negative cases are covered by ``plansys2_tests/test_7``: a performer
+  that reports an outcome no event describes stops the mission before either
+  branch, and one that reports an outcome the planner held impossible has the
+  model repaired and the action planned for the old belief refused by its
+  knowledge guard. Neither reaches ``EpistemicSwitch``, whose refusal stays
+  unit tested: with two-outcome sensing, a policy either branches on both
+  outcomes or commits to one and renders no switch.
 
 * ``ObservedOutcome`` is a test's stand-in for a sensor. A deployment still
   binds ``observed`` to its own performers, the one piece of wiring a domain
   supplies itself.
-* The tests build against ROS 2 rolling only. The Humble job stops before
-  ``plansys2_executor``, as it did before this work.
+* Verified since on ROS 2 Humble as well: the whole stack builds there, and
+  ``test_5``, ``test_6`` and ``test_7`` pass.
 * The mission fixtures ``robot-fleet.json`` and ``robot-fleet-depot.json``, with
   their action mappings, come from the ``feature/epddl-front-end`` branch.

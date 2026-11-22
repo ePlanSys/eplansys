@@ -70,6 +70,7 @@ if(BUILD_TESTING)
   add_subdirectory(test_4)
   add_subdirectory(test_5)
   add_subdirectory(test_6)
+  add_subdirectory(test_7)
 endif()
 
 ament_package()
