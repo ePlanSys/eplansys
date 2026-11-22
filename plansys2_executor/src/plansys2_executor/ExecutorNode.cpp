@@ -594,6 +594,12 @@ ExecutorNode::completed_actions(
 
   std::size_t done = 0;
   for (const auto & entry : *action_map) {
+    // ":0" is the synthetic (INIT) node create_plan_runtime_info adds for the
+    // initial state. It is marked successful from the start, so counting it
+    // would make the first replan of every mission look like progress.
+    if (entry.first == ":0") {
+      continue;
+    }
     const auto & executor = entry.second.action_executor;
     if (executor && executor->get_internal_status() == ActionExecutor::SUCCESS) {
       ++done;
