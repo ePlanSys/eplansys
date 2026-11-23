@@ -2,6 +2,11 @@
 Changelog for package plansys2_epistemic_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.1 (2026-11-22)
+------------------
+* Requires aletheia 0.3, the first version with the temporal search.
+* Released with the PlanSys2 packages at 3.1.0.
+
 0.4.0 (2026-11-22)
 ------------------
 * temporal (off by default) plans a temporal policy: durations from the action

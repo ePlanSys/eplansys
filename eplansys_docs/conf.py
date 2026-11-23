@@ -6,8 +6,8 @@
 project = 'ePlanSys'
 copyright = '2026, Haniel Ulises Vasquez Morales'
 author = 'Haniel Ulises Vasquez Morales'
-release = '0.4.0'
-version = '0.4.0'
+release = '0.4.1'
+version = '0.4.1'
 
 extensions = [
     'sphinx.ext.graphviz',

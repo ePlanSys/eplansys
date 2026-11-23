@@ -12,7 +12,7 @@ On Ubuntu 22.04 with ROS 2 Humble, each GitHub release is an apt repository:
 
 .. code-block:: bash
 
-   echo "deb [trusted=yes] https://github.com/ePlanSys/eplansys/releases/download/v0.4.0 ./" |
+   echo "deb [trusted=yes] https://github.com/ePlanSys/eplansys/releases/download/v0.4.1 ./" |
      sudo tee /etc/apt/sources.list.d/eplansys.list
    sudo apt update
    sudo apt install ros-humble-eplansys ros-humble-eplansys-demo
@@ -21,7 +21,8 @@ On Ubuntu 22.04 with ROS 2 Humble, each GitHub release is an apt repository:
 (``ros-humble-aletheia``, built from del-planner) and the grounder
 (``ros-humble-plank``) at the revisions the release pins. The PlanSys2
 packages are this repository's fork, released under the upstream names at
-version 3.0.0, and take precedence over the upstream 2.0.x packages.
+version 3.x (3.1.0 since 0.4.1), and take precedence over the upstream 2.0.x
+packages.
 ``.github/workflows/debs.yaml`` builds them with ``packaging/build-debs.sh``
 when a release is tagged.
 

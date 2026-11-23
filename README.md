@@ -51,7 +51,7 @@ Each release carries Debian packages for ROS 2 Humble on Ubuntu 22.04, and the
 release itself is the apt repository:
 
 ```bash
-echo "deb [trusted=yes] https://github.com/ePlanSys/eplansys/releases/download/v0.4.0 ./" |
+echo "deb [trusted=yes] https://github.com/ePlanSys/eplansys/releases/download/v0.4.1 ./" |
   sudo tee /etc/apt/sources.list.d/eplansys.list
 sudo apt update
 sudo apt install ros-humble-eplansys ros-humble-eplansys-demo
@@ -60,8 +60,8 @@ ros2 launch eplansys_demo survey_sites_launch.py
 ```
 
 The PlanSys2 packages in it are this repository's fork, released under the
-upstream names at 3.0.0, and replace the upstream 2.0.x packages when both are
-available.
+upstream names at 3.x (3.1.0 since 0.4.1), and replace the upstream 2.0.x
+packages when both are available.
 
 We want to invite you to contribute to this Open Source project!
 

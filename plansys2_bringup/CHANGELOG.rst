@@ -2,6 +2,10 @@
 Changelog for package plansys2_bringup
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.0 (2026-11-22)
+------------------
+* The epistemic parameters file documents temporal and max_concurrency.
+
 3.0.0 (2025-06-06)
 ------------------
 * Revamp CMake and clean unused headers

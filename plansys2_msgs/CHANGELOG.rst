@@ -2,6 +2,13 @@
 Changelog for package plansys2_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.0 (2026-11-22)
+------------------
+* Plan.temporal, and PlanItem.starts_after, given_items and given_outcomes,
+  which carry a temporal policy (eplansys 0.4.0).
+* The message layout changed, so every package built against these messages is
+  released at 3.1.0 with them.
+
 3.0.0 (2025-06-06)
 ------------------
 * Multiple plans and replanning stability
