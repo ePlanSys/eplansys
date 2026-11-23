@@ -148,6 +148,18 @@ Parameters are declared under the plugin name at configure time
      - Treatment of a branching solution: ``policy``, ``flatten`` or
        ``reject``. The parameters file in ``plansys2_bringup`` sets
        ``policy``.
+   * - ``temporal``
+     - bool
+     - ``false``
+     - Plan with the action mapping's durations, minimising the worst-case
+       makespan; overlap only actions whose updates commute
+       (:ref:`arch-temporal`). Requires an executor with the epistemic BT
+       builder of 0.4.0 or later.
+   * - ``max_concurrency``
+     - int
+     - ``3``
+     - Largest number of actions running at once under ``temporal``. The
+       commutation check enumerates subsets of the running set.
    * - ``consistent_beliefs``
      - bool
      - ``true``
@@ -236,6 +248,10 @@ A policy is a tree transported in the epistemic fields of
      - Epistemic formulas the action requires to hold.
    * - ``epistemic_action``
      - Action name in the planner's vocabulary.
+   * - ``starts_after``, ``given_items``, ``given_outcomes``
+     - Temporal policies only (``Plan.temporal``): the items an item waits
+       for, and the observations selecting its branch
+       (:numref:`tab-temporal-fields`).
 
 A classical plan leaves these fields empty and is read as PlanSys2 writes it:
 item :math:`i` followed by item :math:`i+1`. Every plan is thus a policy; a
@@ -304,60 +320,83 @@ neither action's knowledge requirements mention the other's agents.
    agent's sensing action whose precondition is that the agent does not yet
    know.
 
-.. _arch-observation:
+.. _arch-temporal:
 
 Temporal policies
 -----------------
 
-With ``temporal: true`` the solver plans with durations instead of steps. The
-durations are the action mapping's, so the planner and the executor schedule
-against the same numbers. An action is checked when it starts and updates the
-model when it ends; a sensing action's outcome is known at its end, which is
-where the policy branches.
+With ``temporal`` set, the solver plans with durations. The durations are the
+action mapping's, which the executor also schedules and times out against. A
+durative action is checked for applicability when it starts and updates the
+model when it ends; a sensing action's outcome is known at its end, and the
+policy branches there.
 
-Two actions may overlap only when their updates commute: for every pair of
-outcomes, each stays applicable after the other, the same outcome pairs are
-reachable in either order, and the two results are bisimilar. The planner
-decides this exactly, in each state, by computing both orders, contracting
-them and comparing canonical fingerprints. It keeps the running set coherent:
-in every state the running actions can pass through as they end, every
-remaining pair commutes. Under coherence the belief does not depend on the
-order in which overlapping actions happen to end.
+Two actions *commute* in a state when, for every pair of their outcomes, each
+remains applicable after the other, the same outcome pairs are reachable in
+both orders, and the two resulting models are bisimilar. The solver decides
+this exactly in each state: it computes both orders, contracts each result and
+compares canonical fingerprints. A running set is *coherent* when, in every
+state it can pass through as its actions end, every remaining pair commutes.
+The solver starts an action only if the running set remains coherent. Under
+coherence, the model after a set of overlapping actions does not depend on the
+order in which they end.
 
-That is a stronger guarantee than post-hoc parallel dispatch gives. The
-syntactic test the builder uses for untimed policies (disjoint agents,
-knowledge requirements not mentioning the other's agents) admits pairs that
-do not commute. On the corridor, once r2 has seen the corridor blocked, r2
-announcing it and r1 looking pass that test, but the announcement makes r1
-know, and looking requires that r1 does not yet know.
+The search minimises the worst-case makespan over outcomes. Its result can
+differ from the untimed policy: on the corridor, both robots inspect at once
+(35 s), where the shortest untimed policy, inspect and announce, takes 36 s.
 
-The search minimises the worst-case makespan, and the result can differ from
-the untimed policy. On the corridor, sending both robots to look at once takes
-35 s, where the shortest untimed policy (drive, look, announce) takes 36 s.
+The syntactic test of the previous section admits pairs that do not commute.
+On the corridor, after r2 has observed the corridor blocked, ``report-blocked_r2``
+and ``inspect_r1`` pass it; the announcement makes r1 know, and ``inspect_r1``
+requires that r1 does not know. Over the reachable states of the fleet depot
+to depth 4, the syntactic test admits 1476 pairs, of which 72 do not commute.
 
-A temporal policy travels in ``plansys2_msgs/Plan`` with ``temporal`` set. Each
-item waits for the items in ``starts_after`` (every item on its path planned to
-end before it starts) and runs only on the branch its ``given_items`` and
-``given_outcomes`` select. The builder renders every item side by side under
-one ``Parallel``:
+A temporal policy is a ``plansys2_msgs/Plan`` with ``temporal`` set. Each item
+carries the fields of :numref:`tab-temporal-fields`; ``children`` and
+``outcomes`` are empty.
+
+.. _tab-temporal-fields:
+
+.. list-table:: Fields of a temporal policy item.
+   :header-rows: 1
+   :widths: 25 75
+
+   * - Field
+     - Meaning
+   * - ``time``
+     - Planned start, for display and scheduling estimates.
+   * - ``starts_after``
+     - Items the item waits for: every item on its path planned to end before
+       it starts, less those another listed item already waits for. Empty:
+       the item starts with the policy.
+   * - ``given_items``, ``given_outcomes``
+     - The branch: the item runs only if each listed item observed the
+       outcome at the same position. Every observation on the path is listed.
+
+The builder renders every item under one ``Parallel``, each gated as in
+:numref:`code-temporal-item`.
+
+.. _code-temporal-item:
 
 .. code-block:: xml
+   :caption: Rendering of one temporal policy item.
 
    <Sequence name="item_4">
      <WaitForEnds items="0;1"/>
      <IfThenElse>
        <CheckGiven after="0;1" items="0" outcomes="e-inspect-clear"/>
-       <Sequence>  <!-- the action block, then -->  <MarkDone node="4" status="ran"/></Sequence>
+       <Sequence>  <!-- action block -->  <MarkDone node="4" status="ran"/></Sequence>
        <MarkDone node="4" status="skipped"/>
      </IfThenElse>
    </Sequence>
 
-Dispatch is by events, not by the clock: an item starts when the items it
-waits for have ended, whatever their actual durations. A policy dispatched at
-its planned times could start an action while one planned to end earlier is
-still running, an overlap the planner never checked. A branch the world does
-not take drains away: its items are marked skipped, which releases whatever
-waits for them, and those skip in turn.
+Dispatch is event-driven: an item starts when the items it waits for have
+ended, whatever their actual durations. Dispatch at planned start times can
+start an action while an action planned to end earlier is still running, an
+overlap the solver did not check. An item whose branch was not observed is
+marked skipped; items waiting for it are then skipped in turn.
+
+.. _arch-observation:
 
 Reporting an observation
 ------------------------
