@@ -15,7 +15,7 @@ repositories:
   aletheia:
     type: git
     url: https://github.com/HanielUlises/del-planner.git
-    version: 346f52076a443541df4ce0930a0c449f8a47d7a1
+    version: c349036b6998963a7a5b6a35b6096e71eeffbdea
   # The EPDDL grounder plansys2_epddl_grounder runs. It is a plain CMake
   # project rather than a ROS package, so colcon builds it as one and installs
   # the binary into <prefix>/bin, which puts `plank` on PATH once the workspace
