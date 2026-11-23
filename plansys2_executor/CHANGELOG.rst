@@ -2,6 +2,17 @@
 Changelog for package plansys2_executor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.0 (2026-11-22)
+------------------
+* MissionSupervisor and MissionRetryPolicy plan again when a mission fails,
+  from the problem and belief the failed attempt left;
+  MissionSupervisor::Outcome prints by name.
+* The replan guard no longer counts the synthetic (INIT) entry as a completed
+  action.
+* An action executor stops requesting performers once the behavior tree has
+  left its node, and ExecuteAction::halt() cancels the action. WaitAtStartReq
+  takes an optional at_start_req_timeout.
+
 3.0.0 (2025-06-06)
 ------------------
 * Modify export target. Rename metapackage

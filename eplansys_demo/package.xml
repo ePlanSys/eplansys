@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>eplansys_demo</name>
-  <version>0.0.1</version>
+  <version>0.4.1</version>
   <description>
     The corridor mission: two robots, a corridor nobody has looked down, and a
     goal that no classical planner can state. Runs in one command, with no

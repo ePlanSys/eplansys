@@ -2,6 +2,11 @@
 Changelog for package plansys2_core
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.1.0 (2026-11-22)
+------------------
+* Rebuilt against plansys2_msgs 3.1.0, whose messages changed. No source
+  changes.
+
 3.0.0 (2025-06-06)
 ------------------
 * Modify export target. Rename metapackage

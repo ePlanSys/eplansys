@@ -4,7 +4,7 @@ name: debian packages (humble)
 # and attaches the .debs, with the index apt reads, to that tag's GitHub
 # release. The release is then an apt repository:
 #
-#   echo "deb [trusted=yes] https://github.com/ePlanSys/eplansys/releases/download/v0.4.0 ./" |
+#   echo "deb [trusted=yes] https://github.com/ePlanSys/eplansys/releases/download/v0.4.1 ./" |
 #     sudo tee /etc/apt/sources.list.d/eplansys.list
 #   sudo apt update && sudo apt install ros-humble-eplansys
 #
@@ -28,6 +28,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: ws/src/eplansys
+          # The version check compares against the previous release tag, so
+          # the history and the tags have to be there.
+          fetch-depth: 0
 
       - name: Install the packaging tools
         run: |
@@ -37,6 +40,16 @@ jobs:
 
       - name: Import the pinned sources
         run: vcs import ws/src < ws/src/eplansys/dependency_repos.repos
+
+      # apt never upgrades a package to one of the same version, so a release
+      # that changed a package without a new version never reaches the users
+      # of the previous one. Refuse the tag rather than publish it.
+      - name: Check that every changed package has a new version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          git config --global --add safe.directory "$PWD/ws/src/eplansys"
+          git config --global --add safe.directory "$PWD/ws/src/aletheia"
+          ws/src/eplansys/packaging/check-versions.sh "" "$PWD/ws/src"
 
       - name: Build the packages
         run: ws/src/eplansys/packaging/build-debs.sh ws debs

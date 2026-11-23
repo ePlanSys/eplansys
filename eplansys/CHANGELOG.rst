@@ -2,6 +2,20 @@
 Changelog for package eplansys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.1 (2026-11-22)
+------------------
+* A re-release of 0.4.0 that apt can upgrade to. 0.3.0, 0.3.5 and 0.4.0 all
+  shipped the PlanSys2 fork at 3.0.0, eplansys_demo at 0.0.1 and del-planner
+  at 0.2.0, though their contents changed between them; apt never replaces a
+  package with one of the same version, so users of an earlier release kept
+  the old ones, including plansys2_msgs without the temporal fields under
+  epistemic packages built against them.
+* The PlanSys2 fork is at 3.1.0, plansys2_tui_cli at 2.1.0, eplansys_demo at
+  0.4.1, and del-planner is pinned at its 0.3.0 release.
+* The release workflow refuses a tag whose packages changed since the previous
+  release without a new version, or whose plansys2_msgs changed without the
+  packages built against it.
+
 0.4.0 (2026-11-22)
 ------------------
 * Temporal policies: actions overlap where their updates commute, and each

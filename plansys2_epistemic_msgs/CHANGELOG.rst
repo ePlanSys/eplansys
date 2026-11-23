@@ -2,6 +2,11 @@
 Changelog for package plansys2_epistemic_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.1 (2026-11-22)
+------------------
+* Released with the PlanSys2 packages at 3.1.0, so that apt upgrades them
+  together. No source changes.
+
 0.4.0 (2026-11-22)
 ------------------
 * No changes.

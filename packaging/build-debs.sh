@@ -10,7 +10,7 @@
 # installs every package it builds, since the next one builds against it.
 #
 # The PlanSys2 packages here are a fork, released under the upstream names at
-# version 3.0.0. Upstream Humble ships 2.0.9, so apt prefers these once the
+# version 3.x (3.1.0 since 0.4.1). Upstream Humble ships 2.0.9, so apt prefers these once the
 # repository is added. cascade_lifecycle is built too, from the rolling-devel
 # checkout the repos file pins: plansys2_executor links a target Humble's 1.1.0
 # does not export, and at 2.0.6 it is preferred over it the same way. popf
