@@ -290,6 +290,8 @@ Functions</h2></td></tr>
 <tr class="memdesc:a4fd0c820509754c2767490933fd260f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the plugin type parameter for a given plugin name.  <br /></td></tr>
 <tr class="memitem:a9be7a44c06f7fbaaca0034565f40612f" id="r_a9be7a44c06f7fbaaca0034565f40612f"><td class="memItemLeft"><a class="el" href="classplansys2_1_1NodeVariant.html">plansys2::NodeVariant</a>&#160;</td><td class="memItemRight"><a class="el" href="#a9be7a44c06f7fbaaca0034565f40612f">nodeMsgToVariant</a> (const <a class="el" href="classplansys2__msgs_1_1msg_1_1Node.html">plansys2_msgs::msg::Node</a> &amp;node_msg)</td></tr>
 <tr class="memitem:a802bf86eb5981268d7cf80d034b4602c" id="r_a802bf86eb5981268d7cf80d034b4602c"><td class="memItemLeft">std::ostream &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a802bf86eb5981268d7cf80d034b4602c">operator&lt;&lt;</a> (std::ostream &amp;os, const <a class="el" href="classplansys2_1_1NodeVariant.html">NodeVariant</a> &amp;node)</td></tr>
+<tr class="memitem:ad88879468d57ce4af1a7c8e12efd9aba" id="r_ad88879468d57ce4af1a7c8e12efd9aba"><td class="memItemLeft">std::ostream &amp;&#160;</td><td class="memItemRight"><a class="el" href="#ad88879468d57ce4af1a7c8e12efd9aba">operator&lt;&lt;</a> (std::ostream &amp;os, <a class="el" href="classplansys2_1_1MissionSupervisor.html#aafbbb0042a27bcf65d4e58f485a2ae69">MissionSupervisor::Outcome</a> outcome)</td></tr>
+<tr class="memdesc:ad88879468d57ce4af1a7c8e12efd9aba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prints an outcome by name.  <br /></td></tr>
 <tr class="memitem:a53fcc777201afa76a12b79464de9d514" id="r_a53fcc777201afa76a12b79464de9d514"><td class="memItemLeft"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight"><a class="el" href="#a53fcc777201afa76a12b79464de9d514">operator==</a> (const <a class="el" href="classplansys2_1_1NodeVariant.html">NodeVariant</a> &amp;lhs, const <a class="el" href="classplansys2__msgs_1_1msg_1_1Node.html">plansys2_msgs::msg::Node</a> &amp;rhs)</td></tr>
 <tr class="memitem:ae39d64692b209053c066ca40d35f98d1" id="r_ae39d64692b209053c066ca40d35f98d1"><td class="memItemLeft">std::pair&lt; std::string, <a class="el" href="classint.html">int</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="#ae39d64692b209053c066ca40d35f98d1">parse_action</a> (const std::string &amp;input)</td></tr>
 <tr class="memdesc:ae39d64692b209053c066ca40d35f98d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse the action expression and time (optional) from an input string.  <br /></td></tr>
@@ -1142,7 +1144,7 @@ template&lt;typename NodeT&gt; </div>
 </div>
 </div>
 <a id="a802bf86eb5981268d7cf80d034b4602c" name="a802bf86eb5981268d7cf80d034b4602c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a802bf86eb5981268d7cf80d034b4602c">&#9670;&#160;</a></span>operator&lt;&lt;()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a802bf86eb5981268d7cf80d034b4602c">&#9670;&#160;</a></span>operator&lt;&lt;() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1159,6 +1161,30 @@ template&lt;typename NodeT&gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad88879468d57ce4af1a7c8e12efd9aba" name="ad88879468d57ce4af1a7c8e12efd9aba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad88879468d57ce4af1a7c8e12efd9aba">&#9670;&#160;</a></span>operator&lt;&lt;() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::ostream &amp; operator&lt;&lt; </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream &amp;</td>          <td class="paramname"><span class="paramname"><em>os</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classplansys2_1_1MissionSupervisor.html#aafbbb0042a27bcf65d4e58f485a2ae69">MissionSupervisor::Outcome</a></td>          <td class="paramname"><span class="paramname"><em>outcome</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Prints an outcome by name. </p>
+<p>Without it, a stream insertion of an Outcome (a GoogleTest failure message, say) goes looking for any operator&lt;&lt; in namespace <a class="el" href="namespaceplansys2.html">plansys2</a> that an Outcome converts to, and recent GoogleTest finds one taking a shared_ptr to an action variant and fails to compile. </p>
 
 </div>
 </div>
