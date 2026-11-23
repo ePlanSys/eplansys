@@ -2,8 +2,8 @@
 Changelog for package plansys2_epistemic_bt_builder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.4.0 (Forthcoming)
--------------------
+0.4.0 (2026-11-22)
+------------------
 * A temporal Plan is built as an event-dispatched tree, without the parallel
   grouping, which its planner has already done.
 

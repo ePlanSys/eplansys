@@ -2,8 +2,8 @@
 Changelog for package plansys2_epistemic_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.4.0 (Forthcoming)
--------------------
+0.4.0 (2026-11-22)
+------------------
 * temporal (off by default) plans a temporal policy: durations from the action
   mapping, overlap only where the updates commute, the least worst-case
   makespan, validated before it is returned. max_concurrency (3) bounds the

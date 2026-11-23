@@ -2,14 +2,20 @@
 Changelog for package eplansys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.4.0 (Forthcoming)
--------------------
+0.4.0 (2026-11-22)
+------------------
 * Temporal policies: actions overlap where their updates commute, and each
   starts when the actions it waits for have ended, on the branch observed.
+  test_8 runs one end to end (plansys2_tests).
 * plansys2_msgs: Plan.temporal, and PlanItem.starts_after, given_items and
   given_outcomes. The messages changed, so everything built against them has
   to be rebuilt.
-* del-planner is pinned at 346f520, which has the temporal search.
+* del-planner is pinned at c349036 on its main, which has the temporal search
+  and, merged since the previous pin, subjective branching (--subjective) and
+  the symbolic (BDD) engine.
+* MissionSupervisor::Outcome prints by name (plansys2_executor). test_7
+  compared outcomes with EXPECT_EQ, which did not compile against rolling's
+  GoogleTest; the rolling build had failed since 0.3.5's test_7 was merged.
 
 0.3.5 (2026-11-22)
 ------------------
