@@ -1,19 +1,17 @@
 Tutorials
 =========
 
-Three robotics scenarios, one domain family, three sizes. A fleet of survey
-robots shares a depot; the routes out of it may be blocked by debris; only a
-robot standing at a junction can see down a route, and a robot watching another
-one look learns *that* it looked, not *what* it saw. Before the fleet commits
-to a route, every robot has to know which routes are passable.
+Three instances of one domain family, of increasing size. A fleet of survey
+robots shares a depot; the routes out of it may be blocked. Only a robot at a
+junction can observe a route, and a robot watching another inspect a route
+learns that the inspection happened but not its result. The goal is that every
+robot knows whether each route is passable before the fleet commits to one.
 
-That is a planning problem no classical planner can state. Nothing an action
-does here changes whether a corridor is blocked. What changes is who knows
-about it, and the state of the corridor is not in the initial situation to
-begin with, so the solution cannot be a sequence. It has to be a policy that
-senses and then branches on what was sensed.
+No action changes whether a route is blocked; actions change which robots know
+it. The initial state leaves every route's status open, so solutions sense and
+branch on the result.
 
-.. list-table::
+.. list-table:: Tutorial instances.
    :header-rows: 1
    :widths: 30 12 12 12 34
 
@@ -21,41 +19,40 @@ senses and then branches on what was sensed.
      - Robots
      - Routes
      - Worlds
-     - What it adds
+     - Feature
    * - :doc:`fleet_corridor`
      - 2
      - 1
      - 2
-     - The mechanism at its smallest: one sensing action, one branch
+     - One sensing action, one branch
    * - :doc:`fleet_depot`
      - 3
      - 2
      - 4
-     - Division of labour, and a branch inside a branch
+     - Division of labour; nested branching
    * - :doc:`fleet_survey`
      - 4
      - 3
      - 8
-     - Scale: five million expansions, and a robot that only listens
+     - Scale (five million expansions); a robot that only listens
 
-Read them in order. The corridor scenario introduces every construct the other
-two use; the depot and survey pages describe only what is new, and report what
-grows.
+The corridor chapter introduces every construct used by the other two; the
+depot and survey chapters describe only the differences and report how the
+search grows.
 
-The first two are executed end to end by the test suite, over a live ROS graph
-with the world in each of its possible states; see
-:doc:`../reports/epistemic_end_to_end`. The third is too slow for a suite that
-runs on every push, and is there to be run by hand.
+The corridor and depot instances are executed end to end by ``plansys2_tests``
+over a live ROS graph, in each possible world state
+(:doc:`../reports/epistemic_end_to_end`). The survey instance is too slow for
+per-commit CI and is run manually.
 
-All three ship as EPDDL sources in ``plansys2_epddl_grounder/examples``, with
-the two smaller ones also checked in already grounded under
-``plansys2_epistemic_planner/test/tasks``, so they can be run without an EPDDL
-toolchain. They assume a workspace built and sourced as described in
-:doc:`../getting_started/installation`.
+The EPDDL sources are in ``plansys2_epddl_grounder/examples``; the two smaller
+instances are also checked in grounded under
+``plansys2_epistemic_planner/test/tasks`` and run without plank. A workspace
+built as in :doc:`../getting_started/installation` is assumed.
 
-The classical PlanSys2 tutorials (the terminal, the domain and problem
-experts, writing action performers) are on the `PlanSys2 web page
-<https://plansys2.github.io>`_ and apply unchanged here.
+The classical PlanSys2 tutorials (terminal, domain and problem experts, action
+performers) are on the `PlanSys2 web page <https://plansys2.github.io>`_ and
+apply unchanged.
 
 .. toctree::
    :maxdepth: 1

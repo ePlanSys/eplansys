@@ -1,19 +1,18 @@
 Open-RMF execution
 ==================
 
-``eplansys_rmf_bridge`` runs an epistemic policy on a robot fleet managed by
-`Open-RMF <https://github.com/open-rmf>`_. It is an ``ActionExecutorClient``:
-it accepts a dispatched action, submits the corresponding RMF task, waits for
-completion, and calls ``finish()`` with the outcome the robot observed.
-``plansys2_msgs/ActionExecution`` carries an ``outcome`` field for this, and
-the policy branches on it.
+``eplansys_rmf_bridge`` executes epistemic policies on a robot fleet managed by
+Open-RMF :cite:p:`openrmf`. It is an ``ActionExecutorClient``: it accepts a
+dispatched action, submits the corresponding RMF task, waits for completion,
+and calls ``finish()`` with the outcome the robot observed, which the policy
+branches on (:ref:`arch-observation`).
 
-The bridge is maintained in its own repository,
-`eplansys-rmf <https://github.com/ePlanSys/eplansys-rmf>`_. Open-RMF is a
-substantial dependency, and requiring it from ``eplansys`` would render the
-planning stack unusable for installations that do not operate a fleet. This is
-the arrangement ``plansys2_aletheia_plan_solver`` already uses for its external
-binary.
+The bridge is maintained in a separate repository,
+`eplansys-rmf <https://github.com/ePlanSys/eplansys-rmf>`_, so that
+installations without a fleet do not depend on Open-RMF. The same arrangement
+applies to the external planner binary of ``plansys2_aletheia_plan_solver``.
+
+.. _fig-rmf-pipeline:
 
 .. figure:: img/pipeline.svg
    :width: 100%
@@ -22,59 +21,54 @@ binary.
          RMF task; the robot executes it and the observation returns as an
          outcome that updates the epistemic state.
 
-   Where the bridge sits between the policy and the fleet
+   Position of the bridge between the policy and the fleet.
 
-The loop closes at the bridge: it is the only component that both dispatches
-into the fleet and receives what the fleet observed. Everything above it is the
-planner's, everything below it is Open-RMF's, and the ``outcome`` edge is the
-one that makes the execution epistemic rather than a remote control.
+The bridge is the only component that both dispatches into the fleet and
+receives the fleet's observations (:numref:`fig-rmf-pipeline`). Components
+above it belong to the planning stack, components below it to Open-RMF. The
+``outcome`` edge carries observations back into the epistemic state; without
+it the bridge would only issue commands.
 
 Division of responsibility
 --------------------------
 
-The two systems decide disjoint things. Open-RMF holds no representation of
-knowledge, and ePlanSys holds no representation of shared physical resources.
+Open-RMF has no representation of knowledge; ePlanSys has no representation of
+shared physical resources.
 
-.. list-table::
+.. list-table:: Decisions made by each system.
    :header-rows: 1
    :widths: 22 78
 
    * - System
      - Determines
    * - ePlanSys
-     - what has to be found out, which agent should act, and which agents may
-       come to know the result
+     - what must be found out, which agent acts, and which agents may learn
+       the result
    * - Open-RMF
-     - the allocation of floor space, lifts and doors, and which robot is
-       available to perform the work
+     - allocation of floor space, lifts and doors; robot availability
 
-What a performer does
----------------------
+Performers
+----------
 
-The process reads its task map and turns every action name in it into one
-performer. What that performer does when the executor dispatches it depends on
-the entry:
+The bridge creates one performer per action in its task map
+(:doc:`task_map`). On dispatch, a performer behaves according to its entry:
 
-* An action that moves a robot submits an RMF task pinned to the robot its
-  agent is bound to, waits for the fleet to report it done, and finishes.
-* An action marked ``local`` is a speech act. RMF has no representation of
-  saying things and no robot moves to say them, so nothing is submitted and the
-  performer completes after its stated duration. The epistemic effect is
-  entirely the planner's.
-* An action marked ``sensing`` finishes with an outcome token. This is the
-  argument the policy branches on, and the only reason the bridge is more than
-  a remote control.
+* A movement action submits an RMF task pinned to the robot bound to the
+  acting agent, waits for completion, and finishes.
+* A ``local`` action is a speech act: no task is submitted, and the performer
+  finishes after its declared duration. Its epistemic effect is computed by the
+  epistemic state.
+* A ``sensing`` action finishes with an outcome token, on which the policy
+  branches.
 
 Reference scenario
 ------------------
 
-The survey domain: three robots and a site that may be contaminated, under a
-goal of three conjuncts. The scout is required to find out whether the site is
-contaminated, the relay to come to know the result, and an observer not to. The
-planner declines to broadcast and uses a private channel instead, since
-broadcasting would falsify the third conjunct. Executing it over an RMF fleet,
-with RMF driving the robots, is the intended demonstration of the bridge, and
-is described in :doc:`demo`.
+The site survey (:doc:`../demos/survey`): three agents, a site that may be
+contaminated, and a goal requiring that ``scout`` and ``relay`` learn the
+finding and ``observer`` does not. The planner selects the private channel,
+since a broadcast would falsify the third conjunct. :doc:`demo` runs this
+mission over an RMF fleet.
 
 .. toctree::
    :maxdepth: 1

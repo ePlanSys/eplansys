@@ -1,38 +1,37 @@
 Diagnostics
 ===========
 
-``eplansys_rmf_probe`` holds two programs that establish the bridge's two ends
-against a real fleet before any ``ActionExecutorClient`` exists. ``state_probe``
-is the receiving end, built on the same ``WebsocketFeed`` the bridge uses;
-``submit_probe`` is the sending end.
+``eplansys_rmf_probe`` contains two programs that test the bridge's two
+interfaces against a real fleet independently of any ``ActionExecutorClient``.
+``state_probe`` tests the receiving side, using the bridge's ``WebsocketFeed``;
+``submit_probe`` tests the submitting side.
 
 state_probe
 -----------
 
-A websocket server that reads task states and task logs and reports any value
-carrying a known prefix. That settles whether an epistemic outcome token
-survives the trip.
+A websocket server that reads task states and logs and reports values carrying
+a given prefix, i.e. whether an outcome token reaches the bridge.
 
 .. code-block:: bash
 
    ros2 run eplansys_rmf_probe state_probe --port 7879
 
-.. list-table::
+.. list-table:: ``state_probe`` options.
    :header-rows: 1
    :widths: 28 72
 
-   * - Flag
+   * - Option
      - Meaning
    * - ``--port``
-     - Port to listen on.
+     - Listening port.
    * - ``--outcome-prefix``
-     - Prefix that marks a value as an epistemic outcome.
+     - Prefix identifying an outcome value.
    * - ``--all-logs``
-     - Print every log entry, not only those carrying the prefix.
+     - Print every log entry.
    * - ``--raw``
-     - Print the frames as they arrive.
+     - Print frames as received.
 
-Point the adapter at it, with the panel switched off:
+The adapter is pointed at the probe with the panel disabled:
 
 .. code-block:: bash
 
@@ -42,21 +41,20 @@ Point the adapter at it, with the panel switched off:
 submit_probe
 ------------
 
-Submits one task pinned to a named robot and prints the booking id it was
-given. ``state_probe`` groups everything it reports under that same id, which is
-the key the bridge uses to match a finished RMF task to the epistemic action
-that asked for it.
+Submits one task pinned to a named robot and prints its booking id.
+``state_probe`` groups its reports by the same id, which the bridge uses to
+match a completed RMF task to the epistemic action that requested it.
 
 .. code-block:: bash
 
    ros2 run eplansys_rmf_probe submit_probe -F tinyRobot -R tinyRobot1 \
        -p patrol_A1
 
-.. list-table::
+.. list-table:: ``submit_probe`` options.
    :header-rows: 1
    :widths: 28 72
 
-   * - Flag
+   * - Option
      - Meaning
    * - ``-F``, ``--fleet``
      - Fleet name.
@@ -67,13 +65,13 @@ that asked for it.
    * - ``-o``, ``--orient``
      - Final orientation.
    * - ``--dispatch``
-     - Send a ``dispatch_task_request`` instead and let RMF's dispatcher choose
-       the robot, for comparison against the pinned path.
+     - Submit a ``dispatch_task_request``, leaving robot selection to RMF's
+       dispatcher, for comparison with the pinned path.
    * - ``--timeout``
-     - How long to wait for a response.
+     - Response timeout.
 
-Reading the output
-------------------
+Output
+------
 
 .. code-block:: text
 
@@ -88,10 +86,9 @@ Reading the output
      status   completed
      outcome  "e-scan-dirty" (via log)
 
-A stock ``go_to_place`` task carries no outcome, and the summary says so. To see
-one, have the fleet adapter's action executor write the token as shown in
-:doc:`demo`.
+A stock ``go_to_place`` task carries no outcome, and the summary reports none.
+:doc:`demo` shows how a fleet adapter writes the token.
 
-``PYTHONNOUSERSITE=1`` may be needed for anything that launches
-``rmf_demos_panel``, whose Flask can be shadowed by a pip ``--user`` Werkzeug.
-Neither probe is affected.
+Launch files that start ``rmf_demos_panel`` may require ``PYTHONNOUSERSITE=1``,
+as a ``pip --user`` installation of Werkzeug can shadow the panel's Flask. The
+probes are unaffected.

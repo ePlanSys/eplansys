@@ -14,10 +14,12 @@
 
 #include "plansys2_epistemic_executor/policy_bt.hpp"
 
+#include <algorithm>
 #include <map>
 
 #include <cmath>
 #include <sstream>
+#include <type_traits>
 #include <string>
 #include <vector>
 
@@ -280,6 +282,94 @@ std::string policy_to_bt(
     "<root BTCPP_format=\"4\" main_tree_to_execute=\"MainTree\">\n" +
     indent(1) + "<BehaviorTree ID=\"MainTree\">\n" +
     indent(2) + "<Sequence name=\"EpistemicPolicy\">\n" +
+    body +
+    goal_check +
+    indent(2) + "</Sequence>\n" +
+    indent(1) + "</BehaviorTree>\n" +
+    "</root>\n";
+}
+
+std::string temporal_policy_to_bt(
+  const Policy & policy, const std::string & action_bt, int precision)
+{
+  const std::string tmpl = action_bt.empty() ? kDefaultEpistemicActionBT : action_bt;
+
+  const auto joined = [](const auto & values) {
+      std::string out;
+      for (const auto & v : values) {
+        if (!out.empty()) {
+          out += ";";
+        }
+        if constexpr (std::is_arithmetic_v<std::decay_t<decltype(v)>>) {
+          out += std::to_string(v);
+        } else {
+          out += v;
+        }
+      }
+      return out;
+    };
+
+  std::string items;
+  for (std::uint32_t i = 0; i < policy.size(); ++i) {
+    const auto & item = policy.item(i);
+    const std::string id = std::to_string(i);
+
+    std::string block = tmpl;
+    replace_all(block, "NODE_NAME", escape("node_" + id + " " + item.action));
+    replace_all(block, "ACTION_ID", escape(policy_action_id(item, precision)));
+    replace_all(block, "NODE_ID", id);
+    replace_all(block, "OUTCOME_KEY", "epistemic_outcome_" + id);
+    replace_all(block, "OBSERVED_KEY", "epistemic_observed_" + id);
+    replace_all(block, "CONTINUATIONS", "");
+
+    // The observations selecting the branch are waited for as well: the
+    // planner lists them among starts_after already, and this keeps a plan
+    // that does not from reading an outcome before it exists.
+    std::vector<std::uint32_t> wait_for = item.starts_after;
+    for (const auto observer : item.given_items) {
+      if (std::find(wait_for.begin(), wait_for.end(), observer) == wait_for.end()) {
+        wait_for.push_back(observer);
+      }
+    }
+
+    items +=
+      indent(0) + "<Sequence name=\"item_" + id + "\">\n" +
+      indent(1) + "<WaitForEnds items=\"" + joined(wait_for) + "\"/>\n" +
+      indent(1) + "<IfThenElse>\n" +
+      indent(2) + "<CheckGiven after=\"" + joined(item.starts_after) + "\" items=\"" +
+      joined(item.given_items) + "\" outcomes=\"" + escape(joined(item.given_outcomes)) +
+      "\"/>\n" +
+      indent(2) + "<Sequence>\n" +
+      shift(block, 3) +
+      indent(3) + "<MarkDone node=\"" + id + "\" status=\"ran\"/>\n" +
+      indent(2) + "</Sequence>\n" +
+      indent(2) + "<MarkDone node=\"" + id + "\" status=\"skipped\"/>\n" +
+      indent(1) + "</IfThenElse>\n" +
+      indent(0) + "</Sequence>\n";
+  }
+
+  std::string body;
+  if (!items.empty()) {
+    // Every item must finish, ran or skipped; the first failure fails the
+    // policy, and the executor's answer to that is to replan.
+    body =
+      indent(3) + "<Parallel success_count=\"-1\" failure_count=\"1\">\n" +
+      shift(items, 4) +
+      indent(3) + "</Parallel>\n";
+  }
+
+  std::string goal_check;
+  if (!policy.goal().empty()) {
+    goal_check = indent(3) + "<CheckEpistemicGoal goal=\"" + escape(policy.goal()) + "\"/>\n";
+  }
+  if (body.empty() && goal_check.empty()) {
+    body = indent(3) + "<AlwaysSuccess/>\n";
+  }
+
+  return
+    "<root BTCPP_format=\"4\" main_tree_to_execute=\"MainTree\">\n" +
+    indent(1) + "<BehaviorTree ID=\"MainTree\">\n" +
+    indent(2) + "<Sequence name=\"TemporalEpistemicPolicy\">\n" +
     body +
     goal_check +
     indent(2) + "</Sequence>\n" +

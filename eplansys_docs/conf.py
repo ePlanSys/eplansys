@@ -15,7 +15,14 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx_sitemap',
     'sphinxext.opengraph',
+    'sphinxcontrib.bibtex',
 ]
+
+# Citations: :cite:p:`key` and :cite:t:`key` resolve against references.bib,
+# and the list itself is printed once, on the References page.
+bibtex_bibfiles = ['references.bib']
+bibtex_default_style = 'plain'
+bibtex_reference_style = 'author_year'
 
 # The tab and the link preview both read this. Sphinx's default is
 # "<project> <release> documentation", which is what made a shared link look

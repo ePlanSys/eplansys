@@ -15,6 +15,7 @@
 #include "plansys2_epistemic_executor/behavior_tree/epistemic_nodes.hpp"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -421,8 +422,112 @@ BT::NodeStatus CheckEpistemicGoal::tick()
   return BT::NodeStatus::SUCCESS;
 }
 
+// ── Temporal policies ───────────────────────────────────────────────────────
+
+std::string epistemic_done_key(const std::string & item)
+{
+  return "epistemic_done_" + item;
+}
+
+namespace
+{
+
+std::vector<std::string> item_list(const BT::TreeNode & node, const char * port)
+{
+  std::string text;
+  node.getInput(port, text);
+  std::vector<std::string> out;
+  for (auto & part : split(text, ';')) {
+    if (!part.empty()) {
+      out.push_back(part);
+    }
+  }
+  return out;
+}
+
+std::optional<std::string> done_status(const BT::TreeNode & node, const std::string & item)
+{
+  std::string status;
+  if (node.config().blackboard->get(epistemic_done_key(item), status)) {
+    return status;
+  }
+  return std::nullopt;
+}
+
+}  // namespace
+
+WaitForEnds::WaitForEnds(const std::string & xml_tag_name, const BT::NodeConfig & conf)
+: StatefulActionNode(xml_tag_name, conf)
+{
+}
+
+BT::NodeStatus WaitForEnds::onStart()
+{
+  return onRunning();
+}
+
+BT::NodeStatus WaitForEnds::onRunning()
+{
+  for (const auto & item : item_list(*this, "items")) {
+    if (!done_status(*this, item)) {
+      return BT::NodeStatus::RUNNING;
+    }
+  }
+  return BT::NodeStatus::SUCCESS;
+}
+
+CheckGiven::CheckGiven(const std::string & xml_tag_name, const BT::NodeConfig & conf)
+: ConditionNode(xml_tag_name, conf)
+{
+}
+
+BT::NodeStatus CheckGiven::tick()
+{
+  for (const auto & item : item_list(*this, "after")) {
+    if (done_status(*this, item) != std::optional<std::string>("ran")) {
+      return BT::NodeStatus::FAILURE;
+    }
+  }
+
+  const auto items = item_list(*this, "items");
+  std::string outcome_text;
+  getInput("outcomes", outcome_text);
+  const auto outcomes = split(outcome_text, ';');
+  if (outcomes.size() < items.size()) {
+    RCLCPP_ERROR(
+      logger(), "[CheckGiven] %zu items but %zu outcomes", items.size(), outcomes.size());
+    return BT::NodeStatus::FAILURE;
+  }
+
+  for (std::size_t i = 0; i < items.size(); ++i) {
+    if (done_status(*this, items[i]) != std::optional<std::string>("ran")) {
+      return BT::NodeStatus::FAILURE;
+    }
+    std::string observed;
+    if (!config().blackboard->get("epistemic_outcome_" + items[i], observed) ||
+      observed != outcomes[i])
+    {
+      return BT::NodeStatus::FAILURE;
+    }
+  }
+  return BT::NodeStatus::SUCCESS;
+}
+
+BT::NodeStatus MarkDone::tick()
+{
+  std::string node;
+  std::string status;
+  getInput("node", node);
+  getInput("status", status);
+  config().blackboard->set(epistemic_done_key(node), status);
+  return BT::NodeStatus::SUCCESS;
+}
+
 void register_epistemic_nodes(BT::BehaviorTreeFactory & factory)
 {
+  factory.registerNodeType<WaitForEnds>("WaitForEnds");
+  factory.registerNodeType<CheckGiven>("CheckGiven");
+  factory.registerNodeType<MarkDone>("MarkDone");
   factory.registerNodeType<CheckKnowledge>("CheckKnowledge");
   factory.registerNodeType<ApplyEpistemicUpdate>("ApplyEpistemicUpdate");
   factory.registerNodeType<EpistemicSwitch>("EpistemicSwitch");

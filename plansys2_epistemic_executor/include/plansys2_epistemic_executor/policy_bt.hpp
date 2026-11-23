@@ -138,6 +138,25 @@ std::string policy_to_bt(
   const std::string & action_bt,
   int precision);
 
+/**
+ * @brief Render a temporal policy (Plan.temporal) as a tree dispatched by
+ *        events.
+ *
+ * Every item runs side by side under one Parallel, each gated the same way:
+ *
+ *   WaitForEnds  until the items in `starts_after` have finished
+ *   CheckGiven   its branch is the one observed (and nothing it waited for
+ *                was skipped)
+ *     then       the action block, as in policy_to_bt, then MarkDone "ran"
+ *     else       MarkDone "skipped"
+ *
+ * so an item starts when the actions whose ends open its decision point have
+ * ended, whatever the clock says, and the branches the world does not take
+ * drain away. CheckEpistemicGoal follows, as for any policy.
+ */
+std::string temporal_policy_to_bt(
+  const Policy & policy, const std::string & action_bt = "", int precision = 3);
+
 /// The action id the executor keys its action map by, for one policy node.
 /// This has to agree with plansys2::BTBuilder::to_action_id exactly: it is the
 /// name by which a behavior tree node finds the action it is meant to drive.
