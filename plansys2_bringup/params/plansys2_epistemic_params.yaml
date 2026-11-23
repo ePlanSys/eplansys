@@ -128,6 +128,13 @@ planner:
       # commutation check enumerates the subsets of the running set, so it
       # grows exponentially with this.
       max_concurrency: 3
+      # admissible: the least worst-case makespan. critical_path: a faster,
+      # satisficing search (relaxed critical path); its policies are valid
+      # but not necessarily the shortest.
+      temporal_estimate: "admissible"
+      # How the search's time bound grows between iterations. Optimality does
+      # not depend on it; 1.0 steps to the next lower bound.
+      temporal_bound_growth: 1.0
 
       # The same planning is available from an external Aletheia binary rather
       # than in process, through plansys2_aletheia_plan_solver. It takes these

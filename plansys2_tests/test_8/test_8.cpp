@@ -80,7 +80,7 @@ struct Mission
 ///   cannot supply, since the task designates both a blocked and a clear world
 ///   and neither is the model's to choose; the performer reports it on finish,
 ///   the way a real one would report what its sensor returned.
-Mission run_mission(const std::string & observed)
+Mission run_mission(const std::string & observed, const std::string & estimate = "admissible")
 {
   Mission mission;
 
@@ -190,6 +190,7 @@ Mission run_mission(const std::string & observed)
   planner_node->set_parameter(rclcpp::Parameter("EPISTEMIC.strategy", "aostar"));
   // Plan with the mapping's durations and overlap what commutes.
   planner_node->set_parameter(rclcpp::Parameter("EPISTEMIC.temporal", true));
+  planner_node->set_parameter(rclcpp::Parameter("EPISTEMIC.temporal_estimate", estimate));
 
   domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
   problem_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
@@ -318,6 +319,18 @@ TEST(test_8, the_looks_overlap_whatever_the_corridor_is)
     << describe(mission);
   EXPECT_TRUE(mission.ran("(inspect_corridor r1)")) << describe(mission);
   EXPECT_TRUE(mission.ran("(inspect_corridor r2)")) << describe(mission);
+}
+
+TEST(test_8, the_critical_path_search_plans_the_same_mission)
+{
+  // The satisficing search, chosen by parameter: on this mission it finds
+  // the same overlapping policy, and the mission runs the same way.
+  const auto mission = run_mission("e-inspect-blocked", "critical_path");
+  ASSERT_TRUE(mission.temporal);
+  EXPECT_EQ(mission.result, plansys2_msgs::action::ExecutePlan::Result::SUCCESS)
+    << describe(mission);
+  EXPECT_TRUE(overlapped(mission, "(inspect_corridor r1)", "(inspect_corridor r2)"))
+    << describe(mission);
 }
 
 // Leave through _exit, so the DDS threads never outlive the process.

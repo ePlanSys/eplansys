@@ -160,6 +160,19 @@ Parameters are declared under the plugin name at configure time
      - ``3``
      - Largest number of actions running at once under ``temporal``. The
        commutation check enumerates subsets of the running set.
+   * - ``temporal_estimate``
+     - string
+     - ``admissible``
+     - ``admissible``: the least worst-case makespan. ``critical_path``:
+       deepen with :math:`\max(h_{\mathrm{adm}}, h_{\mathrm{cp}})`, which
+       weighs each layer of the relaxed closure by its shortest contributing
+       action; the policy is admissible but not necessarily the shortest.
+   * - ``temporal_bound_growth``
+     - double
+     - ``1.0``
+     - Factor by which the search's time bound grows between iterations.
+       Optimality does not depend on it; ``1.0`` steps to the next lower
+       bound.
    * - ``consistent_beliefs``
      - bool
      - ``true``

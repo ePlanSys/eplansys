@@ -186,6 +186,8 @@ void EpistemicPlanSolver::configure(
   consistent_beliefs_parameter_name_ = plugin_name + ".consistent_beliefs";
   temporal_parameter_name_ = plugin_name + ".temporal";
   max_concurrency_parameter_name_ = plugin_name + ".max_concurrency";
+  temporal_estimate_parameter_name_ = plugin_name + ".temporal_estimate";
+  temporal_bound_growth_parameter_name_ = plugin_name + ".temporal_bound_growth";
 
   const auto declare = [&](const std::string & name, const std::string & def) {
       if (!lc_node_->has_parameter(name)) {
@@ -219,6 +221,13 @@ void EpistemicPlanSolver::configure(
   }
   if (!lc_node_->has_parameter(max_concurrency_parameter_name_)) {
     lc_node_->declare_parameter<int>(max_concurrency_parameter_name_, 3);
+  }
+  // admissible: the least worst-case makespan. critical_path: deepen with
+  // max(h_adm, h_cp), an admissible policy found faster on most tasks but not
+  // necessarily the shortest.
+  declare(temporal_estimate_parameter_name_, "admissible");
+  if (!lc_node_->has_parameter(temporal_bound_growth_parameter_name_)) {
+    lc_node_->declare_parameter<double>(temporal_bound_growth_parameter_name_, 1.0);
   }
 
   declare_epddl_parameters(lc_node_, epddl_parameter_names_);
@@ -488,6 +497,19 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
     options.max_concurrency = static_cast<std::size_t>(
       std::max<int64_t>(1, lc_node_->get_parameter(max_concurrency_parameter_name_).as_int()));
     options.deadline = deadline;
+
+    const std::string estimate = parameter(temporal_estimate_parameter_name_);
+    if (estimate == "critical_path") {
+      options.estimate = temporal::SearchOptions::Estimate::CriticalPath;
+    } else if (estimate != "admissible") {
+      RCLCPP_ERROR(
+        lc_node_->get_logger(),
+        "[epistemic] temporal_estimate is '%s'; it must be 'admissible' or 'critical_path'",
+        estimate.c_str());
+      return std::nullopt;
+    }
+    options.bound_growth = std::max(
+      1.0, lc_node_->get_parameter(temporal_bound_growth_parameter_name_).as_double());
 
     temporal::SearchStats stats;
     const auto durations = durations_from_mapping(task, mapping);

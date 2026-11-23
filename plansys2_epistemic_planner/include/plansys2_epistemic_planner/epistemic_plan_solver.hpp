@@ -174,6 +174,8 @@ private:
   std::string consistent_beliefs_parameter_name_;
   std::string temporal_parameter_name_;
   std::string max_concurrency_parameter_name_;
+  std::string temporal_estimate_parameter_name_;
+  std::string temporal_bound_growth_parameter_name_;
 
   /// The last goal the epistemic state published, as text. Latched by the
   /// subscription rather than fetched, so reading it costs nothing and cannot
