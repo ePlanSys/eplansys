@@ -2,6 +2,13 @@
 Changelog for package plansys2_epistemic_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (2026-11-22)
+------------------
+* temporal (off by default) plans a temporal policy: durations from the action
+  mapping, overlap only where the updates commute, the least worst-case
+  makespan, validated before it is returned. max_concurrency (3) bounds the
+  overlap.
+
 0.3.5 (2026-11-22)
 ------------------
 * A stale-prior task for test_7 (robot-fleet-stale-prior-lone.json).

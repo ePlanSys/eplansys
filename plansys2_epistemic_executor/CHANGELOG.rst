@@ -2,6 +2,13 @@
 Changelog for package plansys2_epistemic_executor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (2026-11-22)
+------------------
+* temporal_policy_to_bt renders a temporal policy as a tree dispatched by
+  events, with the WaitForEnds, CheckGiven and MarkDone nodes. A branch the
+  world did not take is skipped item by item.
+* Policy::validate checks a temporal plan's starts_after and given lists.
+
 0.3.5 (2026-11-22)
 ------------------
 * The README describes MissionSupervisor and how a contradicted policy fails.

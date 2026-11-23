@@ -51,7 +51,7 @@ Each release carries Debian packages for ROS 2 Humble on Ubuntu 22.04, and the
 release itself is the apt repository:
 
 ```bash
-echo "deb [trusted=yes] https://github.com/ePlanSys/eplansys/releases/download/v0.3.5 ./" |
+echo "deb [trusted=yes] https://github.com/ePlanSys/eplansys/releases/download/v0.4.0 ./" |
   sudo tee /etc/apt/sources.list.d/eplansys.list
 sudo apt update
 sudo apt install ros-humble-eplansys ros-humble-eplansys-demo
