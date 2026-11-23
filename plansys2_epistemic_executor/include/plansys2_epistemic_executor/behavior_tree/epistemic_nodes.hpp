@@ -46,8 +46,9 @@ constexpr const char * kEpistemicClientKey = "epistemic_state_client";
 constexpr const char * kEpistemicPolicyKey = "epistemic_policy";
 constexpr const char * kCurrentPlanKey = "current_plan";
 
-/// Register all four with a factory. One call, so a host cannot pick up the
-/// guard without the update and end up checking a state nothing advances.
+/// Register every epistemic node with a factory. One call, so a host cannot
+/// pick up the guard without the update and end up checking a state nothing
+/// advances.
 void register_epistemic_nodes(BT::BehaviorTreeFactory & factory);
 
 /**
@@ -259,6 +260,93 @@ public:
 
 private:
   EpistemicStateClient::Ptr client_;
+};
+
+// ── Temporal policies ───────────────────────────────────────────────────────
+//
+// A temporal policy starts each action when the actions it waits for have
+// ended, on the branch the observations so far select. Its tree runs every
+// item side by side, each one gated by the three nodes below, which talk
+// through one blackboard entry per item: `epistemic_done_<item>`, "ran" or
+// "skipped" once the item is finished either way.
+
+/// The blackboard key recording that an item has finished, and how.
+std::string epistemic_done_key(const std::string & item);
+
+/**
+ * @class plansys2::WaitForEnds
+ * @brief Running until every listed item has finished, ran or skipped.
+ *
+ * This is what makes dispatch event-driven: an item starts when the actions
+ * whose ends open its decision point have ended, whatever the clock says. A
+ * policy whose overlapping actions commute keeps its belief that way under any
+ * durations; one dispatched by planned start times does not.
+ */
+class WaitForEnds : public BT::StatefulActionNode
+{
+public:
+  WaitForEnds(const std::string & xml_tag_name, const BT::NodeConfig & conf);
+
+  BT::NodeStatus onStart() override;
+  BT::NodeStatus onRunning() override;
+  void onHalted() override {}
+
+  static BT::PortsList providedPorts()
+  {
+    return BT::PortsList(
+      {
+        BT::InputPort<std::string>("items", "Items to wait for, separated by ';'"),
+      });
+  }
+};
+
+/**
+ * @class plansys2::CheckGiven
+ * @brief Whether an item's branch is the one being executed.
+ *
+ * Succeeds when every item it waited for ran (none was skipped) and every
+ * observation on its path came out as listed. Fails otherwise, which skips the
+ * item: a branch the world did not take drains away, item by item, instead of
+ * leaving its waits blocked for ever.
+ */
+class CheckGiven : public BT::ConditionNode
+{
+public:
+  CheckGiven(const std::string & xml_tag_name, const BT::NodeConfig & conf);
+
+  BT::NodeStatus tick() override;
+
+  static BT::PortsList providedPorts()
+  {
+    return BT::PortsList(
+      {
+        BT::InputPort<std::string>("after", "Items this one waited for, ';'-separated"),
+        BT::InputPort<std::string>("items", "Items whose observations select the branch"),
+        BT::InputPort<std::string>("outcomes", "The outcome each of them must have observed"),
+      });
+  }
+};
+
+/**
+ * @class plansys2::MarkDone
+ * @brief Records that an item has finished: "ran" or "skipped".
+ */
+class MarkDone : public BT::SyncActionNode
+{
+public:
+  MarkDone(const std::string & xml_tag_name, const BT::NodeConfig & conf)
+  : SyncActionNode(xml_tag_name, conf) {}
+
+  BT::NodeStatus tick() override;
+
+  static BT::PortsList providedPorts()
+  {
+    return BT::PortsList(
+      {
+        BT::InputPort<std::string>("node", "Index of the item"),
+        BT::InputPort<std::string>("status", "ran or skipped"),
+      });
+  }
 };
 
 }  // namespace plansys2

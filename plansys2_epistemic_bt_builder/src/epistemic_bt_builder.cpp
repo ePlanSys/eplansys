@@ -218,6 +218,14 @@ std::string EpistemicBTBuilder::get_tree(const plansys2_msgs::msg::Plan & curren
     logger(), "building a tree for %zu policy nodes%s", policy.size(),
     policy.branches() ? ", branching" : "");
 
+  // A temporal policy carries its own overlap, which the planner proved
+  // commutes: no post-hoc grouping, and every item dispatched by the ends it
+  // waits for rather than by its planned time.
+  if (current_plan.temporal) {
+    RCLCPP_INFO(logger(), "temporal policy: dispatching each item by the ends it waits for");
+    return temporal_policy_to_bt(policy, bt_action_, precision_);
+  }
+
   if (!parallel_dispatch_) {
     return policy_to_bt(policy, bt_action_, precision_);
   }

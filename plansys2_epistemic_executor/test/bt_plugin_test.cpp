@@ -93,12 +93,12 @@ TEST(BtPluginTest, ThePluginRegistersEveryEpistemicNode)
   ASSERT_NO_THROW(factory.registerFromPlugin(EPISTEMIC_BT_NODES_LIBRARY));
 
   for (const auto & name : {"CheckKnowledge", "ApplyEpistemicUpdate", "EpistemicSwitch",
-      "CheckBeliefUnchanged", "CheckEpistemicGoal"})
+      "CheckBeliefUnchanged", "CheckEpistemicGoal", "WaitForEnds", "CheckGiven", "MarkDone"})
   {
     EXPECT_NE(factory.builders().find(name), factory.builders().end())
       << name << " was not registered by the plugin";
   }
-  EXPECT_EQ(factory.builders().size(), before + 5u);
+  EXPECT_EQ(factory.builders().size(), before + 8u);
 }
 
 // A tree rendered from a policy must instantiate with the real nodes, not just

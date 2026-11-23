@@ -24,3 +24,12 @@ ament_add_gtest(epistemic_state_node_test epistemic_state_node_test.cpp TIMEOUT 
 target_compile_definitions(epistemic_state_node_test PRIVATE
   EPISTEMIC_TASK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../plansys2_epistemic_planner/test/tasks")
 target_link_libraries(epistemic_state_node_test ${PROJECT_NAME})
+
+# Temporal policies: the event-driven gates, ticked for real, and the rendered
+# tree instantiated with the plugin's nodes.
+ament_add_gtest(temporal_bt_test temporal_bt_test.cpp TIMEOUT 120)
+target_compile_definitions(temporal_bt_test PRIVATE
+  EPISTEMIC_BT_NODES_LIBRARY="$<TARGET_FILE:plansys2_epistemic_bt_nodes>")
+target_link_libraries(temporal_bt_test ${PROJECT_NAME} plansys2_epistemic_bt_nodes
+  behaviortree_cpp::behaviortree_cpp)
+add_dependencies(temporal_bt_test plansys2_epistemic_bt_nodes)
