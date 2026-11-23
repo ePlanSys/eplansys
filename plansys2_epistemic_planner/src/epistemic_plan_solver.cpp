@@ -188,6 +188,7 @@ void EpistemicPlanSolver::configure(
   max_concurrency_parameter_name_ = plugin_name + ".max_concurrency";
   temporal_estimate_parameter_name_ = plugin_name + ".temporal_estimate";
   temporal_bound_growth_parameter_name_ = plugin_name + ".temporal_bound_growth";
+  temporal_max_expansions_parameter_name_ = plugin_name + ".temporal_max_expansions";
 
   const auto declare = [&](const std::string & name, const std::string & def) {
       if (!lc_node_->has_parameter(name)) {
@@ -228,6 +229,11 @@ void EpistemicPlanSolver::configure(
   declare(temporal_estimate_parameter_name_, "admissible");
   if (!lc_node_->has_parameter(temporal_bound_growth_parameter_name_)) {
     lc_node_->declare_parameter<double>(temporal_bound_growth_parameter_name_, 1.0);
+  }
+  // 0: no limit. The optimal search stops after this many expansions and the
+  // solver falls back as on a timeout.
+  if (!lc_node_->has_parameter(temporal_max_expansions_parameter_name_)) {
+    lc_node_->declare_parameter<int>(temporal_max_expansions_parameter_name_, 0);
   }
 
   declare_epddl_parameters(lc_node_, epddl_parameter_names_);
@@ -496,7 +502,12 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
     temporal::SearchOptions options;
     options.max_concurrency = static_cast<std::size_t>(
       std::max<int64_t>(1, lc_node_->get_parameter(max_concurrency_parameter_name_).as_int()));
-    options.deadline = deadline;
+    // Three quarters of the time for the optimal search; what is left is for
+    // the fallback, should it be needed.
+    options.deadline = started + (deadline - started) * 3 / 4;
+    const int64_t max_expansions =
+      lc_node_->get_parameter(temporal_max_expansions_parameter_name_).as_int();
+    options.max_expansions = static_cast<std::size_t>(std::max<int64_t>(0, max_expansions));
 
     const std::string estimate = parameter(temporal_estimate_parameter_name_);
     if (estimate == "critical_path") {
@@ -513,17 +524,37 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
 
     temporal::SearchStats stats;
     const auto durations = durations_from_mapping(task, mapping);
-    const auto policy = temporal::search_policy(task, durations, options, &stats);
+    auto policy = temporal::search_policy(task, durations, options, &stats);
     RCLCPP_INFO(
       lc_node_->get_logger(),
       "[epistemic] temporal search: %zu expanded, %zu start checks (%zu rejected), %.3f s",
       stats.expanded, stats.start_checks, stats.start_rejected, stats.elapsed_sec);
-    if (!policy) {
-      RCLCPP_WARN(
-        lc_node_->get_logger(), "[epistemic] %s",
-        stats.exhausted ? "no temporal policy exists" :
-        "no temporal policy found before the timeout");
+    if (!policy && stats.exhausted) {
+      RCLCPP_WARN(lc_node_->get_logger(), "[epistemic] no temporal policy exists");
       return std::nullopt;
+    }
+    if (!policy) {
+      // The optimal search did not finish. Plan untimed instead and schedule
+      // the result with StartCheck: an admissible temporal policy, no longer
+      // than the untimed one run in sequence, but not the shortest.
+      const auto h = make_heuristic("rpg", task);
+      const auto untimed = aostar::search(task, *h, 0, deadline);
+      if (untimed) {
+        policy = temporal::schedule_untimed(
+          task, durations, untimed->plan_tree, options.max_concurrency);
+      }
+      if (!policy) {
+        RCLCPP_WARN(
+          lc_node_->get_logger(),
+          "[epistemic] no temporal policy found before the timeout, and no untimed one "
+          "to schedule");
+        return std::nullopt;
+      }
+      RCLCPP_WARN(
+        lc_node_->get_logger(),
+        "[epistemic] the optimal temporal search did not finish; returning the untimed "
+        "policy scheduled with StartCheck (makespan %.2f s, not necessarily the least)",
+        policy->makespan);
     }
     std::string why;
     if (!temporal::validate_policy(task, durations, *policy, &why)) {

@@ -16,7 +16,7 @@ find_package(nlohmann_json 3.10 REQUIRED)
 
 # The planning core is Aletheia's, linked as a library rather than copied in,
 # so the search here and the epistemic_planner binary are one implementation.
-find_package(aletheia 0.4 REQUIRED)
+find_package(aletheia 0.5 REQUIRED)
 
 set(EPISTEMIC_SOURCES
   src/action_mapping.cpp
