@@ -8,3 +8,9 @@ plansys2_msgs/PlanItem[] items
 # not the same as achieving the goal: the executor checks it once execution
 # settles on a leaf.
 string epistemic_goal
+
+# True for a temporal policy: items overlap, and each starts when the items in
+# its `starts_after` have ended, on the branch its `given_items` select. The
+# planner sets it only for a policy whose overlapping actions it has proven to
+# commute, so the order in which they end does not change the belief.
+bool temporal false

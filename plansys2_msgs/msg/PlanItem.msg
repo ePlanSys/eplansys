@@ -46,3 +46,26 @@ bool sensing false
 # expressible as PDDL preconditions, which is why they travel here rather than
 # being read from the domain.
 string[] knowledge_requirements
+
+# --- Temporal policy extension ---
+#
+# A temporal policy (Plan.temporal) overlaps actions, and starts each one when
+# the actions it waits for have ended rather than at a clock time: with
+# durations that jitter, only that keeps the belief the same as planned. `time`
+# is the planned start, for display and scheduling estimates; these fields are
+# what the executor dispatches by. `children` and `outcomes` are unused.
+
+# The items this one waits for: every item on its path planned to end before
+# it starts, less those another listed item already waits for. It starts once
+# all of them have ended; waiting only for the latest ends would let it start
+# while an earlier-planned end is still outstanding, an overlap nobody checked.
+# Empty: it starts with the policy.
+uint32[] starts_after
+
+# The branch this item belongs to: it runs only if each item in `given_items`
+# observed the outcome at the same position of `given_outcomes`. Every
+# observation on the path from the start of the policy is listed, not only the
+# latest, since an item can start after a decision point that started nothing.
+# If any of these items did not run, neither does this one.
+uint32[] given_items
+string[] given_outcomes
