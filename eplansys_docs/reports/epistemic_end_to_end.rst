@@ -1,126 +1,123 @@
-Executing a policy end to end
-=============================
+End-to-end policy execution
+===========================
 
-The planner could produce a branching policy and the builder could render one
-as a behavior tree, but until this work nothing had ever run one over a live
-ROS graph. Two end-to-end tests now do, and the package that turns a policy
-into a tree has the tests it never had.
+This report describes the integration tests that execute branching epistemic
+policies over a live ROS graph, the unit tests of the behavior tree builder
+plugin, and the defects the end-to-end path exposed.
 
-:download:`Read the full report (PDF) <../_static/epistemic_end_to_end_test.pdf>`,
-five pages, with the reasoning behind each fix and the execution logs.
+:download:`Full report (PDF, five pages) <../_static/epistemic_end_to_end_test.pdf>`,
+with the analysis of each defect and the execution logs.
 
-What the tests run
-------------------
+Test setup
+----------
 
-Both missions bring up the whole graph in one process (domain expert,
-problem expert, planner with the ``plansys2/EpistemicPlanSolver`` plugin,
-executor with ``bt_builder_plugin: EpistemicBTBuilder`` and the epistemic node
-library, the ``epistemic_state`` node loaded from the same grounded task, and
-the fake action performers) and run the same mission twice with the world in
-different states.
+Each mission brings up the complete graph in one process: domain expert,
+problem expert, planner with ``plansys2/EpistemicPlanSolver``, executor with
+``bt_builder_plugin: EpistemicBTBuilder`` and the epistemic node library, the
+``epistemic_state`` node loaded with the same grounded task, and stand-in
+action performers. Each mission runs once per world state of interest
+(:numref:`tab-e2e-tests`).
 
-.. list-table::
+.. _tab-e2e-tests:
+
+.. list-table:: Test suites.
    :header-rows: 1
    :widths: 22 48 30
 
    * - Test
      - Mission
-     - What it proves
+     - Property verified
    * - ``plansys2_tests/test_5``
-     - One corridor of unknown state; a four-node policy that drives out,
-       looks, and reports.
-     - One run executes ``report_clear`` and the other ``report_blocked``, and
-       neither runs the branch it did not take.
+     - One corridor of unknown state; four-node policy (drive, inspect,
+       report).
+     - Each run executes exactly the report for the observed state
+       (``report_clear`` or ``report_blocked``).
    * - ``plansys2_tests/test_6``
-     - Two corridors and three robots; a twelve-node policy with a switch
-       nested inside another switch's continuation.
-     - The two runs report the corridors in opposite states and share no leaf,
-       so the second half of the mission is correct inside either branch of the
-       first.
+     - Two corridors, three robots; twelve-node policy with a switch nested in
+       another switch's continuation.
+     - Runs with the corridors in opposite states reach disjoint leaves; the
+       second half is correct under either branch of the first.
+   * - ``plansys2_tests/test_7``
+     - The corridor mission against a world that deviates from the model.
+     - No action planned for a refuted belief executes; under
+       ``MissionSupervisor`` the mission completes from the repaired belief.
    * - ``plansys2_epistemic_bt_builder/test``
      - Twelve unit tests of the plugin's contract with ``plansys2_executor``.
      - Switch rendering and outcome order, flat rendering of unbranched plans,
-       refusal of a malformed policy, agreement with
-       ``BTBuilder::to_action_id``, the dotgraph, and pluginlib lookup by name.
+       rejection of malformed policies, agreement with
+       ``BTBuilder::to_action_id``, dot graph, pluginlib lookup by name.
 
-Where the observation comes from
---------------------------------
+Observation routes
+------------------
 
-The epistemic state can name a sensing outcome by itself only when its model
-already designates one world. Both fleet fixtures designate several, which
-is what makes them worth testing with, and what means the observation has to
-come from whoever did the sensing.
+The epistemic state determines a sensing outcome by itself only if its model
+designates a single world. The fleet tasks designate several, so the outcome
+must be supplied by the sensing agent. The two routes of
+:ref:`arch-observation` are each covered by one test.
 
-The observation reaches the tree by one of two routes, and the tests cover one
-each.
+``test_5``
+   Performer route. The stand-in ``inspect_corridor`` performer reports the
+   corridor state in ``ActionExecution.outcome``; the packaged action template
+   binds ``ExecuteAction``'s outcome port to ``ApplyEpistemicUpdate``'s
+   ``observed``. Executor defaults are used.
 
-``ActionExecution`` carries an ``outcome`` alongside its status, so a performer
-reports what it saw in the same message that reports completion. The packaged
-action template binds ``ExecuteAction``'s outcome port to
-``ApplyEpistemicUpdate``'s ``observed``. ``test_5`` uses this route, running on
-the executor's defaults, with the fake ``inspect_corridor`` performer reporting
-the corridor's state.
+``test_6``
+   External route, for observations not originating from the acting
+   performer. The test supplies an action template that binds ``observed`` to
+   ``ObservedOutcome``, a node reading ``action=outcome`` entries from a
+   latched topic.
 
-``test_6`` binds the port explicitly, the approach required when the
-observation originates elsewhere than the acting performer. It supplies its own
-action template with the port wired to ``ObservedOutcome``, a node that reads
-``action=outcome`` entries from a latched topic and reports the entry matching
-its own action.
-
-What the model then does is the point of the whole stack. From the depot run
-with north blocked and south clear::
+Log of the depot run with north blocked and south clear::
 
     [epistemic_state] applied inspect-north_r1 -> e-inspect-north-blocked: 4 worlds, 2 designated
     [epistemic_state] applied inspect-south_r2 -> e-inspect-south-clear:   4 worlds, 1 designated
     [epistemic_bt] [goal] (and (Kw r1 blocked-north) ... (Kw r3 blocked-south)) holds
 
-Four candidate worlds at the start, two after the first sensing, one after the
-second, and the goal checked against the state that actually resulted rather
-than the one planning assumed.
+The designated set shrinks from four worlds to two and then one, and the goal
+is evaluated in the resulting state.
 
-Defects the end-to-end path exposed
------------------------------------
+Defects found
+-------------
 
-None of these is visible to a unit test, and each is fatal to a real execution.
-All four are fixed; the report has the details.
+The defects of :numref:`tab-e2e-defects` are invisible to unit tests and each
+prevents a correct execution. All are fixed.
 
-.. list-table::
+.. _tab-e2e-defects:
+
+.. list-table:: Defects exposed by the end-to-end path.
    :header-rows: 1
    :widths: 6 64 30
 
    * - \#
      - Defect
-     - Where
+     - Location
    * - 1
-     - A builder loaded by name was never initialized: ``initialize()`` was
-       called only for ``SimpleBTBuilder`` and ``STNBTBuilder``, so any plugin
-       builder ran with its action template and time precision discarded.
+     - A builder loaded by name was not initialised: ``initialize()`` was
+       called only for ``SimpleBTBuilder`` and ``STNBTBuilder``, so plugin
+       builders ran without their action template and time precision.
      - ``ExecutorNode.cpp``
    * - 2
-     - With (1) fixed, the builder could be handed PlanSys2's default action
-       template, which has no ``CONTINUATIONS`` placeholder: the rendered tree
-       holds only the root action, runs, succeeds, and leaves the mission
-       undone. Such a template is now refused, with a warning.
+     - After (1), the builder could receive PlanSys2's default action
+       template, which lacks the ``CONTINUATIONS`` placeholder; the tree then
+       contained only the root action and succeeded with the mission
+       incomplete. Such a template is now rejected with a warning.
      - ``epistemic_bt_builder.cpp``
    * - 3
-     - An empty policy, a goal that already holds, rendered a childless
-       ``Sequence``, which BehaviorTree.CPP rejects, so "nothing to do" crashed
-       tree creation. It now renders ``AlwaysSuccess``.
+     - An empty policy (goal already satisfied) rendered a childless
+       ``Sequence``, which BehaviorTree.CPP rejects. It now renders
+       ``AlwaysSuccess``.
      - ``policy_bt.cpp``
    * - 4
-     - ``nlohmann_json`` sits in the exported link interfaces of the planner
-       and the executor but was absent from ``ament_export_dependencies``, so
-       the first consumer that does not find it independently failed to
-       configure.
+     - ``nlohmann_json`` was in the exported link interfaces of the planner and
+       the executor but missing from ``ament_export_dependencies``, so
+       downstream packages failed to configure.
      - ``CMakeLists.txt`` (×2)
 
 Results
 -------
 
-Verified in the ``ros:rolling`` container, the environment the ``rolling``
-workflow builds in.
-
-.. list-table::
+.. list-table:: Results in the ``ros:rolling`` container (the environment of
+   the ``rolling`` workflow).
    :header-rows: 1
    :widths: 40 12 12 18
 
@@ -143,36 +140,30 @@ workflow builds in.
    * - ``plansys2_epistemic_executor`` (existing)
      - 35
      - pass
-     - none
-   * - ``plansys2_tests`` (whole package, lint included)
+     - n/a
+   * - ``plansys2_tests`` (package, including linters)
      - 165
      - pass
      - 3 min 18 s
-   * - ``plansys2_executor`` (whole package, lint included)
+   * - ``plansys2_executor`` (package, including linters)
      - 255
      - pass
      - 2 min 57 s
 
-``plansys2_epistemic_bt_builder`` is also removed from the ``packages-ignore``
-list of the coverage step in ``rolling.yaml``: that list is for packages
-producing no ``.gcda`` at all, and with a test suite the builder now produces
-one.
+``test_5``, ``test_6`` and ``test_7`` also pass on ROS 2 Humble, where the
+complete stack builds. ``plansys2_epistemic_bt_builder`` was removed from the
+``packages-ignore`` list of the coverage step in ``rolling.yaml``, which lists
+packages producing no ``.gcda`` files.
 
-Known gaps
-----------
+Limitations
+-----------
 
-* The negative cases are covered by ``plansys2_tests/test_7``: a performer
-  that reports an outcome no event describes stops the mission before either
-  branch, and one that reports an outcome the planner held impossible has the
-  model repaired and the action planned for the old belief refused by its
-  knowledge guard. Neither reaches ``EpistemicSwitch``, whose refusal stays
-  unit tested: with two-outcome sensing, a policy either branches on both
-  outcomes or commits to one and renders no switch.
-
-* ``ObservedOutcome`` is a test's stand-in for a sensor. A deployment still
-  binds ``observed`` to its own performers, the one piece of wiring a domain
-  supplies itself.
-* Verified since on ROS 2 Humble as well: the whole stack builds there, and
-  ``test_5``, ``test_6`` and ``test_7`` pass.
-* The mission fixtures ``robot-fleet.json`` and ``robot-fleet-depot.json``, with
-  their action mappings, come from the ``feature/epddl-front-end`` branch.
+* ``test_7`` covers outcomes outside the model: an outcome no event describes
+  stops the mission at the update, before either branch; an outcome the
+  planner held impossible leads to model repair, after which the knowledge
+  guard rejects the action planned for the old belief. Neither case reaches
+  ``EpistemicSwitch``, whose rejection of unplanned outcomes is covered by
+  unit tests only: with two-outcome sensing, a policy either branches on both
+  outcomes or commits to one and has no switch.
+* ``ObservedOutcome`` is a test stand-in for a sensor. A deployment binds
+  ``observed`` to its own performers.

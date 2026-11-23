@@ -1,102 +1,95 @@
 Design decisions
 ================
 
-Three questions the bridge had to answer, and what it settled on.
-
 Allocation authority
 --------------------
 
-Both systems allocate, and their decisions need not coincide. The planner
-assigns actions to named agents during search and the epistemic model records
-knowledge against those names; the RMF dispatcher receives bids and selects a
-robot. Where the two differ, the model records that an agent knows something it
-never sensed, and no error is raised.
+Both systems allocate. The planner assigns actions to named agents, and the
+epistemic model records knowledge against those names; the RMF dispatcher
+collects bids and selects a robot. If the two choices differ, the model credits
+an agent with knowledge it never sensed, and no error is raised.
 
-The bridge therefore binds each RMF task to the robot the planner named,
-through the ``agents`` table of its task map. The mechanism is
-``robot_task_request``, which carries a fleet and a robot and is handled
-directly by that robot's own ``TaskManager`` without a bid. Traffic management,
-lifts and doors are retained in full; only RMF's allocation is forgone.
+The bridge therefore binds each RMF task to the robot of the agent the planner
+named, through the ``agents`` table of the task map. It submits a
+``robot_task_request``, which names a fleet and a robot and is handled directly
+by that robot's ``TaskManager`` without bidding. Traffic management, lifts and
+doors remain under RMF; only RMF's allocation is bypassed.
 
-An agent bound to no robot is a hard error, and the bridge refuses the action.
-Letting RMF choose instead is precisely the failure this decision exists to
-prevent: a silent substitution would credit the wrong agent with sensing, and
-nothing downstream would notice.
+An action whose agent is bound to no robot is refused. Delegating the choice to
+RMF would reintroduce the silent substitution this decision prevents.
 
-The role-based scheme, in which the planner reasons over abstract agents and
-the bridge relabels the epistemic agent after dispatch, remains the research
-variant. Relabelling an agent in a Kripke model during execution is not a
-trivial operation.
+A role-based scheme, in which the planner reasons over abstract agents and the
+bridge relabels the epistemic agent after dispatch, remains a research
+question; relabelling an agent in a Kripke model during execution is
+non-trivial.
 
 Outcome transport
 -----------------
 
-Settled by reading the sources, since Open-RMF's documentation does not address
-it: a task carries no result payload.
+An RMF task carries no result payload. This was established from the sources,
+as the Open-RMF documentation does not address it:
 
-* ``rmf_api_msgs``' ``task_state.json`` has no result, return or output
-  property at any level. Its completion-bearing fields are a status token from
-  a fixed enumeration and a finish time.
-* ``RobotUpdateHandle::ActionExecution::finished()`` takes no argument, which
-  is the exact API a performer would report through.
-* The newer ``DynamicEvent`` action result carries a failure string, a status
-  string and an event id, and nothing of the domain.
+* ``task_state.json`` in ``rmf_api_msgs`` has no result, return or output
+  property at any level. Its completion fields are a status from a fixed
+  enumeration and a finish time.
+* ``RobotUpdateHandle::ActionExecution::finished()``, through which a
+  performer would report, takes no argument.
+* The ``DynamicEvent`` action result carries a failure string, a status string
+  and an event id, and no domain data.
 
-Two free-form fields do travel with a task, and the bridge reads both. A value
-carrying the prefix ``eplansys.outcome=`` in either is read as the token the
-policy branches on.
+Two free-form fields travel with a task, and the bridge reads both. A value
+with the prefix ``eplansys.outcome=`` in either is taken as the outcome token
+(:numref:`tab-outcome-routes`).
 
-.. list-table::
+.. _tab-outcome-routes:
+
+.. list-table:: Routes for the outcome token.
    :header-rows: 1
    :widths: 22 40 38
 
    * - Route
      - Written through
-     - Trade-off
+     - Requirement
    * - event ``detail``
-     - ``SimpleEventState::update_detail``, forwarded verbatim into every state
+     - ``SimpleEventState::update_detail``, forwarded verbatim in every state
        update
-     - tidier; needs a custom ``rmf_task_sequence`` event
+     - a custom ``rmf_task_sequence`` event
    * - log entries
-     - ``underway()`` and its neighbours
-     - reachable from an ordinary ``perform_action`` callback
+     - ``underway()`` and related calls
+     - an ordinary ``perform_action`` callback
 
-In a fleet adapter, writing the token is one line on the execution handle:
+In a fleet adapter, the token is written with one call on the execution handle:
 
 .. code-block:: python
 
    execution.underway("eplansys.outcome=e-scan-dirty")
 
-On Humble this stream leaves the fleet adapter over the websocket named by the
-adapter's ``server_uri`` parameter and over nothing else.
-``StandardNames.hpp`` declares only ``task_api_requests`` and
-``task_api_responses``; the ROS 2 mirror of ``task_state_update`` and
-``task_log_update`` exists on Rolling and not here. The bridge is therefore the
-websocket server the adapter dials.
+On Humble, task states and logs leave the fleet adapter only over the websocket
+named by the adapter's ``server_uri`` parameter. ``StandardNames.hpp`` declares
+only ``task_api_requests`` and ``task_api_responses``; the ROS 2 topics
+``task_state_update`` and ``task_log_update`` exist on Rolling only. The bridge
+is therefore the websocket server the adapter connects to.
 
-Action to task mapping
+Action-to-task mapping
 ----------------------
 
-``eplansys``' ``action_mapping.json`` maps plank's grounded names to PlanSys2
-action expressions, and does its work inside the planner. By the time an action
-reaches a performer the grounded name is gone and what remains is a name and
-arguments, so a map keyed on grounded names could not be consulted here. The
-two files answer different questions at different times, and collapsing them
-would leave the bridge unable to look anything up.
+``action_mapping.json`` in ``eplansys`` maps grounded action names to PlanSys2
+action expressions and is applied inside the planner. A performer receives only
+the expression (a name and arguments), so a map keyed on grounded names cannot
+be consulted there.
 
-The bridge keeps a separate map, keyed differently: it binds agents to robots
-and says where each action sends one. Its format is given in :doc:`task_map`.
+The bridge uses a separate map, keyed on PlanSys2 action names, that binds
+agents to robots and gives each action's destination (:doc:`task_map`).
 
-Why not rmf_websocket::BroadcastServer
---------------------------------------
+Websocket server
+----------------
 
-``rmf_websocket::BroadcastServer`` is the obvious thing to use for the feed and
-does not work. Measured against 2.1.8, an adapter reports the connection open
-and publishes without error while that server's callback is never invoked, and
-a plain websocket server on the same port receives every frame from the same
-adapter. It also aborts the process on the first non-JSON frame, since its
-handler calls ``nlohmann::json::parse`` with exceptions enabled and
-``BroadcastClient`` opens by sending a bare ``Hello`` probe.
+``rmf_websocket::BroadcastServer`` is unsuitable as the feed. With version
+2.1.8 an adapter reports the connection open and publishes without error, but
+the server's callback is never invoked; a plain websocket server on the same
+port receives every frame from the same adapter. The server also aborts the
+process on the first non-JSON frame: its handler calls
+``nlohmann::json::parse`` with exceptions enabled, and ``BroadcastClient``
+opens with a bare ``Hello`` probe.
 
-``WebsocketFeed`` is therefore the bridge's own server, and it treats an
-unparseable frame as a frame to ignore.
+``WebsocketFeed`` is the bridge's own server; it ignores unparseable frames.

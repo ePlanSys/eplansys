@@ -1,34 +1,29 @@
 The site survey
 ===============
 
-Three robots, and a mission whose difficulty is entirely in who is allowed to
-know what.
+Three agents and a site that may be contaminated. As in :doc:`corridor`, only
+an agent on the site can sense its state, and sensing is semi-private. The
+third agent, ``observer``, represents a party outside the team's control (a
+contractor's drone, a public telemetry feed), and the goal requires that it not
+learn the finding. This negative conjunct excludes the public channel and makes
+the choice of channel depend on its audience.
 
-A site may be contaminated. Only a robot standing on the site can tell, and a
-robot watching another one scan learns that it scanned, not what it found. So
-far this is :doc:`corridor` with a third robot.
+The EPDDL sources are grounded by ``plank`` at start-up.
 
-What makes it a different problem is that third robot. ``observer`` is a machine
-the team does not control --- a contractor's drone, a public telemetry feed ---
-and the mission forbids it learning the finding. That single negative goal is
-what the domain is built around. It rules out the open channel, which is
-otherwise the obvious way for the team to inform itself, and forces the planner
-to choose a channel by who can hear it.
-
-Unlike the corridor, this mission is stated in EPDDL and ground by ``plank`` at
-start up, which is the ordinary way to pose an epistemic problem. It needs
-``plank`` built and on ``PATH``.
-
-Running it
-----------
+Usage
+-----
 
 .. code-block:: bash
 
    ros2 launch eplansys_demo survey_launch.py
    ros2 launch eplansys_demo survey_launch.py site:=clean
 
-The goal
---------
+The mission node replans from the reached belief when an action fails, up to
+``mission.max_attempts`` attempts (default 3 for this mission;
+:ref:`arch-supervisor`).
+
+Goal
+----
 
 .. code-block:: lisp
 
@@ -38,42 +33,39 @@ The goal
        ([Kw. relay] (contaminated))
        (<Kw. observer> (contaminated))))
 
-Three conjuncts, and each rules out a different shortcut. Somebody has to go and
-look. The finding has to travel. And it cannot travel over the open channel.
+The first two conjuncts require sensing and communication. The third,
+:math:`\neg\mathit{Kw}_{\mathit{observer}}\,\mathit{contaminated}`, is a
+condition on an agent's ignorance. It is not a property of the world and has no
+PDDL representation.
 
-The third conjunct is the one with no classical counterpart at all. It is not a
-fact to be achieved but a fact to be *avoided being known*, and no arrangement
-of PDDL predicates expresses it: the observer's ignorance is not a property of
-the world, and nothing the robots do to the world can secure it.
+Channels
+--------
 
-The channels
-------------
+The communication actions have no ontic effect; they differ only in audience
+(:numref:`tab-survey-channels`).
 
-Every way of speaking in this domain has the same effect on the world --- none
---- and differs only in its audience. That is what a classical planner cannot
-tell apart, and what the epistemic layer is for.
+.. _tab-survey-channels:
 
-.. list-table::
+.. list-table:: Actions of the survey domain.
    :header-rows: 1
    :widths: 26 30 44
 
    * - Action
      - EPDDL action type
-     - Who comes to know
+     - Resulting knowledge
    * - ``scan``
      - ``semi-private-sensing``
-     - the scanner learns the finding; everyone else learns that a scan
-       happened
+     - the scanner learns the finding; the others learn that a scan occurred
    * - ``broadcast``
      - ``public-announcement``
-     - everyone, including the observer
+     - all agents, including ``observer``, learn the finding
    * - ``relay``
      - ``private-announcement``
-     - the speaker and the named listener; everyone else is oblivious, and
-       does not learn that anything was said
+     - the speaker and the named listener; the others are oblivious and do
+       not learn that a message was sent
 
-What the planner does with them
--------------------------------
+Result
+------
 
 .. code-block:: text
 
@@ -87,49 +79,39 @@ What the planner does with them
                (Kw relay contaminated)
                (not (Kw observer contaminated))) holds
 
-Two things in that trace are worth stopping on.
+The policy uses the private ``relay`` although ``broadcast`` would inform the
+team in one action; a broadcast would falsify the third conjunct. The choice of
+channel follows from the goal and is not configured.
 
-**The planner declined to broadcast.** Nothing told it not to. It was given a
-public announcement that would inform the whole team in one step, and it chose a
-private one instead, because the public one would have made the third conjunct
-false. Which channel to use is a consequence of the goal, worked out rather than
-configured.
+The model grows from two worlds to three at the private announcement. A private
+announcement adds a distinction: the model now contains a world in which the
+message was sent and the world ``observer`` still considers actual, in which it
+was not. Sensing shrinks the designated set and private announcement enlarges
+the model; both are instances of the product update.
 
-**The model grew.** Two worlds before the relay, three after. A private
-announcement adds a distinction rather than removing one: there is now a world
-in which the message was sent and a world the observer still believes in, where
-it was not. Sensing narrows a model and private speech widens it, and both are
-the same product update.
+Goal ablation
+-------------
 
-What removing a conjunct does
------------------------------
-
-The goal is three constraints, and the mission changes shape when any of them
-goes. Measured, by removing each and re-planning:
-
-.. list-table::
+.. list-table:: Effect of removing or weakening each conjunct (measured by
+   re-planning).
    :header-rows: 1
    :widths: 40 60
 
    * - Goal
-     - What the planner does
-   * - all three
-     - a team member scans, then uses the private link. Three actions, 40
-       expansions
-   * - without ``(<Kw. observer> ...)``
-     - sends ``observer`` itself to scan, then broadcasts. Three actions, 32
-       expansions
-   * - ``[relay]`` weakened to the second-order
-       ``([relay] ([Kw. scout] (contaminated)))``
-     - two actions: go and scan, and nothing else
+     - Policy
+   * - all three conjuncts
+     - a team member scans, then relays privately; 3 actions, 40 expansions
+   * - without :math:`\neg\mathit{Kw}_{\mathit{observer}}`
+     - ``observer`` itself scans, then broadcasts; 3 actions, 32 expansions
+   * - :math:`\mathit{Kw}_{\mathit{relay}}` weakened to
+       :math:`K_{\mathit{relay}}\,\mathit{Kw}_{\mathit{scout}}\,\mathit{contaminated}`
+     - go and scan; 2 actions
 
-The first two rows are the same length, which is the opposite of what one
-expects. Secrecy does not cost the mission a step; it makes a whole class of
-solutions inadmissible, and the extra work shows up in the search rather than in
-the plan.
+The first two policies have the same length. The secrecy conjunct excludes a
+class of solutions without lengthening the plan, and its cost appears in the
+search (40 against 32 expansions).
 
-The third row is the one worth dwelling on. Asking that ``relay`` know *that
-scout knows* is already satisfied by the scan, because semi-private sensing lets
-the others see that a scan happened. It is a real epistemic goal and the mission
-gets it for nothing --- which is a good illustration of why second-order goals
-have to be read carefully before they are relied on.
+In the third row, the second-order goal that ``relay`` know that ``scout`` knows
+is satisfied by the scan alone, since semi-private sensing lets every agent
+observe that a scan occurred. Second-order goals of this kind can be weaker
+than their wording suggests.

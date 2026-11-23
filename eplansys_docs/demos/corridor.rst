@@ -1,37 +1,36 @@
 The corridor
 ============
 
-Two robots and a corridor nobody has looked down. The goal is that both come to
-know whether it is blocked.
+Two robots and a corridor of unknown state. The goal is
+:math:`\mathit{Kw}_{r_1}\,\mathit{blocked} \wedge \mathit{Kw}_{r_2}\,
+\mathit{blocked}`. The goal concerns knowledge of the corridor and is
+independent of its actual state, so the solution is a policy: ``r1`` drives to
+the junction, inspects, and announces the result, the announcement being
+selected at run time. The task is the one of :doc:`../tutorials/fleet_corridor`.
 
-No classical planner can state that goal. There is no fact about the corridor to
-plan towards --- the corridor is blocked or it is not, and the plan is the same
-either way --- only a state of knowledge to reach. The solution is therefore a
-policy and not a sequence: ``r1`` drives out, looks, and reports what it found,
-and which report it makes is decided while the mission runs.
+The EPDDL sources are grounded by ``plank`` at start-up
+(:doc:`../getting_started/installation`).
 
-The demo needs no simulator and no hardware. What it shows is the planning, and
-everything that would otherwise stand between a reader and that is left out. The
-problem is stated in EPDDL and ground by ``plank`` at start up, so ``plank`` has
-to be built and on ``PATH``; :doc:`../getting_started/installation` says how.
-
-Running it
-----------
+Usage
+-----
 
 .. code-block:: bash
 
    ros2 launch eplansys_demo corridor_launch.py
    ros2 launch eplansys_demo corridor_launch.py corridor:=blocked
 
-Run it both ways. The ``corridor`` argument is what the robot turns out to see
-when it looks; it is not given to the planner, and the plan does not depend on
-it. The execution does.
+``corridor`` sets the outcome the inspection performer reports. The planner
+does not receive it; the policy is identical in both runs, and the executed
+branch differs.
 
-What runs
+Data flow
 ---------
 
+.. _fig-corridor-demo:
+
 .. graphviz::
-   :caption: The corridor mission, from EPDDL sources to a branch taken
+   :caption: Data flow of the corridor mission. Bold edges are the additions
+      to a classical PlanSys2 deployment.
 
    digraph corridor {
      rankdir=LR;
@@ -40,7 +39,7 @@ What runs
      node [shape=box, fontname="sans-serif", fontsize=10, margin="0.14,0.10"];
      edge [fontname="sans-serif", fontsize=9];
 
-     task      [label="EPDDL domain and problem\ntwo worlds, both possible"];
+     task      [label="EPDDL domain and problem\ntwo designated worlds"];
      planner   [label="planner"];
      policy    [label="policy\nfour nodes, branching", shape=note];
      executor  [label="executor"];
@@ -52,18 +51,13 @@ What runs
      policy    -> executor;
      executor  -> performer [label="dispatch"];
 
-     performer -> state     [label="  outcome observed", penwidth=1.8];
-     state     -> executor  [label="  branch to take", penwidth=1.8,
+     performer -> state     [label="  observed outcome", penwidth=1.8];
+     state     -> executor  [label="  branch", penwidth=1.8,
                              constraint=false];
    }
 
-The two bold edges are the mission's whole difficulty. Everything else a
-classical PlanSys2 deployment already does.
-
-What to watch
--------------
-
-The mission prints its own progress, and four lines carry the argument.
+Log
+---
 
 .. code-block:: text
 
@@ -73,56 +67,43 @@ The mission prints its own progress, and four lines carry the argument.
    [epistemic_state] applied inspect_r1 -> e-inspect-clear: 2 worlds, 1 designated
    [epistemic_bt]    [goal] (and (Kw r1 blocked) (Kw r2 blocked)) holds
 
-Read in order:
+.. list-table:: Interpretation of the log.
+   :header-rows: 1
+   :widths: 38 62
 
-``policy with 4 nodes, branching``
-   Four nodes for a mission that executes three actions. The fourth is the
-   branch not taken, and it is in the plan because the planner could not know
-   which one would be.
+   * - Line
+     - Meaning
+   * - ``policy with 4 nodes, branching``
+     - Three actions execute; the fourth node is the announcement for the
+       outcome that does not occur.
+   * - ``goto-junction_r1: 2 worlds, 2 designated``
+     - The ontic action changes the robot's position. Both corridor states
+       remain designated.
+   * - ``observed e-inspect-clear``
+     - The performer's report, passed as the outcome argument of ``finish``.
+   * - ``inspect_r1 -> e-inspect-clear: 2 worlds, 1 designated``
+     - The inspection eliminates one world from the designated set. Both
+       worlds remain in the model, since ``r2`` cannot yet distinguish them.
+   * - ``[goal] ... holds``
+     - ``CheckEpistemicGoal`` evaluates the goal in the resulting model.
+       Reaching a leaf does not by itself establish the goal.
 
-``2 worlds, 2 designated``
-   After driving out, the model still holds both possibilities: the corridor is
-   blocked in one world and clear in the other, and the robot cannot yet tell
-   which it is in. Driving changed where the robot is and nothing about what it
-   knows.
+With ``corridor:=blocked`` the third line reports ``e-inspect-blocked``, and
+``report_blocked`` executes in place of ``report_clear``.
 
-``observed e-inspect-clear``
-   The performer reporting what it saw. This is the one thing a sensing action
-   has to do that an ordinary one does not, and it is one argument on
-   ``finish``. Everything after it is the framework's business.
-
-``2 worlds, 1 designated``
-   The looking has ruled a world out. The model still contains both, because
-   both remain describable; only one is still held to be actual.
-
-``(Kw r1 blocked) ... holds``
-   The epistemic goal, checked against the model that resulted rather than the
-   one planning assumed. Reaching a leaf of a policy is not the same as having
-   achieved the goal.
-
-Running with ``corridor:=blocked`` changes the third line, and with it the
-branch: ``report_blocked`` runs and ``report_clear`` does not. The policy is
-identical in both runs.
-
-What the demo supplies
-----------------------
-
-Two files, and neither is about knowledge:
+Source files
+------------
 
 ``corridor_actions.cpp``
-   Four performers that wait and then finish. They stand in for hardware, and a
-   deployment would replace the waiting rather than the structure. Only one of
-   them differs from a classical performer: ``inspect_corridor`` names the
-   outcome it observed when it calls ``finish``.
+   Four performers that wait for their duration and finish. Only
+   ``inspect_corridor`` differs from a classical performer: it passes the
+   observed outcome to ``finish``.
 
 ``corridor_mission.cpp``
-   The three steps anyone would otherwise type into ``ros2 plansys2 terminal``:
-   say what exists, name the goal, run. Doing it from a node is what makes the
-   demo one command.
+   Declares the instances and initial predicates in the problem expert, sets
+   the PDDL goal, and runs a ``MissionSupervisor``
+   (:ref:`arch-supervisor`), which plans, executes, and replans on failure.
 
-Nothing else in the demo is code. The EPDDL pair, the PDDL and the mapping are
-the files a mission of your own would also need, and
-:doc:`../getting_started/first_plan` says what each is for.
-
-A harder mission of the same shape, with three agents and a goal about who may
-*not* know, is in :doc:`survey`.
+The EPDDL domain and problem, the PDDL domain, and the action mapping are the
+remaining inputs; :doc:`../getting_started/first_plan` describes each.
+:doc:`survey` extends the mission to three agents and a negative goal.

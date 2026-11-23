@@ -1,20 +1,15 @@
 Fleet: the two-route depot
 ==========================
 
-The corridor scenario one size up. Three robots, a depot with two ways out,
-north and south, and no reason to think the state of one route says anything
-about the other. Every robot has to know the state of both before the fleet
-commits to a route.
+The corridor instance with three robots and two independent routes, north and
+south. Every robot must know the state of both routes. A depot rule prevents a
+robot dispatched to one junction from reaching the other, so no single robot
+can survey both: the work is divided, and the robot that stays behind is
+informed by announcement. The policy branches twice, the second branching
+nested in each branch of the first.
 
-What grows here is not only the numbers. With one corridor there was a single
-thing to find out and any robot could go and find it. With two, and a depot
-rule that a robot dispatched down a route stays on it, no single robot can
-survey both: the mission has to be divided, and whoever stays behind has to be
-told. The policy branches twice, and the second half of it has to be correct
-inside either branch of the first.
-
-The mission
------------
+Mission
+-------
 
 .. list-table::
    :header-rows: 0
@@ -22,23 +17,22 @@ The mission
 
    * - Agents
      - ``r1``, ``r2``, ``r3``
-   * - The unknowns
-     - whether the north route is blocked; whether the south route is
+   * - Unknowns
+     - whether the north route is blocked; whether the south route is blocked
    * - Depot rule
-     - a robot at either junction cannot drive to the other one
+     - a robot at either junction cannot drive to the other
    * - Goal
-     - six conjuncts: each of the three robots knows whether each route is
-       blocked
+     - :math:`\bigwedge_{i \in \{1,2,3\}} \mathit{Kw}_{r_i}\,\mathit{blocked\text{-}north}
+       \wedge \mathit{Kw}_{r_i}\,\mathit{blocked\text{-}south}` (six conjuncts)
 
-Two of those six conjuncts is the most any robot can satisfy by itself, and
-only by driving somewhere and looking. The other four have to arrive by radio.
+A robot can satisfy at most two conjuncts by its own sensing, and only those
+concerning itself; the remaining four require announcements.
 
-Formalization
+Formalisation
 -------------
 
-The domain, ``robot-fleet-depot``, is the corridor domain with each mechanism
-duplicated per route, and with the driving preconditions carrying the depot
-rule:
+``robot-fleet-depot`` duplicates each mechanism of the corridor domain per
+route; the driving events encode the depot rule:
 
 .. code-block:: text
 
@@ -53,15 +47,9 @@ rule:
      :precondition (and (not (at-north ?i)) (not (at-south ?i)))
      :effects (at-north ?i))
 
-The precondition is what forbids driving from one junction to the other, and it
-is a depot rule, not a modelling shortcut: it is what makes this a fleet
-problem instead of one robot's tour.
-
-Sensing and announcing are unchanged, twice over: ``inspect-north`` and
-``inspect-south`` are semi-private, the four ``report-*`` actions are public
-announcements guarded by the speaker actually knowing.
-
-The initial theory leaves both routes open:
+``inspect-north`` and ``inspect-south`` are semi-private sensing actions; the
+four ``report-*`` actions are public announcements whose preconditions require
+the announcer to know their content.
 
 .. code-block:: text
 
@@ -73,12 +61,14 @@ The initial theory leaves both routes open:
        (:forall (?i - agent) ([C. All] (<Kw. ?i> (blocked-north))))
        (:forall (?i - agent) ([C. All] (<Kw. ?i> (blocked-south))))))
 
-Two independent unknowns give four worlds, all designated: blocked/blocked,
-blocked/clear, clear/blocked, clear/clear. The fleet cannot tell any of them
-apart to begin with.
+Two independent unknowns yield four designated worlds
+(:numref:`fig-depot-worlds`).
+
+.. _fig-depot-worlds:
 
 .. graphviz::
-   :caption: The four initial worlds. Every robot's accessibility relation is the whole square, so nobody knows anything about either route.
+   :caption: The four initial worlds. Each agent's accessibility relation is
+      the complete relation on them.
 
    digraph depot_worlds {
      rankdir=TB;
@@ -114,22 +104,24 @@ Grounding
      -p <share>/plansys2_epddl_grounder/examples/robot-fleet-depot-problem.epddl \
      -o /tmp/robot-fleet-depot.json
 
-The result is the checked-in
-``plansys2_epistemic_planner/test/tasks/robot-fleet-depot.json``: 3 agents,
-8 atoms, 24 grounded actions, 4 initial worlds, all designated.
+The output is ``plansys2_epistemic_planner/test/tasks/robot-fleet-depot.json``:
+3 agents, 8 atoms, 24 grounded actions, 4 initial worlds, all designated.
 
-The policy
-----------
+Policy
+------
 
-AO* solves it at depth 6 and returns twelve nodes. Read down the left edge:
-``r1`` drives north, looks, and broadcasts; then ``r2`` drives south, looks, and
-broadcasts. The whole of that second half appears twice, once inside each
-outcome of the first look, not because the plan repeats itself, but because
-those are different plans: they run against different epistemic states, and the
-announcement that ends each one differs.
+AO* returns a policy of depth 6 with twelve nodes
+(:numref:`fig-depot-policy`): ``r1`` drives north, inspects and announces; then
+``r2`` drives south, inspects and announces. The second half occurs once under
+each outcome of the first inspection. The two copies are distinct subpolicies:
+they are executed in different epistemic states, and their announcements
+differ.
+
+.. _fig-depot-policy:
 
 .. graphviz::
-   :caption: The depot policy. Sensing nodes are shaded; each of the four leaves is one way the depot can turn out.
+   :caption: The depot policy. Sensing nodes are shaded; each leaf
+      corresponds to one combination of route states.
 
    digraph depot_policy {
      rankdir=TB;
@@ -166,17 +158,14 @@ announcement that ends each one differs.
      n9 -> n11 [label=" south\nclear"];
    }
 
-The division of labour is the planner's choice, not the domain's. One robot
-walking both routes is impossible here, but ``r1`` and ``r3`` splitting them
-would cost the same as ``r1`` and ``r2`` splitting them; the search has
-to consider both and settles on one. Six actions on every path: three per
-route, and never a robot going to see something it has already been told.
+The assignment of robots to routes is found by the search: ``r1``/``r3`` would
+cost the same as ``r1``/``r2``. Every path has six actions, three per route, and
+no robot senses a fact it has already been told.
 
-Running it
-----------
+Execution
+---------
 
-Identical to :doc:`fleet_corridor` with the depot task and mapping
-substituted:
+As in :doc:`fleet_corridor`, with the depot task and mapping:
 
 .. code-block:: yaml
 
@@ -190,8 +179,8 @@ substituted:
          strategy: "aostar"
          conditional_plan: "policy"
 
-The mapping's PDDL side takes a route parameter, since one PDDL action covers
-both routes where the epistemic domain has one grounded action per route:
+The PDDL actions take a route parameter, whereas the epistemic domain has one
+grounded action per route:
 
 .. code-block:: json
 
@@ -201,15 +190,15 @@ both routes where the epistemic domain has one grounded action per route:
      "report-south-clear_r2": {"action": "(report_clear r2 south)", "duration": 1.0}
    }
 
-Observations are reported per action, not per mission: the depot has two things
-to find out and they need not agree, so whatever binds the ``observed`` port
-has to answer separately for ``(inspect_corridor r1 north)`` and
-``(inspect_corridor r2 south)``.
+Observations are reported per action: the source bound to ``observed`` answers
+``(inspect_corridor r1 north)`` and ``(inspect_corridor r2 south)``
+independently.
 
 Performance
 -----------
 
-.. list-table::
+.. list-table:: Search on ``robot-fleet-depot.json``; ``aostar``; release
+   build.
    :header-rows: 1
    :widths: 34 22 44
 
@@ -218,38 +207,28 @@ Performance
      - Note
    * - Solution depth
      - 6
-     - two survey trips, two broadcasts, two drives
+     - two drives, two inspections, two announcements
    * - Nodes expanded
      - 1 670
-     - two orders of magnitude above the corridor
+     - ~100× the corridor
    * - Nodes generated
      - 2 010
      -
    * - Policy nodes
      - 12
-     - the second half appears once per first-look outcome
+     -
    * - Leaves
      - 4
-     - one per combination of the two routes
+     - one per combination of route states
    * - Wall clock
      - 0.5 s
-     - still dominated by process start-up
+     - dominated by process start-up
    * - Peak resident memory
      - 28 MB
-     - unchanged from the corridor: the model does not grow with the search
+     - unchanged from the corridor
 
-The last row is the interesting one. Between the corridor and the depot the
-search grows by a factor of a hundred and the memory does not move, because
-what is stored is a bisimulation-contracted model, not an enumeration of
-histories.
+``plansys2_tests/test_6`` executes the instance end to end with the routes in
+opposite states, which exercises a switch nested in another switch's
+continuation.
 
-``plansys2_tests/test_6`` runs this scenario end to end, twice, with the routes
-in opposite states, which is the case that exercises a switch nested inside
-another switch's continuation.
-
-Next
-----
-
-:doc:`fleet_survey` is the same domain at four robots and three routes, where
-the search grows by another three orders of magnitude and the memory still does
-not.
+:doc:`fleet_survey` scales the domain to four robots and three routes.
