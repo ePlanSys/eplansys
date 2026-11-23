@@ -67,3 +67,11 @@ target_compile_definitions(epistemic_mapping_draft_test PRIVATE
   EPISTEMIC_EXAMPLE_EPDDL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../plansys2_epddl_grounder/examples"
   EPISTEMIC_MISSION_PDDL_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../plansys2_tests/test_5/pddl")
 target_link_libraries(epistemic_mapping_draft_test ${PROJECT_NAME})
+
+# A temporal policy serialised for event-driven dispatch.
+ament_add_gtest(epistemic_temporal_plan_test temporal_plan_test.cpp TIMEOUT 120)
+target_include_directories(epistemic_temporal_plan_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(epistemic_temporal_plan_test PRIVATE
+  EPISTEMIC_TEST_TASK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tasks"
+  EPISTEMIC_EXAMPLE_MAPPING_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../examples/mappings")
+target_link_libraries(epistemic_temporal_plan_test ${PROJECT_NAME})

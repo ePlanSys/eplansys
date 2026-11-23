@@ -263,4 +263,138 @@ std::optional<plansys2_msgs::msg::Plan> to_policy_plan(
   return plan;
 }
 
+temporal::Durations durations_from_mapping(
+  const PlanningTask & task, const ActionMapping & mapping)
+{
+  temporal::Durations durations = temporal::Durations::uniform(task, 1.0);
+  for (std::size_t a = 0; a < task.actions.size(); ++a) {
+    if (const auto mapped = mapping.translate(task.actions[a].name)) {
+      durations.of[a] = mapped->duration;
+    }
+  }
+  return durations;
+}
+
+std::optional<plansys2_msgs::msg::Plan> to_temporal_plan(
+  const PlanningTask & task,
+  const temporal::TemporalPolicy & policy,
+  const ActionMapping & mapping,
+  std::string & error)
+{
+  plansys2_msgs::msg::Plan plan;
+  plan.temporal = true;
+  if (task.goal) {
+    plan.epistemic_goal = render_formula(task, *task.goal);
+  }
+  if (!policy.root) {
+    return plan;
+  }
+
+  struct Live
+  {
+    std::uint32_t item;
+    ActionIdx action;
+    double end;
+  };
+
+  // Times are compared after rounding to a microsecond, as the search does.
+  const auto same_time = [](double a, double b) {
+      return std::llround(a * 1e6) == std::llround(b * 1e6);
+    };
+
+  // Every item ended on an item's path before it starts, which is what it
+  // must wait for: waiting only for the ends that opened its decision point
+  // would let it start while an earlier-planned end is still outstanding, an
+  // overlap the planner never checked. The list is reduced to the items not
+  // already implied: an item that itself waits for another implies it.
+  std::vector<std::set<std::uint32_t>> waits;
+  const auto reduced = [&](const std::vector<std::uint32_t> & ended) {
+      std::vector<std::uint32_t> out;
+      for (const auto candidate : ended) {
+        const bool implied = std::any_of(
+          ended.begin(), ended.end(), [&](std::uint32_t other) {
+            return other != candidate && waits[other].count(candidate);
+          });
+        if (!implied) {
+          out.push_back(candidate);
+        }
+      }
+      std::sort(out.begin(), out.end());
+      return out;
+    };
+
+  // Walks the epoch tree carrying what is running, every item ended on the
+  // path so far, and the observations on the path.
+  const auto emit =
+    [&](const temporal::Epoch & epoch, std::vector<Live> running,
+    const std::vector<std::uint32_t> & ended,
+    const std::vector<std::pair<std::uint32_t, std::string>> & given,
+    const auto & self) -> bool {
+      for (const auto & step : epoch.starts) {
+        const Action & action = task.actions[step.action];
+        const auto mapped = mapping.translate(action.name);
+        if (!mapped) {
+          error = "no mapping for grounded action '" + action.name + "'";
+          return false;
+        }
+        plansys2_msgs::msg::PlanItem item;
+        item.time = static_cast<float>(step.start);
+        item.action = mapped->action;
+        item.duration = static_cast<float>(step.duration);
+        item.epistemic_action = action.name;
+        item.sensing = !action.is_ontic();
+        item.knowledge_requirements = knowledge_requirements(task, action);
+        item.starts_after = reduced(ended);
+        for (const auto & [observer, outcome] : given) {
+          item.given_items.push_back(observer);
+          item.given_outcomes.push_back(outcome);
+        }
+        running.push_back({static_cast<std::uint32_t>(plan.items.size()), step.action,
+            step.end()});
+        waits.emplace_back(ended.begin(), ended.end());
+        plan.items.push_back(std::move(item));
+      }
+
+      if (epoch.branches.empty()) {
+        return true;
+      }
+
+      std::vector<Live> rest;
+      std::vector<std::uint32_t> now_ended = ended;
+      for (const auto & live : running) {
+        if (same_time(live.end, epoch.advance_to)) {
+          now_ended.push_back(live.item);
+        } else {
+          rest.push_back(live);
+        }
+      }
+
+      for (const auto & branch : epoch.branches) {
+        auto path = given;
+        for (const auto & [observer, event] : branch.observed) {
+          const auto it = std::find_if(
+            running.begin(), running.end(),
+            [&](const Live & live) {
+              return live.action == observer && same_time(live.end, epoch.advance_to);
+            });
+          if (it == running.end()) {
+            error = "a branch observes " + task.actions[observer].name +
+              ", which does not end at that point";
+            return false;
+          }
+          path.emplace_back(it->item, event_name(task.actions[observer], event));
+        }
+        if (!self(*branch.next, rest, now_ended, path, self)) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+  if (!emit(*policy.root, {}, {}, {}, emit)) {
+    return std::nullopt;
+  }
+  return plan;
+}
+
 }  // namespace plansys2

@@ -22,6 +22,7 @@
 #include "plansys2_epistemic_planner/action_mapping.hpp"
 #include "aletheia/search.hpp"
 #include "aletheia/task.hpp"
+#include "aletheia/temporal_search.hpp"
 #include "plansys2_msgs/msg/plan.hpp"
 
 namespace plansys2
@@ -55,6 +56,36 @@ namespace plansys2
 std::optional<plansys2_msgs::msg::Plan> to_policy_plan(
   const PlanningTask & task,
   const std::shared_ptr<PlanNode> & tree,
+  const ActionMapping & mapping,
+  std::string & error);
+
+/**
+ * @brief The duration of every action of `task`, as the mapping states it.
+ *
+ * The temporal search plans with the durations the executor will schedule
+ * and time out against, so they come from the one place both read. An action
+ * the mapping does not cover keeps one second: if the plan uses it, the
+ * translation into a Plan fails on it anyway, with a clearer message.
+ */
+temporal::Durations durations_from_mapping(
+  const PlanningTask & task, const ActionMapping & mapping);
+
+/**
+ * @brief Serialise a temporal policy into a Plan the executor dispatches by
+ *        events.
+ *
+ * One item per action started, on every branch it is started on. Each item
+ * names the items it waits for (`starts_after`: every item on its path that
+ * ends before it starts, minus those another listed item already waits for)
+ * and the observations that select its branch (`given_items`,
+ * `given_outcomes`); `time` is the planned start. Items are written parents
+ * first, so every index an item names is smaller than its own.
+ *
+ * @param[out] error Set when an action cannot be translated.
+ */
+std::optional<plansys2_msgs::msg::Plan> to_temporal_plan(
+  const PlanningTask & task,
+  const temporal::TemporalPolicy & policy,
   const ActionMapping & mapping,
   std::string & error);
 

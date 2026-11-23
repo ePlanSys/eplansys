@@ -35,6 +35,34 @@ std::string Policy::validate(const plansys2_msgs::msg::Plan & plan)
 
   const auto size = static_cast<std::uint32_t>(plan.items.size());
 
+  // A temporal policy links items by what they wait for and which branch they
+  // are on, not by continuations. Each may only name items written before it:
+  // an item waits for actions that started earlier, and observations made
+  // earlier on its path.
+  if (plan.temporal) {
+    for (std::uint32_t i = 0; i < size; ++i) {
+      const auto & item = plan.items[i];
+      if (!item.children.empty() || !item.outcomes.empty()) {
+        return "item " + std::to_string(i) +
+               " has continuations, which a temporal policy does not use";
+      }
+      if (item.given_items.size() != item.given_outcomes.size()) {
+        return "item " + std::to_string(i) + " lists " +
+               std::to_string(item.given_items.size()) + " observing items but " +
+               std::to_string(item.given_outcomes.size()) + " outcomes";
+      }
+      for (const auto & list : {item.starts_after, item.given_items}) {
+        for (const auto other : list) {
+          if (other >= i) {
+            return "item " + std::to_string(i) + " depends on item " +
+                   std::to_string(other) + ", which is not written before it";
+          }
+        }
+      }
+    }
+    return "";
+  }
+
   for (std::uint32_t i = 0; i < size; ++i) {
     const auto & item = plan.items[i];
 
