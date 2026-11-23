@@ -184,6 +184,8 @@ void EpistemicPlanSolver::configure(
   goal_from_state_parameter_name_ = plugin_name + ".goal_from_state";
   initial_from_state_parameter_name_ = plugin_name + ".initial_from_state";
   consistent_beliefs_parameter_name_ = plugin_name + ".consistent_beliefs";
+  temporal_parameter_name_ = plugin_name + ".temporal";
+  max_concurrency_parameter_name_ = plugin_name + ".max_concurrency";
 
   const auto declare = [&](const std::string & name, const std::string & def) {
       if (!lc_node_->has_parameter(name)) {
@@ -208,6 +210,15 @@ void EpistemicPlanSolver::configure(
   // them, and a policy credited that way has nothing to execute.
   if (!lc_node_->has_parameter(consistent_beliefs_parameter_name_)) {
     lc_node_->declare_parameter<bool>(consistent_beliefs_parameter_name_, true);
+  }
+
+  // Off by default: a temporal policy needs an executor that dispatches by
+  // events (the epistemic BT builder of this release or later).
+  if (!lc_node_->has_parameter(temporal_parameter_name_)) {
+    lc_node_->declare_parameter<bool>(temporal_parameter_name_, false);
+  }
+  if (!lc_node_->has_parameter(max_concurrency_parameter_name_)) {
+    lc_node_->declare_parameter<int>(max_concurrency_parameter_name_, 3);
   }
 
   declare_epddl_parameters(lc_node_, epddl_parameter_names_);
@@ -467,6 +478,50 @@ std::optional<plansys2_msgs::msg::Plan> EpistemicPlanSolver::getPlan(
       "[epistemic] no action_mapping set; falling back to the naming "
       "convention, which guesses parameter order from the grounded name. Set "
       "action_mapping before dispatching to real actions.");
+  }
+
+  // Temporal planning: durations from the mapping, overlap only where the
+  // updates commute, the least worst-case makespan. It replaces the strategy
+  // and heuristic choice below, which are for untimed search.
+  if (lc_node_->get_parameter(temporal_parameter_name_).as_bool()) {
+    temporal::SearchOptions options;
+    options.max_concurrency = static_cast<std::size_t>(
+      std::max<int64_t>(1, lc_node_->get_parameter(max_concurrency_parameter_name_).as_int()));
+    options.deadline = deadline;
+
+    temporal::SearchStats stats;
+    const auto durations = durations_from_mapping(task, mapping);
+    const auto policy = temporal::search_policy(task, durations, options, &stats);
+    RCLCPP_INFO(
+      lc_node_->get_logger(),
+      "[epistemic] temporal search: %zu expanded, %zu start checks (%zu rejected), %.3f s",
+      stats.expanded, stats.start_checks, stats.start_rejected, stats.elapsed_sec);
+    if (!policy) {
+      RCLCPP_WARN(
+        lc_node_->get_logger(), "[epistemic] %s",
+        stats.exhausted ? "no temporal policy exists" :
+        "no temporal policy found before the timeout");
+      return std::nullopt;
+    }
+    std::string why;
+    if (!temporal::validate_policy(task, durations, *policy, &why)) {
+      RCLCPP_ERROR(
+        lc_node_->get_logger(), "[epistemic] temporal policy failed validation: %s", why.c_str());
+      return std::nullopt;
+    }
+    std::string error;
+    auto plan = to_temporal_plan(task, *policy, mapping, error);
+    if (!plan) {
+      RCLCPP_ERROR(
+        lc_node_->get_logger(), "[epistemic] %s. Add it to the action_mapping file.",
+        error.c_str());
+      return std::nullopt;
+    }
+    RCLCPP_INFO(
+      lc_node_->get_logger(),
+      "[epistemic] temporal policy: %zu items, %zu leaves, worst-case makespan %.2f s",
+      plan->items.size(), policy->leaves, policy->makespan);
+    return plan;
   }
 
   const TaskFeatures features = TaskFeatures::extract(task);

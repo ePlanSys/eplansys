@@ -115,6 +115,20 @@ planner:
       #             valid.
       conditional_plan: "policy"
 
+      # Plan with durations: the action mapping's, minimising the worst-case
+      # makespan, and overlapping two actions only where their updates
+      # commute in every state the running set can pass through, so the order
+      # in which they end does not change the belief. The result is a
+      # temporal policy (Plan.temporal), which the epistemic BT builder
+      # dispatches by events: each action starts when the actions it waits
+      # for have ended. Off, the policy is untimed and the executor may still
+      # parallelise it afterwards with its own (syntactic) test.
+      temporal: false
+      # How many actions may run at once under temporal planning. The
+      # commutation check enumerates the subsets of the running set, so it
+      # grows exponentially with this.
+      max_concurrency: 3
+
       # The same planning is available from an external Aletheia binary rather
       # than in process, through plansys2_aletheia_plan_solver. It takes these
       # parameters under the same names, so switching is a matter of naming the
