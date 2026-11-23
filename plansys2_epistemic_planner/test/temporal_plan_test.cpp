@@ -140,3 +140,27 @@ TEST(TemporalPlan, OneAtATimeBranchesOnTheLook)
   }
   EXPECT_EQ(reports, 2u);
 }
+
+TEST(TemporalPlan, TheCriticalPathSearchReturnsAPlanNoShorterThanOptimal)
+{
+  // The satisficing search under max(h_adm, h_cp): valid, serialisable, and
+  // never shorter than the optimum, which it usually matches.
+  const auto task = load_task(task_path("robot-fleet-depot"));
+  const auto mapping = plansys2::ActionMapping::load(mapping_path("robot-fleet-depot"));
+  const auto durations = plansys2::durations_from_mapping(task, mapping);
+
+  temporal::SearchOptions cp;
+  cp.estimate = temporal::SearchOptions::Estimate::CriticalPath;
+  const auto satisficing = temporal::search_policy(task, durations, cp);
+  const auto optimal = temporal::search_policy(task, durations);
+  ASSERT_TRUE(satisficing.has_value());
+  ASSERT_TRUE(optimal.has_value());
+  EXPECT_GE(satisficing->makespan, optimal->makespan - 1e-9);
+
+  std::string why;
+  EXPECT_TRUE(temporal::validate_policy(task, durations, *satisficing, &why)) << why;
+  std::string error;
+  const auto plan = plansys2::to_temporal_plan(task, *satisficing, mapping, error);
+  ASSERT_TRUE(plan.has_value()) << error;
+  EXPECT_TRUE(plan->temporal);
+}
