@@ -274,6 +274,59 @@ and a group applies its updates in the order its members finish: an
 announcement that writes no atom can still disable another agent's sensing
 action whose precondition is that it does not yet know.
 
+Temporal policies
+-----------------
+
+With ``temporal: true`` the solver plans with durations instead of steps. The
+durations are the action mapping's, so the planner and the executor schedule
+against the same numbers. An action is checked when it starts and updates the
+model when it ends; a sensing action's outcome is known at its end, which is
+where the policy branches.
+
+Two actions may overlap only when their updates commute: for every pair of
+outcomes, each stays applicable after the other, the same outcome pairs are
+reachable in either order, and the two results are bisimilar. The planner
+decides this exactly, in each state, by computing both orders, contracting
+them and comparing canonical fingerprints. It keeps the running set coherent:
+in every state the running actions can pass through as they end, every
+remaining pair commutes. Under coherence the belief does not depend on the
+order in which overlapping actions happen to end.
+
+That is a stronger guarantee than post-hoc parallel dispatch gives. The
+syntactic test the builder uses for untimed policies (disjoint agents,
+knowledge requirements not mentioning the other's agents) admits pairs that
+do not commute. On the corridor, once r2 has seen the corridor blocked, r2
+announcing it and r1 looking pass that test, but the announcement makes r1
+know, and looking requires that r1 does not yet know.
+
+The search minimises the worst-case makespan, and the result can differ from
+the untimed policy. On the corridor, sending both robots to look at once takes
+35 s, where the shortest untimed policy (drive, look, announce) takes 36 s.
+
+A temporal policy travels in ``plansys2_msgs/Plan`` with ``temporal`` set. Each
+item waits for the items in ``starts_after`` (every item on its path planned to
+end before it starts) and runs only on the branch its ``given_items`` and
+``given_outcomes`` select. The builder renders every item side by side under
+one ``Parallel``:
+
+.. code-block:: xml
+
+   <Sequence name="item_4">
+     <WaitForEnds items="0;1"/>
+     <IfThenElse>
+       <CheckGiven after="0;1" items="0" outcomes="e-inspect-clear"/>
+       <Sequence>  <!-- the action block, then -->  <MarkDone node="4" status="ran"/></Sequence>
+       <MarkDone node="4" status="skipped"/>
+     </IfThenElse>
+   </Sequence>
+
+Dispatch is by events, not by the clock: an item starts when the items it
+waits for have ended, whatever their actual durations. A policy dispatched at
+its planned times could start an action while one planned to end earlier is
+still running, an overlap the planner never checked. A branch the world does
+not take drains away: its items are marked skipped, which releases whatever
+waits for them, and those skip in turn.
+
 Reporting an observation
 ------------------------
 
