@@ -1,33 +1,27 @@
-A First Plan
+A first plan
 ============
 
-This page runs the epistemic solver once, on a task that ships with the
-repository, and shows what it returns. It assumes a workspace built and
-sourced as described in :doc:`installation`.
+This chapter configures the epistemic solver, brings up the system, and
+requests a policy for a task shipped with the repository. It assumes a
+workspace built and sourced as in :doc:`installation`.
 
-The problem
------------
+Problem
+-------
 
-The problem is stated in EPDDL: a domain and a problem file, the epistemic
-counterparts of a PDDL domain and problem. The smallest robotics example ships
-with ``plansys2_epddl_grounder``: two survey robots and a corridor that may
-be blocked, described in full in :doc:`../tutorials/fleet_corridor`:
+The example is the corridor scenario of :doc:`../tutorials/fleet_corridor`: two
+survey robots and a corridor that may be blocked. Its EPDDL sources are
+installed with ``plansys2_epddl_grounder``:
 
 .. code-block:: text
 
    <share>/plansys2_epddl_grounder/examples/robot-fleet-domain.epddl
    <share>/plansys2_epddl_grounder/examples/robot-fleet-problem.epddl
 
-The solver does not search over EPDDL directly. It grounds the sources first,
-building the initial Kripke model from the problem's finitary S5 theory and
-instantiating each action's event model over the agents, into the IePC JSON
-format it does search over. That is ``plank``'s work, run as a subprocess by
-``plansys2_epddl_grounder``; see :doc:`../concepts/epddl` for the format and
-:doc:`installation` for where the binary comes from.
-
-Grounding happens on first use and again whenever the sources change, so
-editing a domain and re-planning is enough. It can also be done by hand, which
-is the way to inspect the task or to check it into a test:
+The solver grounds the sources before searching: it builds the initial Kripke
+model from the problem's finitary S5 theory and instantiates each action's
+event model, producing an IεPC JSON task (:doc:`../concepts/epddl`). Grounding
+runs on first use and whenever a source changes. It can also be run manually,
+to inspect a task or check it into a test:
 
 .. code-block:: bash
 
@@ -36,26 +30,15 @@ is the way to inspect the task or to check it into a test:
      -p <share>/plansys2_epddl_grounder/examples/robot-fleet-problem.epddl \
      -o /tmp/robot-fleet.json
 
-Several already grounded tasks are checked into the planner package for its
-tests, and can be used directly through ``task_file``:
+Grounded tasks in ``plansys2_epistemic_planner/test/tasks`` can be used
+directly through ``task_file``; ``robot-fleet.json`` is the output of the
+command above.
 
-.. code-block:: text
+Solver parameters
+-----------------
 
-   plansys2_epistemic_planner/test/tasks/robot-fleet.json
-   plansys2_epistemic_planner/test/tasks/robot-fleet-depot.json
-   plansys2_epistemic_planner/test/tasks/coin-in-the-box.json
-   plansys2_epistemic_planner/test/tasks/coin-in-the-box-multipointed.json
-
-``robot-fleet.json`` is what grounding the example above produces. The depot
-scenario is the same domain with a second route and a third robot; both are
-covered in :doc:`../tutorials/index`, along with a third that is shipped as
-EPDDL only because its search takes a minute.
-
-Parameters
-----------
-
-``plansys2_bringup`` ships a parameters file that selects the epistemic solver,
-``params/plansys2_epistemic_params.yaml``. Its planner section is:
+``plansys2_bringup`` ships ``params/plansys2_epistemic_params.yaml``, which
+selects the epistemic solver:
 
 .. code-block:: yaml
 
@@ -75,28 +58,11 @@ Parameters
          action_mapping: ""
          conditional_plan: "policy"
 
-The default parameters file keeps POPF, so this one has to be passed
-explicitly. Every parameter is described in :doc:`../concepts/architecture`.
+The default parameters file selects POPF, so this file must be passed
+explicitly. All parameters are listed in :numref:`tab-solver-params`.
 
-Bringing up the system
-----------------------
-
-.. code-block:: bash
-
-   ros2 launch plansys2_bringup plansys2_bringup_launch_monolithic.py \
-     model_file:=<domain.pddl> \
-     params_file:=<share>/plansys2_bringup/params/plansys2_epistemic_params.yaml
-
-``model_file`` is required by the launch file and feeds the domain expert. The
-epistemic solver ignores it, but the executor does not: it is where the
-behavior tree that drives the hardware for each action is found. The PDDL and
-the EPDDL describe the same mission from two sides.
-
-Executing a policy needs a fifth node: the behavior tree the epistemic builder
-produces guards each action on a knowledge formula and updates the model
-afterwards, and both are questions asked of the epistemic state. Add
-``epistemic_state:=True`` and it is started and brought up with the other four,
-by either launch file:
+Bring-up
+--------
 
 .. code-block:: bash
 
@@ -105,8 +71,14 @@ by either launch file:
      params_file:=<share>/plansys2_bringup/params/plansys2_epistemic_params.yaml \
      epistemic_state:=True
 
-Give it the same problem the solver has, under ``epistemic_state:`` in the
-parameters file:
+``model_file`` is required by the launch file and read by the domain expert.
+The epistemic solver ignores it; the executor uses it to find the behavior
+tree for each action.
+
+``epistemic_state:=True`` starts the ``epistemic_state`` node as a fifth
+managed node. Executing a policy requires it, since the tree's knowledge guards
+and updates are service calls to it (:ref:`arch-state`). It is configured with
+the same problem as the solver:
 
 .. code-block:: yaml
 
@@ -115,51 +87,25 @@ parameters file:
        epddl_domain: "/abs/path/to/domain.epddl"
        epddl_problem: "/abs/path/to/problem.epddl"
 
-Naming the same two files twice is deliberate. The state grounds them itself
-instead of being handed the planner's task, which would make the two nodes
-depend on each other's start-up order; what has to agree is the problem, and
-that is what the parameters file states.
+The node grounds the sources itself, so the state and the planner do not
+depend on each other's start-up order.
 
-The node runs as its own process even under the monolithic launch, and
-``plansys2_node`` manages its lifecycle by name over services. That is what
-keeps ``plansys2_bringup`` from linking against the epistemic packages, so the
-package a classical PlanSys2 user builds is unchanged.
-
-Running the node alone still works, and is the quickest way to inspect a model
-without a planner:
+The node can also run alone, to inspect a model without a planner:
 
 .. code-block:: bash
 
    ros2 run plansys2_epistemic_executor epistemic_state_node --ros-args \
-     -p epddl_domain:=<the same domain.epddl> \
-     -p epddl_problem:=<the same problem.epddl>
+     -p epddl_domain:=<domain.epddl> \
+     -p epddl_problem:=<problem.epddl>
 
-Once it is up, ``ros2 plansys2 epistemic`` asks it what it holds, checks a
-formula against it, and advances it by hand. :doc:`command_line` walks the
-corridor scenario through from a terminal that way, which is the shortest path
-to seeing a Kripke model change.
+:doc:`command_line` queries and updates such a node from a terminal.
 
-Sensing from a map
-------------------
+Perception
+~~~~~~~~~~
 
-Something has to tell the state what a sensing action saw. When that something
-is an occupancy grid instead of an operator at a terminal, add a sixth node:
-
-.. code-block:: bash
-
-   ros2 launch plansys2_bringup plansys2_bringup_launch_monolithic.py \
-     model_file:=<domain.pddl> \
-     params_file:=<share>/plansys2_bringup/params/plansys2_epistemic_params.yaml \
-     epistemic_state:=True \
-     epistemic_perception:=True
-
-It needs ``epistemic_state:=True``. Perception reports what it reads over that
-node's services, so the pair without it is refused at launch instead of
-starting with nowhere to report.
-
-It watches nothing until the parameters file names regions for it. Each region
-is a set of boxes in metres in the map frame, the atom its occupancy decides,
-and how the finding is reported:
+To report sensing outcomes from an occupancy grid, add
+``epistemic_perception:=True`` (requires ``epistemic_state:=True``) and declare
+regions:
 
 .. code-block:: yaml
 
@@ -174,72 +120,52 @@ and how the finding is reported:
          outcome_when_clear: "e-inspect-clear"
          outcome_when_blocked: "e-inspect-blocked"
 
-A region bound to a sensing action reports as that action's outcome, which is
-the branch the policy was built around. A region left unbound is announced
-instead, as information that arrived outside the plan. Why each route exists,
-and when a region counts as clear and not merely unobserved, is in
-:doc:`../concepts/architecture`.
+A region bound to a sensing action reports as that action's outcome; an
+unbound region is reported as a public announcement (:ref:`arch-perception`).
 
 Requesting a plan
 -----------------
 
-The solver takes the task from the first of three sources that is available:
-
-#. the ``problem`` string of the ``planner/get_plan`` service, when that string
-   is itself a grounded task JSON, recognised by its ``planning-task-info``
-   key. A task in the request describes one call and outranks anything
-   configured;
-#. the ``epddl_domain`` and ``epddl_problem`` parameters, ground as above;
-#. the ``task_file`` parameter.
-
-Setting both EPDDL sources and a ``task_file`` grounds the sources and warns:
-two descriptions of one problem drift apart, so name only one.
-
-If none is supplied, the request fails with an explicit message and does not
-attempt a translation from PDDL, which could not express event models or
-per-agent observability anyway.
+The solver takes the task from the first available of the request's
+``problem`` string (if it is a grounded task), the EPDDL parameters, and
+``task_file`` (:doc:`../concepts/epddl`). If both EPDDL sources and
+``task_file`` are set, the sources are used and a warning is logged. If none is
+available, the request fails; no translation from PDDL is attempted.
 
 .. todo::
 
-   The exact ``ros2 service call`` invocation for ``planner/get_plan``,
-   including the service type and the shape of its request, is a
-   ``plansys2_planner`` interface and is not documented in this repository.
-   Fill in once the corresponding PlanSys2 page is cited or the call is
-   verified against a running system.
+   The ``ros2 service call`` invocation for ``planner/get_plan`` (service type
+   and request layout) belongs to ``plansys2_planner`` and is not yet
+   documented here.
 
-What comes back
----------------
+Result
+------
 
-The solver searches for a policy and then validates it. What it returns depends
-on the ``conditional_plan`` parameter:
+The solver validates the policy before returning it. ``conditional_plan``
+determines how a branching policy is returned:
 
 ``policy``
-   The branches are kept, carried in the epistemic fields of each
-   ``plansys2_msgs/PlanItem``. Running such a plan requires an executor
-   configured with the epistemic behavior tree builder. This is the default in
-   the shipped parameters file.
+   Branches are kept in the epistemic fields of ``plansys2_msgs/PlanItem``
+   (:numref:`tab-planitem`). Execution requires ``EpistemicBTBuilder``. This is
+   the setting in the shipped parameters file.
 
 ``flatten``
-   Only the lowest-event branch is returned, with a warning. The result is a
-   plain sequence that a stock PlanSys2 executor can run, and it is valid only
-   if execution takes that one contingency.
+   Only the branch through the lowest-indexed events is returned, with a
+   warning. The result is a sequence executable by a stock PlanSys2 executor,
+   valid only if execution follows that branch.
 
 ``reject``
-   A branching solution is refused, since returning it would yield a plan that
-   is only conditionally valid.
+   A branching solution is refused.
 
-A solution that does not branch is returned identically in all three modes, and
-renders as the same flat behavior tree PlanSys2 would have built.
+A non-branching solution is returned identically in all three modes.
 
 Action names
 ------------
 
-The names the planner searches over are not PlanSys2 action expressions. A
-grounded epistemic action is a single token such as ``inspect_r1`` or
-``report-blocked_r1``, while the executor expects ``(inspect_corridor r1)``: a
-name and its parameters, looked up in the PDDL domain to find the behavior tree
-that drives the hardware. The ``action_mapping`` parameter names a JSON file
-stating the correspondence:
+The planner's action names are grounded tokens (``inspect_r1``,
+``report-blocked_r1``); the executor expects PlanSys2 action expressions
+(``(inspect_corridor r1)``), which it looks up in the PDDL domain. The
+``action_mapping`` parameter names a JSON file with the correspondence:
 
 .. code-block:: json
 
@@ -248,18 +174,13 @@ stating the correspondence:
      "goto-junction_r1":  {"action": "(goto_junction r1)", "duration": 30.0}
    }
 
-Duration is in seconds, defaults to 1.0, and must be positive. It is a property
-of the robot's action implementation, not of the plan, since the
-epistemic planner is untimed, and it is what the executor schedules and times
-out against.
+``duration`` is in seconds, positive, default 1.0. The epistemic planner is
+untimed; the duration is a property of the action implementation, used by the
+executor for scheduling and timeouts.
 
-With ``action_mapping`` unset, the solver falls back to a naming convention
-that splits the grounded name at its first underscore and reads the rest as
-parameters, keeping hyphens in the name: ``inspect_r1`` becomes
-``(inspect r1)`` and ``report-blocked_r1`` becomes ``(report-blocked r1)``,
-neither of which is the PDDL action the fleet's executor drives. The convention
-cannot
-recover the parameter order the PDDL domain declares, so a mapping file should
-be written before dispatching to real actions. An action the map does not cover
-fails the planning request instead of reaching the executor as a name it
-cannot dispatch.
+Without ``action_mapping``, a grounded name is split at its first underscore
+and the remainder read as parameters: ``inspect_r1`` becomes ``(inspect r1)``
+and ``report-blocked_r1`` becomes ``(report-blocked r1)``. The convention
+cannot recover the parameter order of the PDDL domain, so a mapping file is
+required for real actions. An action the mapping does not cover fails the
+planning request.

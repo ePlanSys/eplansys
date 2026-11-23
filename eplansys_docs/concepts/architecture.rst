@@ -1,26 +1,33 @@
 Architecture
 ============
 
-ePlanSys attaches to PlanSys2 through its extension points. The planner is a
-plan solver plugin, the tree builder is a behavior tree builder plugin, the
-epistemic behavior tree nodes are loaded as a BehaviorTree.CPP plugin library,
-the model of what the agents know is a separate lifecycle node, and perception
-is a second one that watches a map and reports to the first. Around them sit a
-front end that grounds EPDDL into the task they all read, a command line that
-asks the model questions, and a metapackage that installs the set. Nothing in
-``plansys2_executor`` links against any of it. Every attachment is made through
-pluginlib or a parameter, so a classical deployment loads none of it.
+ePlanSys attaches to PlanSys2 :cite:p:`martin2021plansys2` only through its
+extension points (:numref:`fig-architecture`):
 
-Three of these extension points were widened in the upstream packages to carry
-a policy through the system. ``PlanItem`` gained the fields that let a plan
-branch, ``ActionExecution`` gained the field that carries what a performer
-observed, and the executor gained the ability to load behavior tree nodes named
-by parameter. All three are additions that a classical run leaves at their
-defaults, so the classical execution path is unchanged. ``NOTICE`` documents
-these and the remaining differences from upstream.
+* the planner is a plan solver plugin (:ref:`arch-solver`);
+* the tree builder is a behavior tree builder plugin (:ref:`arch-bt`);
+* the epistemic behavior tree nodes are a BehaviorTree.CPP :cite:p:`btcpp`
+  plugin library (:ref:`arch-nodes`);
+* the model of what the agents know is a lifecycle node,
+  ``epistemic_state`` (:ref:`arch-state`);
+* perception is a second lifecycle node that reports to the first
+  (:ref:`arch-perception`).
+
+``plansys2_executor`` links against none of these. Every attachment is made
+through pluginlib or a parameter, and a classical deployment loads none of
+them.
+
+Three upstream interfaces were extended to carry a policy through the system:
+``PlanItem`` has fields for branching, ``ActionExecution`` has a field for the
+outcome a performer observed, and the executor loads behavior tree node
+libraries named by parameter. All three are additions whose defaults reproduce
+the classical behaviour. ``NOTICE`` lists these and the remaining differences
+from upstream.
+
+.. _fig-architecture:
 
 .. graphviz::
-   :caption: Where the epistemic packages attach to PlanSys2
+   :caption: Attachment points of the epistemic packages in PlanSys2.
 
    digraph architecture {
      rankdir=LR;
@@ -61,13 +68,14 @@ these and the remaining differences from upstream.
      solver   -> executor [label="Plan with\nepistemic fields", style=dashed];
    }
 
+.. _arch-solver:
+
 Plan solver plugin
 ------------------
 
-``plansys2/EpistemicPlanSolver`` implements the ``plansys2::PlanSolverBase``
-interface and is exported to ``plansys2_core`` by the plugin description in
-``plansys2_epistemic_planner``. It is selected by listing it in
-``plan_solver_plugins`` and naming its class under that entry:
+``plansys2/EpistemicPlanSolver`` implements ``plansys2::PlanSolverBase`` and is
+exported by the plugin description in ``plansys2_epistemic_planner``. It is
+selected in the planner's parameters:
 
 .. code-block:: yaml
 
@@ -77,86 +85,102 @@ interface and is exported to ``plansys2_core`` by the plugin description in
        EPISTEMIC:
          plugin: "plansys2/EpistemicPlanSolver"
 
-Its parameters are declared under the plugin's own name at configure time, and
-are strings except where noted:
+Parameters are declared under the plugin name at configure time
+(:numref:`tab-solver-params`).
 
-.. list-table::
+.. _tab-solver-params:
+
+.. list-table:: Parameters of ``EpistemicPlanSolver``.
    :header-rows: 1
-   :widths: 22 18 60
+   :widths: 22 12 14 52
 
    * - Parameter
+     - Type
      - Default
      - Meaning
    * - ``epddl_domain``
+     - string
      - empty
-     - Path to the EPDDL domain. With ``epddl_problem``, the ordinary way to
-       state the problem, and the epistemic counterpart of ``model_file``.
+     - Path to the EPDDL domain.
    * - ``epddl_problem``
+     - string
      - empty
      - Path to the EPDDL problem.
    * - ``epddl_libraries``
+     - string[]
      - empty
-     - Action-type libraries the domain declares. Empty supplies the
+     - Action-type libraries the domain declares. Empty selects the
        ``intermediate`` library packaged with ``plansys2_epddl_grounder``.
-       This one is a string array, ``consistent_beliefs`` is a boolean, and
-       the rest are strings.
    * - ``plank_command``
+     - string
      - empty
-     - Path to the plank binary. Empty takes ``$PLANK``, then PATH.
+     - Path to the plank binary. Empty: ``$PLANK``, then ``PATH``.
    * - ``task_file``
+     - string
      - empty
-     - Absolute path to an already grounded task JSON. Ignored when the EPDDL
-       sources are set; with neither, the task must arrive in the planning
-       request instead.
+     - Absolute path to a grounded task (JSON). Ignored when the EPDDL sources
+       are set.
    * - ``heuristic``
+     - string
      - empty
-     - Pins a heuristic: ``ug``, ``ed``, ``ks``, ``wc``, ``rpg``, ``radd``,
-       ``kadd`` or ``kff``. Empty leaves the choice to the selection policy.
+     - One of ``ug``, ``ed``, ``ks``, ``wc``, ``rpg``, ``radd``, ``kadd``,
+       ``kff``. Empty: chosen by the selection policy.
    * - ``strategy``
+     - string
      - empty
-     - Pins a search strategy: ``gbfs``, ``ehc``, ``aostar``, ``replan`` or
-       ``portfolio``. Empty leaves the choice to the selection policy, and AO*
-       chosen that way on a task with sensing actions gets a short pass before
-       ``replan`` takes the rest of the timeout, as in the Aletheia binary.
+     - One of ``gbfs``, ``ehc``, ``aostar``, ``replan``, ``portfolio``. Empty:
+       chosen by the selection policy; AO* selected this way on a task with
+       sensing actions runs for a short pass before ``replan`` takes the rest
+       of the timeout.
    * - ``policy_file``
+     - string
      - empty
-     - Path to a JSON selection policy replacing the built-in rule table.
+     - JSON selection policy replacing the built-in rule table
+       (:doc:`epistemic_models`).
    * - ``action_mapping``
+     - string
      - empty
-     - Path to a JSON map from grounded epistemic action names to PlanSys2
-       action expressions. Empty falls back to the naming convention.
+     - JSON map from grounded action names to PlanSys2 action expressions.
+       Empty: naming convention (:doc:`../getting_started/first_plan`).
    * - ``conditional_plan``
+     - string
      - ``flatten``
-     - What to do with a branching solution: ``policy``, ``flatten`` or
-       ``reject``. The parameters file shipped by ``plansys2_bringup`` sets
+     - Treatment of a branching solution: ``policy``, ``flatten`` or
+       ``reject``. The parameters file in ``plansys2_bringup`` sets
        ``policy``.
    * - ``consistent_beliefs``
+     - bool
      - ``true``
-     - Refuses any state in which an agent believes a contradiction. An agent
-       that observes an event its beliefs rule out is left with no accessible
-       world, and every goal about what it believes then holds without it
-       believing anything. ``false`` accepts those plans, as plank does.
+     - Reject states in which an agent believes a contradiction (empty
+       accessibility set). Such an agent satisfies every belief goal
+       vacuously. ``false`` accepts these plans, as plank does.
+   * - ``goal_from_state``
+     - bool
+     - ``true``
+     - Plan for the goal published by ``epistemic_state``
+       (:ref:`arch-state`).
+   * - ``initial_from_state``
+     - bool
+     - ``true``
+     - Plan from the model published by ``epistemic_state``
+       (:ref:`arch-replan-belief`).
 
-The solver validates a solution before returning it, and a plan that fails
-validation is not returned at all.
+Every solution is validated against the task before it is returned; a plan
+that fails validation is not returned.
 
-The planner node answers both planning services late: the service callback
-hands the request to the node's own planning thread and returns, so the
-executor is free while the search runs, and one request is searched at a time.
-This matters in ``plansys2_bringup``'s monolithic node, where one executor
-serves every PlanSys2 node and also answers the lifecycle manager bringing them
-up. A search that ran inside its callback held all of that for as long as it
-took: seconds, for an epistemic domain of any size, which is long enough for
-bring-up to give up on nodes that were never asked.
+The planner node answers planning requests asynchronously: the service
+callback passes the request to a dedicated planning thread and returns, and
+requests are searched one at a time. In the monolithic bring-up, where one
+executor serves every PlanSys2 node and the lifecycle manager, a search inside
+the callback would block bring-up for the duration of the search.
 
-Running the planner as a subprocess
------------------------------------
+Subprocess variant
+~~~~~~~~~~~~~~~~~~
 
-``plansys2_aletheia_plan_solver`` provides a second plan solver plugin,
-``plansys2/AletheiaPlanSolver``, which reaches the same planner by running its
-binary instead of linking it. It is to the epistemic planner what
-``plansys2_popf_plan_solver`` is to POPF: an adapter that writes the input to a
-file, runs a process under the solver timeout, and reads its output back.
+``plansys2_aletheia_plan_solver`` provides ``plansys2/AletheiaPlanSolver``,
+which runs the planner binary as a subprocess, in the manner of
+``plansys2_popf_plan_solver``: it writes the task to a file, runs the process
+under the solver timeout, and reads the plan back.
 
 .. code-block:: yaml
 
@@ -168,72 +192,77 @@ file, runs a process under the solver timeout, and reads its output back.
          command: "/abs/path/to/epistemic_planner"
          conditional_plan: "policy"
 
-It adds three parameters to the seven above: ``command``, the binary, which
-defaults to ``epistemic_planner`` on the path; ``arguments``, appended
-verbatim; and ``output_dir``, where the task, the plan and the planner's log
-are written. The other seven keep their names and meanings, so a parameters file
-moves between the two plugins by changing ``plugin`` alone.
+It accepts the parameters of :numref:`tab-solver-params` with the same
+meanings, plus ``command`` (default ``epistemic_planner`` on ``PATH``),
+``arguments`` (appended verbatim) and ``output_dir`` (task, plan and log). A
+parameters file moves between the two plugins by changing ``plugin``.
 
-The plan file names actions and event indices only. What a branch is taken on,
-what an action requires to be known, and what the goal is are properties of the
-task, not of the plan, so the task is parsed on this side as well and
-the conversion is performed by ``plansys2_epistemic_planner``'s own policy
-serialisation. The returned plan is also validated against the task as parsed
-here, in addition to the planner's own validation: the two can disagree only if
-the binary and the workspace were built from different Aletheia checkouts,
-which is the failure a separately built planner introduces. The ``aletheia``
-package installs both from one checkout, and a test in this package holds the
-two plugins to the same policy on the fleet tasks.
+The plan file contains action names and event indices only. Branch outcomes,
+knowledge requirements and the goal are properties of the task, so the plugin
+parses the task itself and serialises the policy with
+``plansys2_epistemic_planner``'s code. It validates the returned plan against
+its own parse of the task; a disagreement indicates that the binary and the
+workspace were built from different planner revisions. The ``aletheia``
+package installs both from one checkout, and a test holds the two plugins to
+the same policy on the fleet tasks.
 
-The in-process plugin remains the better default, since it costs no process
-launch, no serialisation, and no separately installed binary. The subprocess
-plugin is for a planner versioned apart from the workspace, one run under its
-own resource limits, or one being compared against the in-process build.
+The in-process plugin is the default. The subprocess plugin is intended for a
+planner versioned separately from the workspace, run under its own resource
+limits, or compared against the in-process build.
+
+.. _arch-policy:
 
 Policies
 --------
 
-A policy is a tree, and it travels in the epistemic fields of
-``plansys2_msgs/PlanItem``:
+A policy is a tree transported in the epistemic fields of
+``plansys2_msgs/PlanItem`` (:numref:`tab-planitem`).
 
-.. list-table::
+.. _tab-planitem:
+
+.. list-table:: Epistemic fields of ``plansys2_msgs/PlanItem``.
    :header-rows: 1
    :widths: 30 70
 
    * - Field
      - Contents
    * - ``children``
-     - One continuation per possible outcome, by item index.
+     - Item index of the continuation for each outcome.
    * - ``outcomes``
-     - The observation selecting each, in the same order.
+     - Event name selecting each continuation, in the same order.
    * - ``sensing``
-     - Whether the outcome has to be observed at all.
+     - Whether the outcome must be observed.
    * - ``knowledge_requirements``
-     - The epistemic conditions the action needs.
+     - Epistemic formulas the action requires to hold.
    * - ``epistemic_action``
-     - The action's name in the planner's own vocabulary.
+     - Action name in the planner's vocabulary.
 
-A classical plan sets none of them and is read the way PlanSys2 writes it: item
-``i`` followed by item ``i+1``. Every plan is therefore a policy here, and the
-distinction that matters is whether it branches.
+A classical plan leaves these fields empty and is read as PlanSys2 writes it:
+item :math:`i` followed by item :math:`i+1`. Every plan is thus a policy; a
+classical plan is one without branches.
+
+.. _arch-bt:
 
 Behavior tree
 -------------
 
-``plansys2::EpistemicBTBuilder`` renders each policy node as the PlanSys2
-action subtree, unchanged, wrapped in the three things a sequence cannot
-express: a guard on what must be known, the knowledge update the action
-performs, and a branch on what was observed.
+``plansys2::EpistemicBTBuilder`` renders each policy node as the unmodified
+PlanSys2 action subtree, extended with three elements a sequence cannot
+express: a guard on required knowledge, the epistemic update the action
+performs, and a branch on the observed outcome (:numref:`lst-bt`).
+
+.. _lst-bt:
 
 .. code-block:: text
+   :caption: Rendering of a sensing action with two outcomes.
 
    Sequence "node_0 (peek A)"
      CheckKnowledge         node="0"
      WaitAtStartReq         action="(peek A):0"           ┐
      ApplyAtStartEffect     action="(peek A):0"           │
-     ReactiveSequence                                     │ PlanSys2's own
-       CheckOverAllReq      action="(peek A):0"           │ nodes, driving the
-       ExecuteAction        action="(peek A):0"           │ same performers
+     ReactiveSequence                                     │ PlanSys2
+       CheckOverAllReq      action="(peek A):0"           │ action subtree
+       ExecuteAction        action="(peek A):0"           │
                             outcome="{epistemic_observed_0}"
      CheckAtEndReq          action="(peek A):0"           │
      ApplyAtEndEffect       action="(peek A):0"           ┘
@@ -245,47 +274,48 @@ performs, and a branch on what was observed.
        Sequence "node_2 (open A)"
    CheckEpistemicGoal goal="(K A tails)"
 
-A node with a single continuation renders without a switch, so a classical plan
-comes out as the same flat sequence PlanSys2 would have built.
+A node with one continuation is rendered without a switch, so a classical plan
+yields the flat sequence that PlanSys2's ``SimpleBTBuilder`` produces.
 
-``get_graph`` reports the policy as a temporal graph: one node per policy node,
-an arc to each continuation. SimpleBTBuilder derives its graph by working out
-which actions establish each other's preconditions, because a sequential plan
-leaves the ordering open. A policy has it already, so this records the
-structure instead of deriving one, and ``propagate`` fills in the bounds from
-the durations the plan carries.
+``get_graph`` reports the policy as a temporal graph with one node per policy
+node and one arc per continuation. ``SimpleBTBuilder`` derives the ordering of
+a sequential plan from causal links; a policy states its ordering explicitly,
+so the builder records it, and ``propagate`` computes the bounds from the
+durations the plan carries.
 
-The lower bound on every arc is the parent's whole duration, so a continuation
-cannot begin before the action it follows has finished. That is stricter than a
-classical plan needs, and it is a requirement of the epistemic layer rather
-than a scheduling choice: ``CheckKnowledge`` on a continuation is evaluated
-against the state that ``ApplyEpistemicUpdate`` produced for its parent, so the
-two overlapping would check a guard against a model that does not exist yet.
+The lower bound of every arc is the full duration of the parent action.
+``CheckKnowledge`` of a continuation is evaluated against the state produced by
+the parent's ``ApplyEpistemicUpdate``; overlap would evaluate the guard against
+a state that does not yet exist. An action therefore never overlaps its own
+continuation.
 
-An action and its own continuation therefore never overlap. Runs of the
-policy that are not ordered with respect to each other can, and the builder
-dispatches them in a ``Parallel`` group (``schedule_policy``), lifting
-independent actions above a branch point when every branch starts with them.
-Two actions may share a group when their PDDL effects do not interfere and the
-epistemic test in ``policy_parallel.cpp`` passes: they act for disjoint agents,
-and neither one's knowledge requirements mention the other's agents. That test
-is syntactic. It does not establish that the two epistemic updates commute,
-and a group applies its updates in the order its members finish: an
-announcement that writes no atom can still disable another agent's sensing
-action whose precondition is that it does not yet know.
+Runs of the policy that are mutually unordered may overlap. The builder
+dispatches them in a ``Parallel`` group (``schedule_policy``) and hoists an
+independent action above a branch point when every branch begins with it. Two
+actions may share a group when their PDDL effects do not interfere and the test
+in ``policy_parallel.cpp`` passes: they act for disjoint sets of agents, and
+neither action's knowledge requirements mention the other's agents.
+
+.. note::
+
+   The independence test is syntactic and does not establish that the two
+   epistemic updates commute. A group applies its updates in completion
+   order; an announcement that writes no atom can still disable another
+   agent's sensing action whose precondition is that the agent does not yet
+   know.
+
+.. _arch-observation:
 
 Reporting an observation
 ------------------------
 
-Which outcome a sensing action produced is a question about the world, and the
-epistemic state can answer it alone only when its model designates a single
-world. With several designated the model is undetermined, and the answer must
-come from the agent that performed the sensing.
+The epistemic state determines the outcome of a sensing action by itself only
+when its model designates a single world. Otherwise the outcome is supplied by
+the agent that performed the sensing.
 
-The observation travels on the protocol that carries every other execution
-report. ``plansys2_msgs/ActionExecution`` defines an ``outcome`` field
-alongside ``status``, meaningful on ``FINISH``, which a performer sets when it
-finishes:
+The observation is carried by the existing execution protocol.
+``plansys2_msgs/ActionExecution`` has an ``outcome`` field, meaningful with
+``FINISH``, which the performer sets on completion:
 
 .. code-block:: cpp
 
@@ -293,262 +323,244 @@ finishes:
    finish(true, 1.0, "Corridor inspected", clear ? "e-inspect-clear"
                                                  : "e-inspect-blocked");
 
-The token must name an event of the action's model, since the policy branches
-on it. ``status`` remains the human-readable message for the log. An ordinary
-action leaves the field empty, which is the default for every classical
-performer and the reason none of them required changes.
+The token must name an event of the action's event model. ``status`` remains a
+human-readable message. Ordinary actions leave ``outcome`` empty, which is the
+default, so classical performers need no change.
 
-The value then reaches the tree without further configuration.
-``ExecuteAction`` provides an ``outcome`` output port, the packaged action
-template binds it to ``ApplyEpistemicUpdate``'s ``observed`` input, and each
-policy node receives its own blackboard entry, so two sensing actions on
-different branches cannot overwrite each other.
-``plansys2_msgs/ActionExecutionInfo`` also carries the field, allowing a
-monitor subscribed to ``action_execution_info`` to observe which branch a
-policy took without subscribing to the actions hub.
+``ExecuteAction`` exposes the value on an ``outcome`` output port; the
+packaged action template binds it to the ``observed`` input of
+``ApplyEpistemicUpdate``, with one blackboard entry per policy node so that
+sensing actions on different branches do not overwrite each other.
+``plansys2_msgs/ActionExecutionInfo`` carries the field as well, so a monitor
+of ``action_execution_info`` can observe which branch a policy took.
 
-An observation originating elsewhere, such as a perception node operating
-independently of the acting robot, is supplied by binding ``observed`` in a
-deployment-specific action template. Both routes are covered by the
-integration tests; see :doc:`../reports/epistemic_end_to_end`.
+An observation from another source, such as a perception node independent of
+the acting robot, is supplied by binding ``observed`` in a deployment-specific
+action template. Both routes are covered by the integration tests
+(:doc:`../reports/epistemic_end_to_end`).
 
-Epistemic nodes
----------------
+.. _arch-nodes:
 
-Five node types are registered by the plugin library
-``libplansys2_epistemic_bt_nodes.so``.
+Epistemic behavior tree nodes
+-----------------------------
 
-``CheckKnowledge``
-   A condition node, the counterpart of ``CheckOverAllReq`` for conditions the
-   problem expert cannot answer. "The corridor is clear" is a fact and lives
-   there; "r1 knows whether the corridor is clear" is not a fact about the
-   corridor, and no set of predicates records it. Ports: ``node``, the index of
-   the policy node being guarded, and ``action``, the action identifier used in
-   the error message.
+The plugin library ``libplansys2_epistemic_bt_nodes.so`` registers five node
+types (:numref:`tab-bt-nodes`).
 
-``ApplyEpistemicUpdate``
-   The counterpart of ``ApplyAtEndEffect``, one level up. An action changes
-   what agents know by more than its own effects: an announcement informs
-   everyone listening, and an observation that finds nothing still rules worlds
-   out. This performs the DEL product update, so the next action's guard is
-   checked against the state this action produced. Input ports: ``node``,
-   ``action``, and ``observed``, the outcome the performer observed, which the
-   packaged action template binds to ``ExecuteAction``'s outcome port and which
-   is left empty to let the state decide. Output port: ``outcome``, the outcome
-   that occurred, which the following ``EpistemicSwitch`` reads. The two are
-   separate blackboard entries: ``observed`` holds the performer's report and
-   ``outcome`` holds the state's reading of it.
+.. _tab-bt-nodes:
 
-``EpistemicSwitch``
-   A control node with no PlanSys2 counterpart. It reads the outcome the update
-   reported and runs the continuation planned for it. Ports: ``node``,
-   ``outcome``, the observed outcome, and ``outcomes``, the outcomes in child
-   order, separated by semicolons. An outcome the policy does not list fails
-   the node instead of defaulting to a branch: every branch was built for a
-   different belief, and running one anyway is a robot acting confidently on a
-   belief nothing supports. The failure reaches the executor, whose answer to a
-   failed plan is to replan.
+.. list-table:: Epistemic behavior tree nodes.
+   :header-rows: 1
+   :widths: 24 14 22 40
 
-``CheckBeliefUnchanged``
-   A condition node that fails when the belief has changed from outside the
-   plan, which is what makes an announcement interrupt a policy it invalidates.
-   Ports: ``action`` for the message, and ``enabled``, false for a deployment
-   that would rather not be interrupted.
+   * - Node
+     - Kind
+     - Ports
+     - Semantics
+   * - ``CheckKnowledge``
+     - condition
+     - ``node``, ``action``
+     - Succeeds iff every knowledge requirement of policy node ``node`` holds
+       in the current state. The epistemic counterpart of
+       ``CheckOverAllReq``: :math:`\mathit{Kw}_{r_1}\,\mathit{blocked}` is
+       not a fact about the corridor and has no PDDL representation.
+   * - ``ApplyEpistemicUpdate``
+     - action
+     - in: ``node``, ``action``, ``observed``, ``recover``;
+       out: ``outcome``
+     - Applies the product update for the action with the observed outcome
+       (empty: the state determines it) and writes the outcome that occurred.
+       ``observed`` is the performer's report; ``outcome`` is the state's
+       reading of it. ``recover`` (default true) requests model repair
+       (:ref:`arch-contradiction`).
+   * - ``EpistemicSwitch``
+     - control
+     - ``node``, ``outcome``, ``outcomes``
+     - Runs the child whose position in ``outcomes`` (``;``-separated)
+       matches ``outcome``. An unlisted outcome fails the node; no default
+       branch is taken, since every branch was planned for a different belief.
+       The executor responds to the failure by replanning.
+   * - ``CheckBeliefUnchanged``
+     - condition
+     - ``action``, ``enabled``
+     - Fails when the belief has been changed by an announcement since the
+       policy started (:ref:`arch-announcements`). ``enabled=false``
+       disables the check.
+   * - ``CheckEpistemicGoal``
+     - condition
+     - ``goal``
+     - Runs once after the policy. Succeeds iff ``goal`` holds; an empty goal
+       (classical plan) succeeds, the PDDL goal being checked by the
+       executor. Reaching a leaf only means the execution finished, since the
+       leaf was planned against the model at planning time.
 
-``CheckEpistemicGoal``
-   A condition node that runs once, after the policy, with a single ``goal``
-   port, empty for none. A tree with no epistemic goal, which is to say a
-   classical plan, succeeds here, since the executor already checks the PDDL
-   goal. Reaching a leaf means one execution finished, not that the goal holds:
-   every leaf was believed to reach it, but that belief was formed against the
-   model at planning time.
+.. _arch-domain:
 
-The domain side
----------------
+Domain introspection
+--------------------
 
-The problem expert answers what is true and the epistemic state answers what is
-known. Neither says what the domain declares can be done, and for EPDDL that is
-a different question from the PDDL one: an action here is an event model with
-per-agent observability, and no part of that has a PDDL surface. ``get domain
-action details`` on the classical terminal is blind to all of it.
-
-Two services on the same node answer it, named ``epistemic_domain`` to keep
-what is being asked about clear. They live on the node that holds the task
-because in EPDDL the domain and the problem are one grounded artefact: the
-event models and the initial model arrive together, and a separate node
-answering about the first would have to ground the same sources again.
+In EPDDL an action is an event model with per-agent observability, which has
+no PDDL representation; the classical ``get domain action details`` cannot
+report it. Two services on the ``epistemic_state`` node do. They reside on the
+node that holds the task because an EPDDL domain and problem are grounded
+together into one artefact.
 
 ``epistemic_domain/get_domain``
-   The agents, the atoms, the grounded actions, and which of those are sensing.
-   Sensing is not a flag a domain sets; it is what having more than one event
-   that can occur amounts to. It also reports the frame, S5 or KD45, and
-   whether any action gives two agents different observability.
+   Agents, atoms, grounded actions, and which actions are sensing (have more
+   than one event that can occur). Also the frame (S5 or KD45) and whether any
+   action gives two agents different observability.
 
 ``epistemic_domain/get_action_details``
-   One action's event model: every event with its precondition and effects,
-   which of them can actually occur, and a line per agent saying what that
-   agent observes of it.
+   One action's event model: each event with its precondition and effects,
+   which events can occur, and each agent's observability. For
+   ``inspect_r1`` in the corridor mission::
 
-That last line is the part with no PDDL counterpart. For the corridor mission's
-``inspect_r1``::
+      r1: sees which event occurred
+      r2: sees nothing of which event occurred
 
-   r1: sees which event occurred
-   r2: sees nothing of which event occurred
+The terminal exposes both as ``ros2 plansys2 epistemic domain`` and
+``ros2 plansys2 epistemic action <name>``.
 
-Two agents equally affected by an action, learning entirely different things
-from it. The terminal reaches both services through ``ros2 plansys2 epistemic
-domain`` and ``ros2 plansys2 epistemic action <name>``.
+.. _arch-state:
 
 Epistemic state
 ---------------
 
-``epistemic_state_node`` runs a lifecycle node named ``epistemic_state``. It is
-to knowledge what the problem expert is to facts: it holds one pointed Kripke
-model at a time, for one grounded task, and answers six services. Each of them
-is reachable from a terminal through ``ros2 plansys2 epistemic``, described in
-:doc:`../getting_started/command_line`.
+``epistemic_state_node`` runs the lifecycle node ``epistemic_state``. It holds
+one multi-pointed Kripke model for one grounded task, in the role the problem
+expert plays for facts, and provides the services of
+:numref:`tab-state-services` in addition to those of :ref:`arch-domain`. All are
+reachable through ``ros2 plansys2 epistemic``
+(:doc:`../getting_started/command_line`).
 
-.. list-table::
+.. _tab-state-services:
+
+.. list-table:: Services of ``epistemic_state``.
    :header-rows: 1
    :widths: 38 62
 
    * - Service
-     - Question
+     - Semantics
    * - ``epistemic_state/load_task``
-     - Be the model of this task. The task is supplied inline as ``task_json``,
-       by path as ``task_file``, or as the EPDDL sources to ground
-       (``epddl_domain``, ``epddl_problem``, ``epddl_libraries``); loading
-       resets the model to that task's initial state. The response reports the
-       number of worlds, agents and actions loaded.
+     - Load a task, given inline (``task_json``), by path (``task_file``), or
+       as EPDDL sources (``epddl_domain``, ``epddl_problem``,
+       ``epddl_libraries``), and reset the model to its initial state.
+       Returns the number of worlds, agents and actions.
    * - ``epistemic_state/check_formula``
-     - Does this formula hold now? The response distinguishes a failure, no
-       task loaded or a formula that does not parse, from the answer itself.
+     - Evaluate a formula in the current model, optionally from one agent's
+       perspective (``agent``). A failure (no task, parse error) is reported
+       separately from a false result.
    * - ``epistemic_state/apply_action``
-     - This action ran: perform the DEL product update and report what was
-       observed. The request names the action in the task's own vocabulary and
-       may carry the observed outcome; the response reports the outcome that
-       occurred and the size of the resulting state.
+     - Apply the product update for a named action, optionally with the
+       observed outcome and ``allow_recovery``. Returns the outcome that
+       occurred, the size of the resulting model, and ``recovered``.
    * - ``epistemic_state/get_goal``
-     - What is being aimed at, and whether it holds yet. The response says
-       whether the goal is the loaded task's own or one set since.
+     - The current goal, whether it holds, and whether it is the task's own
+       or one set since.
    * - ``epistemic_state/set_goal``
-     - Aim at something else, without re-grounding the problem. The formula is
-       parsed against the loaded task, so a goal naming an agent or atom the
-       task does not have is refused here, before it can fail inside a
-       planning request. An empty goal restores the task's own.
+     - Replace the goal without re-grounding. The formula is parsed against
+       the task, so unknown agents or atoms are rejected here. An empty goal
+       restores the task's goal.
    * - ``epistemic_state/announce``
-     - Everyone just learned that this is true. The model is restricted to the
-       worlds where the formula holds. An announcement that holds nowhere the
-       state considers possible is refused, since applying it would empty
-       the model.
+     - Public announcement: restrict the model to the worlds where the formula
+       holds. Rejected if no designated world satisfies it.
+   * - ``epistemic_state/get_agent_perspective``
+     - The model as seen by one agent (:ref:`arch-perspective`).
 
-It declares the same four EPDDL parameters as the solver, plus ``task_file``,
-and publishes on ``epistemic_state/state`` with transient-local durability. A
-task named at configure time is the common case: one mission, one task, loaded
-before anything asks a question about it. Pointing this node and the planner at
-the same pair of ``.epddl`` files is what keeps the policy and the model it is
-checked against expressed in one vocabulary. The failure the arrangement is
-there to prevent is a policy naming an action the state has never heard of.
+The node declares the solver's four EPDDL parameters and ``task_file``, and
+publishes ``epistemic_state/state`` with transient-local durability. The
+message carries the goal, ``belief_version`` and, unless ``publish_model`` is
+false, the model. The node and the solver are configured with the same EPDDL
+files so that the policy and the model it is checked against share one
+vocabulary; each grounds the sources itself, which removes any dependency on
+start-up order.
 
-It is a managed node of the system, not a process started alongside it.
-Both launch files start it on ``epistemic_state:=True``, and the lifecycle
-manager configures and activates it with the other four and takes it down with
-them. It is off by default, since a classical system has no use for it.
+Lifecycle
+~~~~~~~~~
 
-It runs as its own process even under the monolithic launch, where the other
-four share one. That is not an oversight: ``plansys2_node`` manages it through
-``LifecycleServiceClient``, which needs the node's name and not its class, so
-``plansys2_bringup`` links against nothing epistemic and the package every
-other distribution's workflow builds is unchanged. The same reasoning as
-``bt_node_plugins`` on the executor, one level up.
+Both bring-up launch files start the node when ``epistemic_state:=True``
+(default false), and the lifecycle manager configures, activates and shuts it
+down with the four PlanSys2 nodes. It runs in its own process even under the
+monolithic launch: ``plansys2_node`` manages it by name through
+``LifecycleServiceClient``, so ``plansys2_bringup`` has no build dependency on
+the epistemic packages. The switch is a launch argument because it controls both whether the process starts and whether the manager
+waits for it.
 
-The switch is a launch argument, not a parameter, because it decides two
-things that must agree: whether the process is started, and whether the manager
-waits for it. A parameters file can set the second but not the first, so the
-argument takes precedence over the parameters file.
+``startup_function`` in ``plansys2_lifecycle_manager`` brings up the nodes it
+is given and skips names it does not find, so one function serves the
+four-node classical, five-node epistemic, and six-node (with perception)
+configurations. The standalone ``lifecycle_manager_node`` used by the
+distributed launch takes the set as ``managed_nodes``; the launch assembles it
+after argument resolution, since naming a node that was not started blocks
+start-up.
 
-``startup_function`` in ``plansys2_lifecycle_manager`` brings up whatever map
-it is given, skipping a name it does not find, so one function
-serve a four-node classical bringup, a five-node epistemic one, and the
-six-node system that adds perception. The standalone
-``lifecycle_manager_node`` the distributed launch runs takes the set as its
-``managed_nodes`` parameter for the same reason; the distributed launch
-assembles that set in Python, once the launch arguments have values, because
-naming a node that was not started makes startup block and then fail.
+Announcement and goal
+~~~~~~~~~~~~~~~~~~~~~
 
-Announcing is the counterpart of the problem expert's ``set predicate``, and it
-is deliberately not the same operation. Setting a predicate changes what is
-true; announcing changes what is *known*. Every agent that could not previously
-tell the surviving worlds apart from the ruled-out ones now can, and knows that
-the others can too, so announcing ``muddy_c1`` in the muddy-children
-model makes ``(K c1 muddy_c1)`` hold when it did not before. Knowledge that
-reaches only one agent is not a public announcement and cannot be expressed this
-way; that needs an event model, which an action supplies.
+``announce`` is the epistemic counterpart of the problem expert's
+``set predicate`` and is a different operation: setting a predicate changes
+what is true, announcing changes what is known. After a public announcement of
+:math:`\varphi` every agent knows :math:`\varphi` and knows that the others
+know it; announcing ``muddy_c1`` in the muddy-children model makes
+:math:`K_{c_1}\,\mathit{muddy}_{c_1}` hold. Information that reaches only some
+agents is not a public announcement and requires an event model, i.e. an
+action.
 
-The goal it holds is what the plan solver plans for. The solver subscribes to
-``epistemic_state/state``, where the goal travels latched, and replaces the
-task's goal with it when the two differ. It subscribes instead of calling a
-service so the search never waits on another node: planning runs on the
-planner's own thread, and the latest goal is already there when it starts.
-(Before 0.2.0 planning ran inside the planner's service callback, where a
-service call could deadlock a single-threaded executor.) Setting
-``goal_from_state`` to false plans for the problem exactly as written.
+The solver subscribes to ``epistemic_state/state`` and replaces the task's goal
+with the published one when they differ. The goal is received by subscription,
+so the search never waits on another node. ``goal_from_state:
+false`` plans for the problem as written.
 
-When information arrives from outside the plan
-----------------------------------------------
+.. _arch-announcements:
 
-A policy is built against a belief. While it runs, its own actions move that
-belief in ways it has branches for. An announcement is the other case:
-perception resolves a region, an operator says something, two robots reconcile
-their maps when a link comes back, and the model moves for a reason the policy
-never accounted for.
+Information from outside the plan
+---------------------------------
 
-Nothing in a behavior tree can see a service call, so a running policy would
-carry on against a belief that no longer holds until some later action failed
-for what looks like an unrelated reason. The state therefore counts the
-announcements it has taken, publishing the count as ``belief_version``, and
-``CheckBeliefUnchanged`` reads it.
+A policy is computed against a belief, and its own actions change that belief
+in ways it has branches for. An announcement (perception resolving a region, an
+operator, two robots reconciling maps) changes it in a way the policy did not
+account for, and a behavior tree has no means to observe a service call.
 
-The packaged action template puts that node inside the reactive sequence, so it
-is re-checked while the action runs and the interruption arrives when the
-information does, rather than after the action it invalidated has finished. The
-executor's answer to a failed plan is to replan, and the model it replans from
-is the one the announcement produced.
+The state therefore counts the announcements it has applied and publishes the
+count as ``belief_version``; ``CheckBeliefUnchanged`` compares it with the
+value at policy start. The packaged action template places the node inside the
+``ReactiveSequence``, so it is re-evaluated while the action runs and the
+policy fails when the information arrives. The executor then replans from the
+announced model.
 
-Only announcements count. A policy that abandoned itself every time one of its
-own actions worked would never finish anything, so ``apply_action`` does not
-touch the version. A deployment that would rather finish what it started sets
-the node's ``enabled`` port to false.
+``apply_action`` does not increment the version: a policy's own actions are
+anticipated by its branches. A deployment that prefers to finish the current
+policy sets ``enabled`` to false.
 
-When replanning stops getting anywhere
---------------------------------------
+.. _arch-replan-guard:
 
-A plan that fails, is replanned, and fails the same way is a loop. The planner
-is being asked the same question and answering it the same way, and the
-executor would keep driving the robot into the same failure until someone
-stopped it. Epistemic missions reach this more easily than classical ones,
-because an observation the model cannot represent fails the update, and a
-domain that cannot express the outcome will not plan for it next time either.
+Replanning without progress
+---------------------------
 
-The executor counts replans that arrive with no action having completed since
-the last one. Counting replans alone would be wrong: a mission that replans
-often while getting further is healthy, and what marks the loop is replanning
-with nothing having happened in between. Past
-``max_replans_without_progress``, which defaults to three, the plan is aborted
-through the ordinary failure path rather than replanned again. Setting it to
-zero asks the executor to keep trying however long the loop runs.
+A plan that fails, is replanned, and fails identically forms a loop.
+Epistemic missions are prone to it: an observation the model cannot represent
+fails the update, and a domain that cannot express the outcome will not plan
+for it on the next attempt.
 
-Recovery and this guard pull in opposite directions on purpose. Repairing the
-model is what lets a contradicted belief be corrected and the next plan be a
-different one; the guard is what stops the case where it is not.
+The executor counts replans that follow no completed action. Replans in
+themselves are not the criterion; a mission that replans while making progress
+is healthy. When the count exceeds ``max_replans_without_progress`` (default
+3) the plan is aborted through the ordinary failure path. ``0`` disables the
+bound. The synthetic ``(INIT)`` entry of every action map is not counted as
+progress.
 
-Asking for the next plan
-------------------------
+Model repair (:ref:`arch-contradiction`) and this guard are complementary:
+repair allows the next plan to differ; the guard stops the case where it does
+not.
 
-Replanning from the reached belief only helps if something asks for a new
-plan. ``plansys2::MissionSupervisor``, in ``plansys2_executor``, is that
-something: it plans, executes, and when execution fails plans again against
-the problem and the belief as the failed attempt left them.
+.. _arch-supervisor:
+
+Mission supervision
+-------------------
+
+``plansys2::MissionSupervisor`` in ``plansys2_executor`` implements the outer
+loop: plan, execute, and on failure plan again from the problem and the belief
+the failed attempt left.
 
 .. code-block:: cpp
 
@@ -557,155 +569,153 @@ the problem and the belief as the failed attempt left them.
    supervisor.problem()->setGoal(plansys2::Goal("(and(reported r1))"));
    const auto report = supervisor.run();           // Succeeded, GaveUp, NoPlan, ...
 
-It gives up on the same evidence the executor's own guard uses: an attempt in
-which some action completed has moved the mission, and one in which nothing
-did is the same question asked again. ``mission.max_attempts_without_progress``
-(3) bounds the second kind; ``mission.max_attempts`` (0, no bound) bounds the
-total. An empty plan from a replan means the goal already holds, and the
-mission ends successfully. All three demo missions run on it, and
-``plansys2_tests/test_7`` runs it over a stale map: the first policy is stopped
-by its knowledge guard, and the second, planned from the repaired belief, tells
-the other robot the truth.
+.. list-table:: Parameters of ``MissionSupervisor``.
+   :header-rows: 1
+   :widths: 40 12 48
 
-When the world contradicts the model
-------------------------------------
+   * - Parameter
+     - Default
+     - Meaning
+   * - ``mission.max_attempts_without_progress``
+     - 3
+     - Consecutive attempts in which no action completed.
+   * - ``mission.max_attempts``
+     - 0
+     - Total attempts; 0 for no bound.
+   * - ``mission.settle_seconds``
+     - 2
+     - Delay before the next planning request.
+   * - ``mission.check_rate_hz``
+     - 4
+     - Rate at which execution is polled.
 
-The model is a belief about the world, and the world can contradict it. A robot
-drives out carrying the map's word that a corridor is clear, looks, and sees
-that it is blocked. ``apply_action`` is then handed an outcome the model holds
-impossible.
+The retry decision (``MissionRetryPolicy``) uses the same criterion as the
+executor's guard and is tested without a running system. An empty plan from a
+replan means the goal already holds and ends the mission successfully. All
+three demo missions use the supervisor; ``plansys2_tests/test_7`` runs it
+against a stale map, where the first policy is stopped by its knowledge guard
+and the second, planned from the repaired belief, reports the corridor
+blocked.
 
-Refusing the update keeps the model honest about never having represented what
-happened, but it freezes it, and a frozen model is worse than a corrected one:
-the replan that follows plans from the belief the sensor just contradicted, and
-routes the robot down the corridor it has looked at.
+.. _arch-contradiction:
 
-So ``allow_recovery`` on the request repairs the model instead, by trusting the
-observation over the belief. The model is re-designated to the worlds where the
-observed event could have fired, and the update proceeds from there. The
-response reports ``recovered`` and what the repair gave up, and the state logs
-it at warning level, because this is a change of belief rather than a detail of
-an update.
+Observations that contradict the model
+--------------------------------------
 
-``ApplyEpistemicUpdate`` asks for recovery by default, on the grounds that a
-robot which corrects a wrong belief is in better shape than one which stops.
-Its ``recover`` port turns that off for a deployment that would rather fail.
+The model is a belief and can be wrong: the map says a corridor is clear, the
+robot inspects it and observes that it is blocked, and ``apply_action``
+receives an outcome the model holds impossible. Rejecting the update leaves
+the model unchanged, and the following replan would start from the belief the
+sensor has just refuted.
 
-Recovery has a limit worth stating plainly. Re-designation corrects which world
-is believed actual; it cannot add a world the model never contained. Observing
-something no world in the model could have produced means the model cannot
-represent what happened at all, and that is refused whatever ``allow_recovery``
-says. In the corridor domain, inspecting before driving out is such a case:
-every world has the robot away from the junction, so there is nothing to
-re-designate to.
+With ``allow_recovery`` the state repairs the model instead, giving precedence
+to the observation: the model is re-designated to the worlds in which the
+observed event is applicable, and the update proceeds. The response sets
+``recovered`` and describes what was discarded; the state logs the repair at
+warning level. ``ApplyEpistemicUpdate`` requests recovery by default; its
+``recover`` port disables it.
+
+Re-designation changes which worlds are considered actual; it cannot add a
+world the model does not contain. An observation that no world could produce
+is rejected regardless of ``allow_recovery``. In the corridor domain,
+inspecting before driving to the junction is such a case: every world has the
+robot away from the junction.
+
+.. _arch-replan-belief:
 
 Replanning from the current belief
 ----------------------------------
 
-The same topic carries the model itself, under ``model``, in the shape the task
-format gives an initial state. The solver reads it and plans from it, which is
-controlled by ``initial_from_state`` and on by default.
+``epistemic_state/state`` also carries the model, under ``model``, in the shape
+of a task's initial state. With ``initial_from_state`` (default true) the
+solver plans from it, so that a replan starts from the belief the mission has
+reached.
 
-This is what makes a replan start from where the mission got to. An epistemic
-policy usually fails because the world contradicted the belief it was built
-against. With recovery on, the update accepts the observation and repairs the
-model, and the failure comes one step later, from the next action's
-``CheckKnowledge``: the action was planned for a belief the repaired model no
-longer holds. (``EpistemicSwitch`` refuses an unplanned outcome too, but only a
-node that branches has a switch, and one that branches on every outcome of its
-action has nothing unplanned to see.) Planning
-again from the model grounding produced would begin at a belief that divergence
-has already disproved: the robot would be sent to find out what it has just
-found out, or told to act on a possibility it has ruled out.
+An epistemic policy typically fails because the world contradicted its belief.
+With recovery enabled the update succeeds and repairs the model, and the
+failure occurs at the next action's ``CheckKnowledge``, the action having been
+planned for a belief the repaired model no longer supports.
+``EpistemicSwitch`` also rejects unplanned outcomes, but only branching nodes
+have a switch, and a node that branches on every outcome has none unplanned.
+Planning from the grounded initial model would restart from a belief already
+refuted, sending the robot to re-sense what it has observed or to act on a
+possibility it has eliminated.
 
-The model is resolved against the task before it is used. Every atom, agent and
-designated world it names must exist there; a name the task lacks is an error
-and not a new symbol, since it means the state and the planner hold different
-problems and a policy built from one could not be executed against the other. A
-model designating no world is refused for the same reason an empty announcement
-is: every formula holds vacuously in it, so the goal check would report success
-from a model that says nothing.
+The published model is resolved against the task before use. Every atom, agent
+and designated world it names must exist in the task; an unknown name is an
+error, since it indicates that the state and the planner hold different
+problems. A model with no designated world is rejected: every formula holds
+vacuously in it.
 
-Two parameters turn it off, at either end. ``initial_from_state`` false on the
-solver plans from the task's own initial state. ``publish_model`` false on the
-state node omits the model from the published message, which for a large model
-is most of it; the solver then falls back to the task's initial state on its
-own.
+``initial_from_state: false`` on the solver, or ``publish_model: false`` on the
+state, disables the mechanism; in the second case the solver falls back to the
+task's initial state.
 
-The state advances by executed actions, not by observing the world, which is
-what distinguishes a belief state from a log. When it disagrees with what
-the robot observed, the disagreement surfaces at ``apply_action`` as an outcome
-the model cannot account for: a reason to replan, not to overwrite the model
-quietly.
+The state advances only by executed actions. A
+disagreement with what the robot observed therefore appears at
+``apply_action`` as an outcome the model cannot account for, which is a reason
+to repair or replan.
 
-Which outcome occurred is a question about the world, not about the model. When
-the state designates a single world it already answers it, and the response
-reports it. When it designates several the model is undetermined, and the
-observation has to come from whoever did the sensing.
+.. _arch-perspective:
 
-One agent's point of view
--------------------------
+Agent perspective
+-----------------
 
-The state holds one model for the whole system, and that is what makes a
-group's knowledge expressible at all: "r1 knows that r2 does not know" is a
-statement about one structure, not about two. A deployment often needs the
-other reading, though — what would this robot act on, given only what it has
-seen — and that is a different model.
+The state holds one model for the whole system, in which nested
+group knowledge (":math:`r_1` knows that :math:`r_2` does not know") is
+expressible. A deployment may also need the model an individual agent acts on.
 
-``epistemic_state/get_agent_perspective`` returns it: the same worlds and
-relations, designating what the agent considers possible from the worlds that
-are actually the case. It comes back in the task format's initial-state shape,
-so it can be handed to a planner the same way a replan's starting model is.
+``epistemic_state/get_agent_perspective`` returns the same worlds and relations
+with the designated set replaced by the worlds the agent considers possible
+from the actual worlds, in the task's initial-state format, so it can be given
+to a planner as a replan's initial model. ``check_formula`` evaluates from the
+same perspective when ``agent`` is set: from the system's perspective
+``blocked`` is a statement about the corridor; from ``r1``'s, it holds only if
+``r1`` believes it.
 
-``check_formula`` takes the same view through its ``agent`` field. The two
-readings answer different questions. Asked of the model, ``blocked`` is about
-the corridor; asked of ``r1``, it is about ``r1``, which has no opinion either
-way until it has looked.
+The response also states whether the agent considers the actual world
+possible. Under S5 this always holds: an agent may be uninformed but not
+mistaken. Under KD45 it need not. The terminal exposes this as ``ros2 plansys2
+epistemic view <agent>`` and ``check --agent``.
 
-The response also reports whether the agent holds the actual world possible.
-Under S5 it always does, so an agent can be uninformed but never mistaken.
-Under KD45 it need not, and that is the difference between an agent that does
-not know and one that is wrong. The terminal reaches both through ``ros2
-plansys2 epistemic view <agent>`` and ``--agent`` on ``check``.
+.. _arch-perception:
 
 Perception
 ----------
 
-The state advances by executed actions, and something still has to tell it what
-a sensing action saw. ``plansys2_epistemic_perception`` is that something: a
-lifecycle node that watches an ``nav_msgs/OccupancyGrid``, classifies named
-regions of it, and reports what it found in the vocabulary of the loaded task.
+``plansys2_epistemic_perception`` provides a lifecycle node that subscribes to
+a ``nav_msgs/OccupancyGrid``, classifies named regions, and reports the results
+in the vocabulary of the loaded task.
 
-Two things stand between a grid and a formula, and the package exists because
-neither is mechanical.
+Classification
+~~~~~~~~~~~~~~
 
-The first is a quantifier. A cell is free or occupied; a proposition is about a
-region, and which quantifier joins them is a modelling decision:
+A region is a union of boxes, in metres in the map frame; cell coordinates are
+not used because the grid is re-dimensioned as the map grows. A region's state
+is determined by its cells (:numref:`tab-region`).
 
-.. list-table::
+.. _tab-region:
+
+.. list-table:: Region classification.
    :header-rows: 1
    :widths: 20 80
 
-   * - The region is
-     - when
-   * - ``Clear``
-     - every cell in it has been observed and settled as free
+   * - State
+     - Condition
    * - ``Blocked``
-     - any one cell in it is occupied
+     - some cell is occupied
+   * - ``Clear``
+     - every cell has been observed and is free
    * - ``Unknown``
-     - anything else
+     - otherwise
 
-Occupied beats unobserved, since no further looking removes an obstacle;
-unobserved beats free, since a region is clear only when all of it is. A cell
-that has been seen without being settled, the band between the two
-thresholds, counts as unobserved, because calling it free would hand an agent knowledge
-it does not have.
+Occupied takes precedence over unobserved, and unobserved over free. A cell
+whose occupancy lies between the free and occupied thresholds counts as
+unobserved, so that no agent is credited with knowledge it does not have.
 
-The second is the vocabulary. A region is a place on a map; an atom is a name
-in a grounded task, and those names are flat: ``blocked``, ``at-junction_r1``.
-Each region therefore names the atom its occupancy decides and says which way
-that atom points, so the corridor of the fleet tutorial can be
-``blocked`` instead of ``clear_corridor``:
+Each region names the atom its state decides and the polarity
+(``atom_true_when_clear``), so that the fleet tutorial's corridor maps to
+``blocked`` without an additional atom ``clear_corridor``:
 
 .. code-block:: yaml
 
@@ -720,50 +730,39 @@ that atom points, so the corridor of the fleet tutorial can be
          outcome_when_clear: "e-inspect-clear"
          outcome_when_blocked: "e-inspect-blocked"
 
-Regions are given in metres in the map frame, not in cells, because a map
-is re-gridded as it grows: the origin moves and the width changes, and a region
-written in cell indices would come to mean somewhere else without saying so.
+Reporting
+~~~~~~~~~
 
-How the finding is reported follows from why it is being reported, which is the
-same distinction announcing draws above. A region bound to a sensing action
-reports through ``apply_action``: the observation belongs to an action the
-planner branched on, the state has its event model, and the update is the one
-the plan accounted for. A region without a binding is announced instead, as
-information that arrived outside the plan: an operator or two robots
-reconciling their maps, which is the purpose of a public announcement.
+A region bound to a sensing action (``sensing_action``) reports through
+``apply_action`` with the configured outcome: the observation belongs to an
+action the policy branches on. An unbound region is reported through
+``announce``, as information from outside the plan.
 
-It reports only on change. A map arrives several times a
-second and says the same thing each time; a repeated announcement is harmless
-in the model, since restricting to worlds where a formula already holds changes
-nothing, but a sensing action applied twice is not, and both routes follow the
-one rule. A region that goes back to undecided produces no call at all: the
-state has no operation for taking knowledge back.
+Reports are sent on change only. A repeated announcement leaves the model
+unchanged, but a sensing action applied twice does not, and both routes follow
+the same rule. A transition back to ``Unknown`` sends nothing, since the state
+has no operation that retracts knowledge.
 
-It is brought up the way the state is. Both launch files start it on
-``epistemic_perception:=True``, as a sixth managed node, and the lifecycle
-manager configures and activates it with the others. It is off by default, and
-it starts watching nothing until the parameters file names regions under
-``epistemic_perception:``.
+Lifecycle
+~~~~~~~~~
 
-Asking for it without ``epistemic_state:=True`` is refused. Every route
-perception has for reporting is a call on the state, so
-the pair is not a degraded system but one that cannot work at all, and both the
-distributed launch and ``plansys2_node`` say so instead of bringing up a node
-with nowhere to report. As with the state, ``plansys2_bringup`` manages it by
-name over services and links against none of it.
+Both launch files start the node when ``epistemic_perception:=True``, as a
+sixth managed node. It requires ``epistemic_state:=True``; the combination
+without it is rejected at launch. ``plansys2_bringup`` manages it by name and
+has no build dependency on it.
 
-Regions are declared at configure time, not at construction, since there
-is no list of regions before the parameters are read. Configure is reachable
-more than once, so the node declares each region's settings only if they are
-not already declared, and ``on_cleanup`` releases the subscription and the
-service client that the configuration created. A box is accepted as an integer
-array as well as a double array, because ``[2, -1, 8, 1]`` in a YAML file is a
-list of integers and a reader writing metres has no reason to expect otherwise.
+Regions are declared at configure time, when the parameter listing them has
+been read. Since configure can be reached more than once, each region's
+parameters are declared only if absent, and ``on_cleanup`` releases the
+subscription and service client. Boxes are accepted as integer or double
+arrays, as ``[2, -1, 8, 1]`` in YAML is an integer list.
+
+.. _arch-executor:
 
 Executor configuration
 ----------------------
 
-Two parameters connect the executor to all of this:
+Two executor parameters enable epistemic execution:
 
 .. code-block:: yaml
 
@@ -772,16 +771,17 @@ Two parameters connect the executor to all of this:
        bt_builder_plugin: "EpistemicBTBuilder"
        bt_node_plugins: ["libplansys2_epistemic_bt_nodes.so"]
 
-``bt_node_plugins`` is a generic hook: the executor loads BehaviorTree.CPP node
-libraries before building a tree. That is what keeps ``plansys2_executor`` free
-of any dependency on the epistemic stack. It never links against the epistemic
-nodes, it loads them, and the nodes find the policy on the blackboard where the
-executor already publishes the plan it is running.
+``bt_node_plugins`` is generic: the executor loads the named BehaviorTree.CPP
+libraries before building a tree. ``plansys2_executor`` loads the epistemic
+nodes at run time without linking them, and the nodes read the policy from
+the blackboard entry in which the executor publishes the current plan.
 
-Package boundaries
-------------------
+.. _arch-packages:
 
-.. list-table::
+Package dependencies
+--------------------
+
+.. list-table:: Epistemic packages and their dependency on the executor.
    :header-rows: 1
    :widths: 34 46 20
 
@@ -789,40 +789,37 @@ Package boundaries
      - Contents
      - Depends on ``plansys2_executor``
    * - ``plansys2_epddl_grounder``
-     - The EPDDL front end: runs plank, caches the result
-     - No
+     - EPDDL front end: runs plank, caches the result
+     - no
    * - ``plansys2_epistemic_msgs``
-     - The three service definitions
-     - No
+     - Nine service definitions
+     - no
    * - ``plansys2_epistemic_planner``
-     - The solver plugin over Aletheia's planning core, policy and belief state
-       serialisation
-     - No
+     - Solver plugin over the Aletheia core; policy and belief serialisation
+     - no
    * - ``plansys2_epistemic_executor``
-     - Policy, tree rendering, the four nodes, the state node
-     - No
+     - Policy, tree rendering, five BT nodes, ``epistemic_state``
+     - no
    * - ``plansys2_epistemic_perception``
-     - Regions of a map, and their translation into calls on the state
-     - No
+     - Map regions and their reports to the state
+     - no
    * - ``plansys2_epistemic_bt_builder``
-     - The ``BTBuilder`` plugin
-     - Yes
+     - ``BTBuilder`` plugin
+     - yes
    * - ``plansys2_aletheia_plan_solver``
-     - The subprocess plan solver plugin
-     - No
+     - Subprocess plan solver plugin
+     - no
    * - ``plansys2_tui_cli``
-     - The ``ros2 plansys2`` verbs and the Textual dashboard
-     - No
+     - ``ros2 plansys2`` verbs and dashboard
+     - no
    * - ``eplansys``
-     - Metapackage; dependencies only, no code
-     - No
+     - Metapackage
+     - no
 
-The builder is a separate package because it is the only piece that needs the
-executor's plugin API. Keeping it apart lets everything else build and be
-tested against a released distribution as well as against this fork.
+The builder is a separate package because it alone requires the executor's
+plugin API; the remaining packages build and test against a released ROS
+distribution as well as against this fork.
 
-Within ``plansys2_epistemic_executor`` the same boundary is drawn once more.
-The policy and its rendering as a behavior tree are built as a separate
-library, ``plansys2_epistemic_executor_policy``, which depends on nothing but
-the message package: they are the shared reading of a policy, and keeping them
-free of ROS lets them be tested as the pure transformation they are.
+Within ``plansys2_epistemic_executor``, the policy and its rendering form a
+separate library, ``plansys2_epistemic_executor_policy``, that depends only on
+the message package and is tested as a pure transformation without ROS.

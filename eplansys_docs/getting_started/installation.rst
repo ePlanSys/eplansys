@@ -1,18 +1,14 @@
 Installation
 ============
 
-ePlanSys is built as a ROS 2 workspace with ``colcon``, or installed from the
-Debian packages each release carries for Humble. The whole repository,
-including the classical PlanSys2 packages, builds on Rolling and on Humble.
-Continuous integration builds all of it on Rolling
-(``.github/workflows/rolling.yaml``) and the epistemic chain on Humble
-(``.github/workflows/epistemic-humble.yaml``); the Docker image and the release
-packages are built from the whole repository on Humble.
+ePlanSys is installed from the Debian packages attached to each release
+(Humble only) or built from source as a ROS 2 workspace with ``colcon``
+(Humble and Rolling).
 
-From the release packages
--------------------------
+Release packages
+----------------
 
-On Ubuntu 22.04 with ROS 2 Humble, a release is an apt repository:
+On Ubuntu 22.04 with ROS 2 Humble, each GitHub release is an apt repository:
 
 .. code-block:: bash
 
@@ -21,98 +17,98 @@ On Ubuntu 22.04 with ROS 2 Humble, a release is an apt repository:
    sudo apt update
    sudo apt install ros-humble-eplansys ros-humble-eplansys-demo
 
-``ros-humble-eplansys`` brings the epistemic packages, the planner
+``ros-humble-eplansys`` installs the epistemic packages, the planner
 (``ros-humble-aletheia``, built from del-planner) and the grounder
-(``ros-humble-plank``) at the commits the release pins. The PlanSys2 packages
-are this repository's fork, released under the upstream names at 3.0.0, and
-replace the upstream 2.0.x packages. ``.github/workflows/debs.yaml`` builds
-them with ``packaging/build-debs.sh`` when a release is tagged.
+(``ros-humble-plank``) at the revisions the release pins. The PlanSys2
+packages are this repository's fork, released under the upstream names at
+version 3.0.0, and take precedence over the upstream 2.0.x packages.
+``.github/workflows/debs.yaml`` builds them with ``packaging/build-debs.sh``
+when a release is tagged.
 
 Supported distributions
 -----------------------
 
-.. list-table::
+.. list-table:: Continuous integration and packaging.
    :header-rows: 1
-   :widths: 20 30 50
+   :widths: 16 26 58
 
    * - Distribution
      - Workflow
-     - Packages built
+     - Scope
    * - Rolling
      - ``rolling.yaml``
-     - All packages in the repository, including
-       ``plansys2_epistemic_bt_builder``.
+     - Build and test of every package; coverage uploaded to Codecov.
    * - Humble
      - ``epistemic-humble.yaml``
-     - ``plansys2_epddl_grounder``, ``plansys2_epistemic_planner``,
-       ``plansys2_epistemic_msgs``, ``plansys2_epistemic_executor``,
-       ``plansys2_epistemic_perception``, ``plansys2_aletheia_plan_solver``
-       and ``plansys2_tui_cli``. ``plansys2_epistemic_bt_builder`` is absent
-       because it is the one epistemic package that depends on
-       ``plansys2_executor``.
+     - Build and test of the epistemic packages, ``plansys2_executor``,
+       ``plansys2_epistemic_bt_builder``, ``plansys2_tests`` and
+       ``eplansys_demo``. ``uncrustify`` is excluded on this job: Humble's
+       version formats two lines of ``plansys2_executor`` differently from
+       Rolling's, and the Rolling job is the style gate.
    * - Humble
      - ``debs.yaml``
-     - Every package the release carries, as Debian packages, on a release
-       tag.
+     - Debian packages of every released package, on a release tag.
 
-Two differences between the distributions are what the list above turns on,
-and both are posed as questions about the API, not about the distribution's
-name, in ``plansys2_core/Compat.hpp``:
+The source differences between the two distributions are isolated in
+``plansys2_core/Compat.hpp``, which tests for API features and never for
+the distribution name:
 
 ``plansys2::SpinExecutor``
-   ``rclcpp::experimental::executors::EventsExecutor`` where the header
-   exists, which is Iron and later, and
-   ``rclcpp::executors::SingleThreadedExecutor`` on Humble, where it does not.
-   Bringing a system up is a burst of service calls and transition
-   notifications, which is the traffic a wait-set executor handles worst, so
-   the events executor is preferred wherever it is available.
+   ``rclcpp::experimental::executors::EventsExecutor`` where the header exists
+   (Iron and later), otherwise ``rclcpp::executors::SingleThreadedExecutor``.
+   Bring-up consists of bursts of service calls and transition notifications,
+   for which the events executor performs better than a wait-set executor.
 
 ``plansys2::service_qos()``
-   An ``rclcpp::QoS`` from rclcpp 17 onwards, and the ``rmw`` profile that
-   Humble's ``create_service`` still takes below it. The two do not convert,
-   so the call site cannot be written once for both without this.
-
-A distribution that changes back, or a backport, is therefore handled without
-editing that header.
+   An ``rclcpp::QoS`` from rclcpp 17 onwards, and the ``rmw`` QoS profile that
+   Humble's ``create_service`` takes otherwise. The two types do not convert.
 
 Dependencies
 ------------
 
-Beyond a ROS 2 installation, the epistemic packages need:
+.. list-table:: Dependencies beyond a ROS 2 installation.
+   :header-rows: 1
+   :widths: 30 25 45
 
-* ``nlohmann_json`` 3.10 or newer, required by ``plansys2_epistemic_planner``
-  and re-exported on its interface.
-* ``behaviortree_cpp``, required by ``plansys2_epistemic_executor``.
-* ``pluginlib``, ``rclcpp``, ``rclcpp_lifecycle`` and ``std_msgs``.
+   * - Dependency
+     - Required by
+     - Notes
+   * - ``nlohmann_json`` ≥ 3.10
+     - ``plansys2_epistemic_planner``
+     - Re-exported on the package's interface.
+   * - ``behaviortree_cpp``
+     - ``plansys2_epistemic_executor``
+     -
+   * - ``pluginlib``, ``rclcpp``, ``rclcpp_lifecycle``, ``std_msgs``
+     - epistemic packages
+     -
+   * - ``rclpy``, ``ros2cli``, ``python3-rich``, ``python3-platformdirs``,
+       ``python3-typing-extensions``
+     - ``plansys2_tui_cli``
+     - Textual is vendored; the two ``python3-`` packages are backfilled
+       where Humble's are older than it expects.
+   * - Aletheia (`del-planner <https://github.com/HanielUlises/del-planner>`_)
+     - ``plansys2_epistemic_planner``, ``plansys2_aletheia_plan_solver``
+     - Source dependency, pinned. Built as a library (linked) and as the
+       ``epistemic_planner`` binary (run by the subprocess plugin).
+   * - `plank <https://github.com/HanielUlises/plank>`_
+     - ``plansys2_epddl_grounder`` (run time)
+     - Source dependency, pinned. Plain CMake project; requires
+       ``libboost-filesystem-dev``.
+   * - ``popf``, ``cascade_lifecycle``
+     - classical PlanSys2 packages
+     - Source dependencies; ``popf`` requires ``libfl-dev``.
 
-``plansys2_tui_cli`` is pure Python and needs ``rclpy``, ``ros2cli``,
-``python3-rich``, ``python3-platformdirs`` and ``python3-typing-extensions``.
-It vendors the Textual library it draws its dashboard with, so nothing has to
-be installed with pip; the two ``python3-`` packages are what the vendored
-copy expects to find in the distribution, and are backfilled where Humble's
-are older than it wants.
+All source dependencies are listed with their pinned revisions in
+``dependency_repos.repos``.
 
-``plansys2_epistemic_planner`` links the planning core of
-`Aletheia <https://github.com/HanielUlises/Aletheia>`_, a source dependency
-in ``dependency_repos.repos`` pinned to a commit. Its
-checkout is a colcon package: it builds the core as a library and installs the
-``epistemic_planner`` binary into ``<prefix>/bin``, which is what
-``plansys2_aletheia_plan_solver`` runs. The binary is compiled with
-``-march=native``; pass ``--cmake-args -DALETHEIA_NATIVE=OFF`` when the
-workspace is built on one machine and run on another. The library never is.
+The ``epistemic_planner`` binary is compiled with ``-march=native``; pass
+``--cmake-args -DALETHEIA_NATIVE=OFF`` when the build machine differs from the
+target. The library is never compiled with it.
 
-``plansys2_epddl_grounder`` needs the ``plank`` EPDDL toolkit at run time,
-another source dependency in ``dependency_repos.repos``. It is a
-plain CMake project, not a ROS package, so colcon builds it as one and
-installs its binary into ``<prefix>/bin``, which puts ``plank`` on PATH once
-the workspace is sourced; building it requires ``libboost-filesystem-dev``.
-Nothing links against it, so a workspace built without it still builds and
-still passes its tests. Only the EPDDL front end is unavailable, and the
-grounder reports it explicitly instead of failing obscurely.
-
-The classical PlanSys2 packages additionally need two source dependencies,
-listed in the same file: ``popf`` and ``cascade_lifecycle``. Building ``popf``
-requires ``libfl-dev``.
+plank is installed into ``<prefix>/bin`` and found on ``PATH``. No package
+links against it, so a workspace without it builds and passes its tests; only
+the EPDDL front end is unavailable, and it reports this explicitly.
 
 Building from source
 --------------------
@@ -133,35 +129,24 @@ Building from source
    colcon build --symlink-install
    source install/setup.bash
 
-``eplansys`` is a metapackage that depends on PlanSys2 and on every epistemic
-package, so ``--packages-up-to eplansys`` builds the whole system and
-installing it as a binary package pulls the set in. It contains no code of its
-own.
+``eplansys`` is a metapackage depending on PlanSys2 and every epistemic
+package; ``--packages-up-to eplansys`` builds the complete system.
 
-To build only the epistemic chain, which needs neither ``popf`` nor
-``cascade_lifecycle``:
+The epistemic chain alone, without ``popf`` and ``cascade_lifecycle``:
 
 .. code-block:: bash
 
    colcon build --packages-up-to plansys2_epistemic_executor plank
 
-``plank`` is named explicitly because nothing declares a build dependency on
-it: ``plansys2_epddl_grounder`` runs it as a subprocess and finds it on PATH,
-so ``--packages-up-to`` would never reach it.
+``plank`` is named explicitly because no package declares a build dependency on
+it. ``plansys2_epistemic_bt_builder`` is not in this chain; it is the only
+epistemic package that depends on ``plansys2_executor``.
 
-Note that ``plansys2_epistemic_bt_builder`` is deliberately excluded from that
-chain: it is the only epistemic package that depends on ``plansys2_executor``,
-which keeps the rest buildable against a released distribution.
+The epistemic packages set ``CMAKE_CXX_STANDARD 23`` with extensions disabled
+and require a C++23 compiler. The classical packages are unaffected.
 
-Language standard
------------------
-
-The epistemic packages set ``CMAKE_CXX_STANDARD 23`` with extensions
-disabled, so a compiler with C++23 support is required. The classical
-PlanSys2 packages are unaffected.
-
-Running the tests
------------------
+Tests
+-----
 
 .. code-block:: bash
 
@@ -169,19 +154,26 @@ Running the tests
      plansys2_epistemic_executor plansys2_epistemic_perception plansys2_tui_cli
    colcon test-result --verbose
 
-The tests that run without a live ROS graph cover the EPDDL grounder, the task
-parser, the search strategies, the action mapping, the policy plan, the policy
-reading, and the
-rendering of a policy into a behavior tree that the real BehaviorTree.CPP
-factory accepts. ``plansys2_epistemic_perception`` additionally brings up a
-real ``epistemic_state`` node and checks that what it reads off a grid arrives
-there as the outcome or announcement it was configured to send, with no
-stand-in for that node. ``plansys2_tui_cli``'s tests are the three
-ament linters and a check that every declared entry point imports, which is
-what catches a verb that would only fail when a user typed it. The grounder's own tests run against a stand-in for plank, so
-they pass whether or not it is built; the one test that grounds the packaged
-example through the real binary skips when it is absent. The behavior tree
-nodes ticking against a running
-``epistemic_state`` node, and the builder inside a running executor, are not
-covered by these tests; they require a full PlanSys2 stack and are exercised
-on Rolling only.
+.. list-table:: Coverage of the package tests.
+   :header-rows: 1
+   :widths: 32 68
+
+   * - Package
+     - Tests
+   * - ``plansys2_epddl_grounder``
+     - Grounding against a stand-in for plank; one test grounds the packaged
+       example with the real binary and is skipped when it is absent.
+   * - ``plansys2_epistemic_planner``
+     - Task parser, search strategies, action mapping, policy plan.
+   * - ``plansys2_epistemic_executor``
+     - Policy reading and rendering into a tree accepted by the
+       BehaviorTree.CPP factory; the ``epistemic_state`` node.
+   * - ``plansys2_epistemic_perception``
+     - Region classification, against a live ``epistemic_state`` node.
+   * - ``plansys2_tui_cli``
+     - ament linters; import of every declared entry point.
+
+The behavior tree nodes against a live ``epistemic_state``, and the builder
+inside a running executor, require the full PlanSys2 stack. They are covered
+by ``plansys2_tests`` (tests 5 to 7) on Rolling and Humble
+(:doc:`../reports/epistemic_end_to_end`).

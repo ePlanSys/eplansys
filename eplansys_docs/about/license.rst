@@ -2,63 +2,57 @@ License
 =======
 
 ePlanSys is distributed under the `Apache License, Version 2.0
-<https://www.apache.org/licenses/LICENSE-2.0>`_. The full text is in the
-``LICENSE`` file at the root of the repository, and the attribution notice is
-in ``NOTICE``.
+<https://www.apache.org/licenses/LICENSE-2.0>`_. The full text is in
+``LICENSE`` at the repository root and the attribution notice in ``NOTICE``.
 
 Relationship to PlanSys2
 ------------------------
 
-This project is a derivative work of `PlanSys2 (ROS2 Planning System)
-<https://github.com/PlanSys2/ros2_planning_system>`_, originally developed by
-Francisco Martín Rico, Jonatan Ginés Clavero, Francisco J. Rodríguez Lera and
-Vicente Matellán Olivera, and licensed under the Apache License, Version 2.0.
-The original work is described in F. Martín et al., "PlanSys2: A Planning
-System Framework for ROS2", IROS 2021.
+ePlanSys is a derivative work of `PlanSys2
+<https://github.com/PlanSys2/ros2_planning_system>`_
+:cite:p:`martin2021plansys2`, developed by Francisco Martín Rico, Jonatan
+Ginés Clavero, Francisco J. Rodríguez Lera and Vicente Matellán Olivera and
+licensed under the Apache License, Version 2.0.
 
 ePlanSys is not endorsed by, affiliated with, or supported by the PlanSys2
-project or its authors. Questions, bug reports and pull requests about the code
-in this repository belong here, not to the upstream project.
+project or its authors. Issues and pull requests concerning this repository
+belong here.
 
-Provenance of the packages
---------------------------
+Provenance
+----------
 
-The ``plansys2_*`` packages that are not epistemic come from the original
-PlanSys2 project and remain subject to its copyright notices and the Apache
-License, Version 2.0. This repository preserves their upstream commit history,
-so ``git log`` on any file identifies its origin.
+.. list-table:: Origin of the packages.
+   :header-rows: 1
+   :widths: 30 70
 
-All of them have been modified, in four categories: the extension points the
-epistemic packages attach to were widened, principally in ``plansys2_msgs`` and
-``plansys2_executor``; bring-up and lifecycle management were extended to cover
-the epistemic nodes; compatibility shims were added for building on both Humble
-and Rolling; and defects found while running the system were corrected.
-``plansys2_tui_cli`` and ``plansys2_tests`` are modified more extensively, the
-first adding the ``epistemic`` verb and a Textual dashboard, the second two
-integration missions.
-
-The epistemic packages are original contributions, developed as part of a
-terminal work at the Instituto Politécnico Nacional, Mexico, and are also
-distributed under the Apache License, Version 2.0. Several carry the
-``plansys2_`` prefix to identify the extension point they attach to. The prefix
-reflects the attachment point, not the authorship. ``NOTICE`` lists them.
-
-The planning core of ``plansys2_epistemic_planner`` is the
-`Aletheia <https://github.com/HanielUlises/Aletheia>`_ epistemic planner, a
-work of the same author, also under the Apache License, Version 2.0: the
-Kripke state representation, the DEL product update, bisimulation contraction,
-formula representation and model checking, the heuristics, the search
-strategies, the selection policy, the parser and the validator. It is not
-copied into this repository: it is built from source through
-``dependency_repos.repos`` and linked as a library, and
-``plansys2_aletheia_plan_solver`` runs the binary the same build installs. The
-files of ``plansys2_epistemic_planner``, the plan solver plugin, the policy plan
-serialisation, the belief state serialisation, the action mapping and the
-formula text front end, are original to this repository.
-
-``plansys2_epddl_grounder`` includes three files reproduced verbatim from other
-projects, used at run time and not compiled. ``NOTICE`` names them and
-their licences.
+   * - Packages
+     - Origin
+   * - Non-epistemic ``plansys2_*``
+     - PlanSys2, with upstream commit history preserved (``git log``
+       identifies the origin of each file). All are modified, in four
+       categories: extension points (principally ``plansys2_msgs`` and
+       ``plansys2_executor``), bring-up and lifecycle management of the
+       epistemic nodes, Humble/Rolling compatibility shims, and defect
+       fixes. ``plansys2_tui_cli`` (the ``epistemic`` verb and a Textual
+       dashboard) and ``plansys2_tests`` (epistemic integration tests) are
+       modified more extensively.
+   * - Epistemic packages, ``eplansys``, ``eplansys_demo``
+     - Original contributions, developed as part of a terminal work at the
+       Instituto Politécnico Nacional, Mexico. The ``plansys2_`` prefix of
+       several of them names the extension point they attach to; it does
+       not indicate authorship. ``NOTICE`` lists them.
+   * - Planning core of ``plansys2_epistemic_planner``
+     - Aletheia (`del-planner <https://github.com/HanielUlises/del-planner>`_)
+       :cite:p:`aletheia`, by the same author, Apache License 2.0: state
+       representation, product update, bisimulation contraction, formulas and
+       model checking, heuristics, search strategies, selection policy, parser
+       and validator. Built from source through ``dependency_repos.repos`` and
+       linked as a library; not copied into this repository. The plugin,
+       policy and belief serialisation, action mapping and formula front end
+       in ``plansys2_epistemic_planner`` are original to this repository.
+   * - Three files in ``plansys2_epddl_grounder``
+     - Reproduced verbatim from other projects; used at run time and not
+       compiled. ``NOTICE`` names them and their licences.
 
 Copyright
 ---------
@@ -80,8 +74,7 @@ Copyright
    See the License for the specific language governing permissions and
    limitations under the License.
 
-The link preview image carries the ROS logo, from
-`ros-infrastructure/artwork <https://github.com/ros-infrastructure/artwork>`_,
-which is licensed under the Creative Commons Attribution-NonCommercial 4.0
-International License and used unmodified under the ROS trademark policy. ROS
-is a trademark of Open Robotics.
+The link-preview image contains the ROS logo from `ros-infrastructure/artwork
+<https://github.com/ros-infrastructure/artwork>`_, licensed under CC BY-NC 4.0
+and used unmodified under the ROS trademark policy. ROS is a trademark of Open
+Robotics.

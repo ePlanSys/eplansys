@@ -1,23 +1,16 @@
 Fleet: the three-route survey
 =============================
 
-The fleet scenario at its third size: four robots, three routes out of the
-depot, any of which may be blocked, and every robot needing to know the state
-of all three.
+The largest instance of the family: four robots and three independent routes.
+The actions are those of :doc:`fleet_corridor` and :doc:`fleet_depot` without
+additions, so the three instances differ only in the size of the search.
 
-It is deliberately big, not clever. The mechanisms are those of
-:doc:`fleet_corridor` and :doc:`fleet_depot` (drive, look, say what you saw)
-with nothing added, so that what grows between the three scenarios is the
-search and not the modelling. That is what makes the family worth having: the
-same domain at three sizes says something about the planner that no single
-instance can.
+The instance is not part of the test suite; its search time (about one minute)
+exceeds what per-commit CI allows. The two smaller instances provide the
+regression tests.
 
-This one is not part of the test suite. A minute of search is too long for a
-job that runs on every push, so the two smaller scenarios carry the regression
-testing and this one is here to be run deliberately.
-
-The mission
------------
+Mission
+-------
 
 .. list-table::
    :header-rows: 0
@@ -25,25 +18,24 @@ The mission
 
    * - Agents
      - ``r1``, ``r2``, ``r3``, ``r4``
-   * - The unknowns
-     - whether each of north, south and east is blocked: three independent
-       questions
+   * - Unknowns
+     - whether each of north, south and east is blocked
    * - Depot rule
-     - as before: a robot dispatched down a route stays on it
+     - a robot dispatched to a junction remains there
    * - Goal
-     - twelve conjuncts: four robots × three routes
+     - twelve conjuncts :math:`\mathit{Kw}_{r_i}\,\mathit{blocked\text{-}d}`,
+       :math:`i \in \{1..4\}`, :math:`d \in \{\mathit{north}, \mathit{south},
+       \mathit{east}\}`
 
-No robot can satisfy more than one of its own three conjuncts by driving, so
-the fleet needs three survey trips and three broadcasts however it arranges
-them.
+Each robot can resolve at most one route by sensing, so every solution needs
+three inspections and three announcements.
 
-Formalization
+Formalisation
 -------------
 
-``robot-fleet-survey`` is the depot domain with a third route added and a
-fourth agent in the problem. Nothing else changes, and the file says so: it is
-generated from the same template, and the commentary explaining each construct
-lives in the depot domain.
+``robot-fleet-survey`` is the depot domain with a third route; the problem adds
+a fourth agent. The file is generated from the same template as the depot
+domain, which carries the commentary.
 
 .. code-block:: text
 
@@ -51,12 +43,10 @@ lives in the depot domain.
      (blocked-north) (blocked-south) (blocked-east)
      (at-north ?i - agent) (at-south ?i - agent) (at-east ?i - agent))
 
-Three routes over four agents is what produces the size: 15 atoms (three route
-states plus three positions per robot) and 48 grounded actions (four drive,
-four look and eight report actions per route).
-
-The initial theory leaves all three routes open, so the model designates eight
-worlds, one per combination:
+This gives 15 atoms (three route states and three positions per robot) and 48
+grounded actions (per route: four drive, four inspect and eight report
+actions). The initial theory leaves all three routes open, so the model
+designates eight worlds:
 
 .. code-block:: text
 
@@ -74,7 +64,7 @@ worlds, one per combination:
 Grounding
 ---------
 
-This task is not checked in. Ground it when you want to run it:
+The grounded task is not checked in:
 
 .. code-block:: bash
 
@@ -83,21 +73,24 @@ This task is not checked in. Ground it when you want to run it:
      -p <share>/plansys2_epddl_grounder/examples/robot-fleet-survey-problem.epddl \
      -o /tmp/robot-fleet-survey.json
 
-Grounding takes under a tenth of a second and reports the numbers above in the
-task's ``planning-task-info``: 4 agents, 15 atoms, 48 actions, 8 initial
-worlds. The action mapping for it *is* checked in, at
-``plansys2_epistemic_planner/examples/mappings/robot-fleet-survey.json``, since
-it is a fixed correspondence, not a derived artefact.
+Grounding takes under 0.1 s; ``planning-task-info`` reports 4 agents, 15 atoms,
+48 actions and 8 initial worlds. The action mapping is checked in at
+``plansys2_epistemic_planner/examples/mappings/robot-fleet-survey.json``.
 
-The policy
-----------
+Policy
+------
 
-AO* solves it at depth 9 and returns 28 nodes with eight leaves. Each survey
-trip is three actions (drive, look, broadcast) and the look in the middle
-of each is where the policy branches.
+AO* returns a policy of depth 9 with 28 nodes and eight leaves. Each survey trip
+is drive, inspect, announce, and the policy branches at each inspection
+(:numref:`fig-survey-shape`).
+
+.. _fig-survey-shape:
 
 .. graphviz::
-   :caption: The sensing skeleton of the survey policy. Each edge also carries the drive that precedes the look and the broadcast that follows it; each leaf is labelled with the three route states it corresponds to (B blocked, C clear) in the order the policy senses them: east, north, south.
+   :caption: Sensing skeleton of the survey policy. Each edge also contains the
+      drive preceding the inspection and the announcement following it. Leaves
+      give the route states (B blocked, C clear) in sensing order: east,
+      north, south.
 
    digraph survey_shape {
      rankdir=TB;
@@ -135,16 +128,12 @@ of each is where the policy branches.
      s3 -> l6; s3 -> l7;
    }
 
-The order the search settles on is east, then north, then south, with ``r1``,
-``r2`` and ``r3`` taking one route each. ``r4`` never acts. It is a full member
-of the fleet and four of the twelve goal conjuncts are about what it knows, and
-it satisfies all four by listening, which is the clearest statement the
-family makes of why the announcements are in the domain at all.
+The returned order is east, north, south, with ``r1``, ``r2`` and ``r3`` taking
+one route each. ``r4`` performs no action; the four goal conjuncts concerning
+``r4`` are satisfied by announcements alone.
 
-Running it
-----------
-
-As in the other two, with the survey task and mapping:
+Execution
+---------
 
 .. code-block:: yaml
 
@@ -159,18 +148,14 @@ As in the other two, with the survey task and mapping:
          strategy: "aostar"
          conditional_plan: "policy"
 
-``plan_solver_timeout`` is the parameter to notice. Its default is 15 seconds,
-which this scenario exceeds by a factor of four: leave it and the planner
-returns no plan, with the search abandoned and not failed. The two smaller
-scenarios never approach it, so it is easy to forget.
+``plan_solver_timeout`` defaults to 15 s, which this instance exceeds; with the
+default the search is abandoned and no plan is returned.
 
 Performance
 -----------
 
-Measured on a release build with ``aostar`` and the heuristic the selection
-policy chooses (``ks``):
-
-.. list-table::
+.. list-table:: Search on the survey task; ``aostar`` with the heuristic chosen
+   by the selection policy (``ks``); release build.
    :header-rows: 1
    :widths: 34 22 44
 
@@ -179,37 +164,33 @@ policy chooses (``ks``):
      - Note
    * - Solution depth
      - 9
-     - three drives, three looks, three broadcasts
+     - three drives, three inspections, three announcements
    * - Nodes expanded
      - 5 029 063
-     - three orders of magnitude above the depot
+     - ~3000× the depot
    * - Nodes generated
      - 5 746 557
      -
    * - Policy nodes
      - 28
-     - seven sensing nodes and eight leaves
+     - seven sensing nodes
    * - Leaves
      - 8
-     - one per combination of the three routes
+     - one per combination of route states
    * - Wall clock
      - 57 s
-     - search, this time; start-up is noise at this size
+     - search-dominated
    * - Peak resident memory
      - 28 MB
-     - the same as the corridor scenario, which finishes in 17 expansions
+     -
 
-That last comparison is the point of running this scenario at all. Across the
-three sizes the search grows by five orders of magnitude and the resident set
-does not move, because what the planner holds is a bisimulation-contracted
-model of what the agents know, not an enumeration of the histories that could
-have produced it.
+.. _tab-fleet-family:
 
-.. list-table:: The family, side by side
+.. list-table:: The fleet family.
    :header-rows: 1
    :widths: 26 14 14 14 16 16
 
-   * - Scenario
+   * - Instance
      - Agents
      - Actions
      - Worlds
@@ -234,6 +215,6 @@ have produced it.
      - 5 029 063
      - 57 s
 
-Each route added doubles the worlds and adds three to the solution depth, and
-depth is what the search pays for exponentially: 17 expansions, then 1 670,
-then five million. A fourth route would not be a fourth step of the same size.
+Each additional route doubles the number of designated worlds and adds three to
+the solution depth; expansions grow exponentially in depth (17, 1 670,
+5.0 × 10\ :sup:`6`).

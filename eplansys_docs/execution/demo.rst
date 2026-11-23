@@ -1,22 +1,20 @@
-Running the survey demo
-=======================
+Survey demo over Open-RMF
+=========================
 
-The site survey of ``eplansys``, run over an Open-RMF fleet. One command brings
-up the office fleet, the planning system and the bridge.
+The site survey of :doc:`../demos/survey`, executed by an Open-RMF fleet. One
+command starts the office fleet, the planning system and the bridge:
 
 .. code-block:: bash
 
    ros2 launch eplansys_rmf_demo survey_rmf_launch.py
    ros2 launch eplansys_rmf_demo survey_rmf_launch.py site:=clean
 
-Same mission, same EPDDL, same policy as ``eplansys_demo``. What changes is who
-moves the robots: those performers wait out a duration, and these submit RMF
-tasks and wait for the fleet to report them done. ``site:`` chooses what the
-scout turns out to find, and the policy takes a different branch for each,
-``relay-dirty_relay_scout`` against ``relay-clean_relay_scout``, with the robot
-driven by RMF either way.
+The EPDDL problem and the policy are those of ``eplansys_demo``. The performers
+submit RMF tasks and wait for the fleet to complete them. ``site`` selects the
+outcome of the scan, and with it the branch: ``relay-dirty_relay_scout`` or
+``relay-clean_relay_scout``.
 
-.. list-table::
+.. list-table:: Launch arguments.
    :header-rows: 1
    :widths: 18 16 66
 
@@ -25,21 +23,24 @@ driven by RMF either way.
      - Meaning
    * - ``site``
      - ``dirty``
-     - What the scout turns out to find: ``dirty`` or ``clean``.
+     - Scan outcome: ``dirty`` or ``clean``.
    * - ``headless``
      - ``false``
-     - Run Gazebo headless and leave rviz out.
+     - Run Gazebo headless, without rviz.
    * - ``rmf``
      - ``true``
-     - Launch the office fleet too. ``false`` leaves it to another terminal.
+     - Launch the office fleet. ``false`` expects it in another terminal.
 
-The map
--------
+Task map
+--------
 
-``config/office_survey.json`` binds each epistemic agent to one robot of the
-``rmf_demos`` office fleet and says where each action sends it.
+``config/office_survey.json`` binds each agent to a robot of the
+``rmf_demos`` office fleet (:numref:`tab-office-agents`) and gives each
+action's destination.
 
-.. list-table::
+.. _tab-office-agents:
+
+.. list-table:: Agent bindings.
    :header-rows: 1
    :widths: 30 70
 
@@ -52,26 +53,26 @@ The map
    * - ``observer``
      - none
 
-``observer`` is deliberately unbound. The office fleet has two robots, and the
-mission's third conjunct is that the observer must not come to know, so the
-planner does not send it anywhere. If a change to the goal ever made the planner
-choose to move it, the bridge refuses the action and says why, which is the
-behaviour worth having.
+``observer`` is unbound: the office fleet has two robots, and the policy never
+moves ``observer``. If a modified goal led the planner to move it, the bridge
+would refuse the action with an explanatory error.
 
-``goto_site`` and ``scan`` both go to ``pantry``. ``scan`` names the waypoint
-the robot has already reached, so RMF completes it almost at once; it stands in
-for a sensing task, and a deployment would use a ``perform_action`` the fleet
-declares. ``relay`` and ``broadcast`` are speech acts and submit nothing.
+``goto_site`` and ``scan`` both target ``pantry``. ``scan`` therefore
+completes almost immediately, standing in for a sensing task; a deployment
+would use a ``perform_action`` declared by the fleet. ``relay`` and
+``broadcast`` are speech acts and submit no task.
 
 Ports
 -----
 
-The bridge is the websocket server the fleet adapter dials, on 7879. The
-``rmf_demos`` panel owns 7878 and is switched off here, since an adapter has one
-``server_uri`` and cannot feed both.
+The bridge listens on port 7879 as the fleet adapter's websocket server. The
+``rmf_demos`` panel uses port 7878 and is disabled, since an adapter has a
+single ``server_uri`` (:numref:`fig-rmf-ports`).
+
+.. _fig-rmf-ports:
 
 .. graphviz::
-   :caption: An adapter feeds one destination, so the panel and the bridge cannot both receive the stream
+   :caption: A fleet adapter feeds one destination.
 
    digraph ports {
      rankdir=LR;
@@ -80,29 +81,27 @@ The bridge is the websocket server the fleet adapter dials, on 7879. The
 
      adapter [label="fleet adapter\n(one server_uri)"];
      bridge  [label="eplansys_rmf_bridge\nport 7879"];
-     panel   [label="rmf_demos panel\nport 7878, switched off", style=dashed];
+     panel   [label="rmf_demos panel\nport 7878, disabled", style=dashed];
 
      adapter -> bridge [label="states, logs"];
      adapter -> panel  [style=dashed, label="not available"];
    }
 
-``office_fleet.launch.xml`` exists because
 ``rmf_demos_gz_classic/office.launch.xml`` forwards neither ``server_uri`` nor
-``use_rmf_panel`` down to ``common.launch.xml``, so setting them on its command
-line does nothing, silently. It assembles the same demo from the same pieces and
-passes both.
+``use_rmf_panel`` to ``common.launch.xml``; setting them on its command line
+has no effect and no warning. ``office_fleet.launch.xml`` assembles the same
+demo from the same components and forwards both.
 
-Seeing the real outcome path
-----------------------------
+Outcome path
+------------
 
-``site:=dirty|clean`` sets the ``default_outcome`` the bridge falls back to when
-the fleet reports none, and the fallback is logged as a warning every time. To
-exercise the real path instead, have the fleet adapter's action executor write
-the token. In ``rmf_demos_fleet_adapter/fleet_adapter.py`` that is one line on
-the ``execution`` handle:
+``site`` sets the bridge's ``default_outcome``, used when the fleet reports no
+token; each fallback is logged as a warning. To exercise the fleet-reported
+path, the fleet adapter's action executor writes the token, e.g. in
+``rmf_demos_fleet_adapter/fleet_adapter.py``:
 
 .. code-block:: python
 
    execution.underway("eplansys.outcome=e-scan-dirty")
 
-The bridge then reports what the fleet observed and ignores the default.
+The bridge then reports the fleet's token and ignores the default.

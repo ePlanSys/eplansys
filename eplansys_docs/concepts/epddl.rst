@@ -1,72 +1,69 @@
-EPDDL and Grounded Tasks
+EPDDL and grounded tasks
 ========================
 
-Classical PlanSys2 takes a PDDL domain and problem. An epistemic domain needs
-more than PDDL can state: event models, per-agent observability, and goals that
-are formulas about knowledge, not about facts. EPDDL is the language
-that states them, and the planner in this repository consumes its grounded
-output.
+PDDL :cite:p:`fox2003pddl21` describes a single world and cannot state event
+models, per-agent observability, or goals about knowledge. ePlanSys takes its
+problems in EPDDL :cite:p:`epddl2026guideline`, which can, and plans over the
+grounded task that plank :cite:p:`plank` produces from it.
 
-What the solver reads
----------------------
+Input routes
+------------
 
-``EpistemicPlanSolver`` searches over a *grounded* epistemic planning task in
-the IePC JSON format. EPDDL is what a user writes; the grounded task is what
-the search runs on, and ``plansys2_epddl_grounder`` is the step between them.
+``EpistemicPlanSolver`` searches over a *grounded* task in the IεPC JSON format
+:cite:p:`iepc2026`. ``plansys2_epddl_grounder`` produces it from EPDDL sources.
+The solver takes the task from the first available of:
 
-There is deliberately no translation from the PDDL problem the domain expert
-holds: PDDL cannot express event models or per-agent observability, so no such
-translation exists. A request that supplies no epistemic problem at all fails
-with that explanation in place of a parse error.
+#. the ``problem`` string of ``planner/get_plan``, if it is a grounded task
+   (identified by the key ``planning-task-info``);
+#. the ``epddl_domain`` and ``epddl_problem`` parameters, grounded on first use
+   and whenever either file changes;
+#. the ``task_file`` parameter, an absolute path to a grounded task.
 
-The task arrives by the first of three routes that is available:
+No translation from the PDDL problem held by the domain expert is attempted,
+as PDDL cannot express the required structure; a request without an epistemic
+problem fails with a message saying so.
 
-* the ``problem`` string of ``planner/get_plan``, when that string is itself a
-  grounded task JSON, recognised by its ``planning-task-info`` key;
-* the ``epddl_domain`` and ``epddl_problem`` parameters, ground on first use
-  and again whenever the files change;
-* the ``task_file`` parameter, an absolute path to a grounded task on disk.
+The PDDL ``model_file`` required by the launch files is still read by the
+domain expert, and the executor uses it to find each action's behavior tree.
+The PDDL domain describes the robot's actions; the EPDDL domain describes what
+the agents know. Both describe the same mission.
 
-The ``model_file`` the launch file requires still feeds the domain expert, and
-is what the executor consults to find the behavior tree for an action. The
-epistemic solver ignores it: the PDDL states what the robot can do, the EPDDL
-states what the agents know.
+Grounded task format
+--------------------
 
-Structure of a grounded task
-----------------------------
+A grounded task is a JSON object with six top-level keys
+(:numref:`tab-task-keys`).
 
-A grounded task is a JSON object with six top-level keys:
+.. _tab-task-keys:
 
-.. list-table::
+.. list-table:: Top-level keys of a grounded task.
    :header-rows: 1
    :widths: 25 75
 
    * - Key
      - Contents
    * - ``planning-task-info``
-     - Problem and domain names, the EPDDL libraries and requirements the
-       instance uses, and counts of agents, atoms, facts, actions and worlds.
+     - Problem and domain names, the EPDDL libraries and requirements used,
+       and counts of agents, atoms, facts, actions and worlds.
    * - ``language``
-     - The vocabulary: the agents and the atoms formulas are written over.
+     - Vocabulary: agents and atoms.
    * - ``facts``
-     - The instance's ground facts.
+     - Ground facts of the instance.
    * - ``initial-state``
-     - The initial Kripke model, including its ``designated`` worlds.
+     - Initial Kripke model, including the ``designated`` worlds.
    * - ``actions``
-     - The event model of each grounded action.
+     - Event model of each grounded action.
    * - ``goal``
-     - The goal formula, which may be modal.
+     - Goal formula, possibly modal.
 
-The count fields in ``planning-task-info`` are what the parser tests assert
-against, so a task file is checked against the grounder's own accounting rather
-than against the parser's reading of it alone.
+The parser tests compare the parsed task against the counts in
+``planning-task-info``, i.e. against the grounder's accounting.
 
 Requirements
-------------
+~~~~~~~~~~~~
 
-The requirement flags a grounded task declares record which parts of the
-language the instance uses. Those appearing in the tasks checked into this
-repository include ``:common-knowledge``, ``:disjunctive-list-formulas``,
+Requirement flags record which language features an instance uses. The tasks
+in this repository use ``:common-knowledge``, ``:disjunctive-list-formulas``,
 ``:disjunctive-preconditions``, ``:equality``, ``:events-conditions``,
 ``:finitary-S5-theories``, ``:group-modalities``, ``:knowing-whether``,
 ``:list-comprehensions``, ``:lists``, ``:modal-goals``,
@@ -77,54 +74,45 @@ repository include ``:common-knowledge``, ``:disjunctive-list-formulas``,
 Grounding
 ---------
 
-Grounding is done by `plank <https://github.com/HanielUlises/plank>`_, the
-EPDDL toolkit, which ``plansys2_epddl_grounder`` runs as a subprocess:
+``plansys2_epddl_grounder`` runs plank as a subprocess:
 
 .. code-block:: bash
 
    plank export -d <domain.epddl> -p <problem.epddl> -l <library.epddl>... \
                 -o <output directory>
 
-plank is listed in ``dependency_repos.repos``, so building the workspace builds
-it and sourcing the workspace puts it on PATH; the ``plank_command`` parameter
-and the ``PLANK`` environment variable name it explicitly for an installation
-outside the workspace. Nothing else in the tree links against it: the
-epistemic packages build and their tests pass without it, and only the EPDDL front end is
-unavailable, which it reports explicitly instead of failing silently.
+plank is a source dependency in ``dependency_repos.repos``; building the
+workspace builds it, and sourcing the workspace puts it on ``PATH``.
+``plank_command`` or ``$PLANK`` select a binary outside the workspace. No
+package links against plank. Without it the epistemic packages still build and
+pass their tests; only the EPDDL front end is unavailable, and it reports so.
 
-A domain declares the action-type libraries it uses in its
-``:action-type-libraries`` clause, and plank resolves those names only against
-library files it is handed. ``plansys2_epddl_grounder`` therefore ships a copy
-of the ``intermediate`` library, which every domain in this repository declares,
-and supplies it when ``epddl_libraries`` is empty. A domain using a different
-library must name it.
+A domain lists the action-type libraries it uses in
+``:action-type-libraries``, and plank resolves them only against library files
+passed to it. The grounder ships the ``intermediate`` library, which every
+domain in this repository uses, and passes it when ``epddl_libraries`` is
+empty. Domains using another library must name it.
 
-Two properties of plank's error reporting are worth knowing, because they shape
-what a grounding failure looks like in a ROS log: it prints the offending line
-of the specification, and it terminates on a signal without setting an exit
-status. The grounder therefore judges success by whether the task file was
-written, and passes plank's own output through as the error.
+plank prints the offending line on a specification error and terminates on a
+signal without setting an exit status. The grounder therefore determines
+success by whether the task file was written, and forwards plank's output as
+the error message.
 
-The EPDDL sources are packaged under
-``<share>/plansys2_epddl_grounder/examples``: the three fleet domains and
-their problems, described in :doc:`../tutorials/index`, and muddy children,
-which is the puzzle the fleet scenarios replaced as the worked example. The
-corridor scenario also ships its PDDL side, ``robot-fleet-domain.pddl``, since
-the executor needs a behavior tree per action and the EPDDL says nothing about
-hardware: the two files describe one mission from two sides. The remaining
-puzzle fixtures live in the ``epddl-workspace`` of the
+The EPDDL sources installed under ``<share>/plansys2_epddl_grounder/examples``
+are the three fleet domains and problems (:doc:`../tutorials/index`) and
+muddy children. The corridor scenario also ships its PDDL counterpart,
+``robot-fleet-domain.pddl``, which the executor needs for action behavior
+trees. Further puzzle fixtures are in the ``epddl-workspace`` of the
 `Epistemic-Robotics <https://github.com/HanielUlises/epistemic-robotics>`_
-repository. The EPDDL grammar itself is
-specified in the `EPDDL Official Guideline <https://arxiv.org/abs/2601.20969>`_
-and is not restated here.
+repository. The EPDDL grammar is specified by
+:cite:t:`epddl2026guideline` and not restated here.
 
 Formula syntax
 --------------
 
-Formulas travel between the planner and the epistemic state as text: they have
-to cross a service boundary, and the interned identifiers they were built from
-are process-local. The grammar is the one the policy carries and the one
-``epistemic_state/check_formula`` accepts:
+Formulas are exchanged between the planner and the epistemic state as text,
+since interned formula identifiers are local to a process. The policy carries
+formulas in this grammar, and ``epistemic_state/check_formula`` accepts it:
 
 .. code-block:: text
 
@@ -136,62 +124,67 @@ are process-local. The grammar is the one the policy carries and the one
             | "(Kw" agent formula ")"
             | "(C (" agent+ ")" formula ")"
 
-``K`` and ``B`` are the same modality under different frames, an agent's box,
-and both are accepted whatever the task's frame is. Rejecting ``(K ...)`` on a
-doxastic task would only mean that the goal a policy carries stops parsing the
-moment the frame changes.
+``K`` and ``B`` denote the same modality :math:`[i]` and are both accepted
+under either frame, so a policy's goal remains parseable if the task's frame
+changes. Atoms are written bare (``blocked``); a parenthesised name is parsed
+as an operator.
 
-Agent and atom names are resolved against the loaded task, so a formula naming
-a symbol the task does not have is an error, not a new symbol: it
-means the policy and the state disagree about which problem is being solved.
+Agent and atom names are resolved against the loaded task. An unknown name is
+an error, since it indicates that the policy and the state refer to different
+problems.
 
 Checked-in tasks
 ----------------
 
-.. list-table::
+``plansys2_epistemic_planner/test/tasks`` contains the grounded tasks used by the
+tests; :numref:`tab-tasks` lists the principal ones.
+
+.. _tab-tasks:
+
+.. list-table:: Principal grounded tasks.
    :header-rows: 1
    :widths: 40 60
 
    * - File
-     - Why it exists
+     - Purpose
    * - ``robot-fleet.json``
-     - The corridor scenario: two designated worlds, and the smallest task
-       whose solution branches. Executed end to end by ``plansys2_tests``.
+     - Corridor scenario: two designated worlds; the smallest task whose
+       solution branches. Executed end to end by ``plansys2_tests``.
    * - ``robot-fleet-depot.json``
-     - The two-route depot: four designated worlds, and a policy with a branch
-       inside a branch.
+     - Two-route depot: four designated worlds; nested branching.
+   * - ``robot-fleet-stale-prior.json``
+     - Corridor with a stale prior: the robots are at the junction and the
+       model designates only the clear world. Used by ``test_7`` and the
+       state node's repair tests.
+   * - ``robot-fleet-stale-prior-lone.json``
+     - As above, with ``r2`` away from the junction, so that the policy
+       contains a report to ``r2``. Used by ``test_7``.
    * - ``coin-in-the-box.json``
-     - Sensing domain with a knowledge goal in place of a
-       :math:`\mathit{Kw}` goal.
+     - Sensing domain with a :math:`K` goal.
    * - ``coin-in-the-box-multipointed.json``
-     - The hand-derived multi-pointed coin, kept for the parser tests.
+     - Multi-pointed variant derived by hand, for the parser tests.
    * - ``muddy-children-2.json``, ``muddy-children-3.json``,
        ``active-muddy-child.json``
-     - Puzzle fixtures that predate the fleet scenarios; they pin the parser
-       and the search against tasks with up to thirty-two initial worlds.
+     - Puzzle fixtures with up to 32 initial worlds, for the parser and the
+       search.
 
-The puzzle instances all ground to single-pointed tasks, one designated
-world, so sensing has exactly one possible outcome in them and AO* returns a
-chain. Nothing among them exercises contingent branching, which is precisely
-the path the solver flattens away when ``conditional_plan`` is not ``policy``.
-``coin-in-the-box-multipointed.json`` was derived by hand to cover that gap,
-from ``coin-in-the-box.json`` with two edits: the initial state designates two
-worlds instead of one, leaving it open whether the coin lies tails; and the
-goal is :math:`\mathit{Kw}_A(\mathit{tails})` in place of
-:math:`K_A(\mathit{tails})`, since knowing that the coin is tails is
-unachievable in the world where it is not.
+The puzzle instances ground to single-pointed tasks, so each sensing action has
+one possible outcome and AO* returns a chain; none exercises contingent
+branching. ``coin-in-the-box-multipointed.json`` was derived from
+``coin-in-the-box.json`` by two edits: the initial state designates two worlds,
+leaving the coin's side open, and the goal is :math:`\mathit{Kw}_A\,
+\mathit{tails}`. The original goal :math:`K_A\, \mathit{tails}` is
+unachievable in the world where the coin is heads.
 
-The fleet problems close that gap properly. They declare
-``:multi-pointed-models`` and state an initial theory that says nothing about
-whether a corridor is blocked, so the grounder produces a task designating one
-world per combination (two for the corridor, four for the depot, eight for
-the survey) and every solution to them branches.
+The fleet problems declare ``:multi-pointed-models`` and leave the state of each
+corridor unspecified, so the grounder designates one world per combination (2
+for the corridor, 4 for the depot, 8 for the survey) and every solution
+branches.
 
 Action names
 ------------
 
-A grounded epistemic action name is a single token in the task's own
-vocabulary. PlanSys2 action expressions are a different vocabulary, not a
-different spelling of the same one, and the ``action_mapping`` parameter states
-the correspondence between them. See :doc:`../getting_started/first_plan` for
-the file format and the fallback convention.
+A grounded action name is one token in the task's vocabulary
+(``inspect_r1``); a PlanSys2 action expression is a name with parameters
+(``(inspect_corridor r1)``). The ``action_mapping`` parameter defines the
+correspondence (:doc:`../getting_started/first_plan`).
