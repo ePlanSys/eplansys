@@ -60,7 +60,8 @@ sitemap_url_scheme = '{link}'
 sitemap_excludes = ['genindex.html', 'search.html']
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'requirements.txt']
+# _video holds the generator of the front-page video, not documentation.
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'requirements.txt', '_video']
 
 # Figures, tables and listings are numbered and cross-referenced by number.
 numfig = True
@@ -82,7 +83,7 @@ html_static_path = ['_static']
 # URL-prefix property by a file directly under that prefix, which for this
 # site is /eplansys/.
 html_extra_path = ['_extra']
-html_css_files = ['css/tables.css']
+html_css_files = ['css/tables.css', 'css/video.css']
 html_logo = 'eplansys.png'
 html_favicon = 'favicon.svg'
 html_show_sphinx = False

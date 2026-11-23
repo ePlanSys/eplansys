@@ -15,6 +15,25 @@ Release |release| · Apache License 2.0 ·
 `releases <https://github.com/ePlanSys/eplansys/releases>`_ ·
 ROS 2 Humble and Rolling
 
+.. raw:: html
+
+   <figure class="tutorial-video">
+     <video controls preload="metadata" playsinline
+            poster="_static/video/eplansys-tutorial-poster.png">
+       <source src="_static/video/eplansys-tutorial.mp4" type="video/mp4">
+       <a href="_static/video/eplansys-tutorial.mp4">Download the video (MP4, 66 s)</a>
+     </video>
+     <figcaption>
+       Worked example (66 s, no audio): the site-survey mission of
+       <code>eplansys_demo</code>. A scout must learn whether a site is
+       contaminated and tell a teammate, while an observer must not learn it.
+       The planner chooses a private message over a broadcast because a
+       broadcast falsifies the secrecy conjunct. The Kripke models are
+       computed from the grounded task by the DEL product update; the planner
+       output is from the pinned planner revision.
+     </figcaption>
+   </figure>
+
 Abstract
 --------
 
