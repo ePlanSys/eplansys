@@ -15,6 +15,26 @@ Release |release| · Apache License 2.0 ·
 `releases <https://github.com/ePlanSys/eplansys/releases>`_ ·
 ROS 2 Humble and Rolling
 
+.. raw:: html
+
+   <figure class="tutorial-video">
+     <video controls preload="metadata" playsinline
+            poster="_static/video/eplansys-demo-poster.png">
+       <source src="_static/video/eplansys-demo.mp4" type="video/mp4">
+       <a href="_static/video/eplansys-demo.mp4">Download the video (MP4, 3 min 25 s)</a>
+     </video>
+     <figcaption>
+       Recorded run, real time, no audio. A TurtleBot3 in Gazebo (left) must
+       come to know whether rooms 3 and 6 are blocked; RViz (right) shows the
+       map slam_toolbox builds from its laser and, above it, the executing
+       policy: the goal, the running action (ontic or sensing), and the
+       branch it selects. Room 3 is observed blocked, room 6 clear, and the
+       goal <code>(and (Kw r1 blocked-r3) (Kw r1 blocked-r6))</code> holds.
+       Each observation comes from <code>epistemic_perception</code> reading
+       the occupancy grid.
+     </figcaption>
+   </figure>
+
 Abstract
 --------
 

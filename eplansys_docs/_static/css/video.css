@@ -1,0 +1,19 @@
+/* Front-page tutorial video. The theme gives media no default sizing, so a
+   1280x720 video would overflow the content column on narrow screens. */
+.tutorial-video {
+  margin: 0 0 24px 0;
+}
+.tutorial-video video {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #e1e4e5;
+  border-radius: 4px;
+  background: #fbfaf7;
+}
+.tutorial-video figcaption {
+  margin-top: 8px;
+  font-size: 90%;
+  color: #555;
+  line-height: 1.5;
+}

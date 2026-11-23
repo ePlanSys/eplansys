@@ -82,7 +82,7 @@ html_static_path = ['_static']
 # URL-prefix property by a file directly under that prefix, which for this
 # site is /eplansys/.
 html_extra_path = ['_extra']
-html_css_files = ['css/tables.css']
+html_css_files = ['css/tables.css', 'css/video.css']
 html_logo = 'eplansys.png'
 html_favicon = 'favicon.svg'
 html_show_sphinx = False
