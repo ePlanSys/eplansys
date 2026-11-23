@@ -17,6 +17,8 @@
 // The loop around it needs a planner, an executor and performers; whether to go
 // round it again does not, and that decision is what these tests pin down.
 
+#include <sstream>
+
 #include "gtest/gtest.h"
 
 #include "plansys2_executor/MissionSupervisor.hpp"
@@ -113,4 +115,16 @@ TEST(MissionRetryPolicy, TheDefaultsGiveUpAfterThreeFruitlessAttempts)
   MissionRetryPolicy p;
   EXPECT_EQ(p.limits().max_attempts, 0);
   EXPECT_EQ(p.limits().max_attempts_without_progress, 3);
+}
+
+TEST(MissionSupervisor, AnOutcomePrintsByName)
+{
+  // GoogleTest prints both sides of a failed EXPECT_EQ; an Outcome with no
+  // printer of its own did not compile against recent GoogleTest.
+  std::ostringstream os;
+  os << plansys2::MissionSupervisor::Outcome::GaveUp;
+  EXPECT_EQ(os.str(), "gave up");
+  EXPECT_EQ(
+    plansys2::MissionSupervisor::Outcome::Succeeded,
+    plansys2::MissionSupervisor::Outcome::Succeeded);
 }

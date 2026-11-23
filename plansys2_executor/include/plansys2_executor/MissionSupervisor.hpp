@@ -20,6 +20,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -217,6 +218,15 @@ private:
   bool keep_going() const;
   void settle();
 };
+
+/// Prints an outcome by name. Without it, a stream insertion of an Outcome (a
+/// GoogleTest failure message, say) goes looking for any operator<< in
+/// namespace plansys2 that an Outcome converts to, and recent GoogleTest finds
+/// one taking a shared_ptr to an action variant and fails to compile.
+inline std::ostream & operator<<(std::ostream & os, MissionSupervisor::Outcome outcome)
+{
+  return os << MissionSupervisor::to_string(outcome);
+}
 
 }  // namespace plansys2
 
