@@ -60,8 +60,7 @@ sitemap_url_scheme = '{link}'
 sitemap_excludes = ['genindex.html', 'search.html']
 
 templates_path = ['_templates']
-# _video holds the generator of the front-page video, not documentation.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'requirements.txt', '_video']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'requirements.txt']
 
 # Figures, tables and listings are numbered and cross-referenced by number.
 numfig = True
