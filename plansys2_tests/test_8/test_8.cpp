@@ -80,7 +80,9 @@ struct Mission
 ///   cannot supply, since the task designates both a blocked and a clear world
 ///   and neither is the model's to choose; the performer reports it on finish,
 ///   the way a real one would report what its sensor returned.
-Mission run_mission(const std::string & observed, const std::string & estimate = "admissible")
+Mission run_mission(
+  const std::string & observed, const std::string & estimate = "admissible",
+  int max_expansions = 0)
 {
   Mission mission;
 
@@ -191,6 +193,8 @@ Mission run_mission(const std::string & observed, const std::string & estimate =
   // Plan with the mapping's durations and overlap what commutes.
   planner_node->set_parameter(rclcpp::Parameter("EPISTEMIC.temporal", true));
   planner_node->set_parameter(rclcpp::Parameter("EPISTEMIC.temporal_estimate", estimate));
+  planner_node->set_parameter(
+    rclcpp::Parameter("EPISTEMIC.temporal_max_expansions", max_expansions));
 
   domain_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
   problem_node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
@@ -331,6 +335,18 @@ TEST(test_8, the_critical_path_search_plans_the_same_mission)
     << describe(mission);
   EXPECT_TRUE(overlapped(mission, "(inspect_corridor r1)", "(inspect_corridor r2)"))
     << describe(mission);
+}
+
+TEST(test_8, a_search_that_does_not_finish_falls_back_to_the_scheduled_untimed_policy)
+{
+  // One expansion is not enough for the optimal search, so the solver plans
+  // untimed and schedules that policy: r1 drives, looks and announces. It is
+  // still a temporal policy, admissible, and the mission still succeeds.
+  const auto mission = run_mission("e-inspect-blocked", "admissible", 1);
+  ASSERT_TRUE(mission.temporal) << "the fallback must still return a temporal policy";
+  EXPECT_EQ(mission.result, plansys2_msgs::action::ExecutePlan::Result::SUCCESS)
+    << describe(mission);
+  EXPECT_TRUE(mission.ran("(report_blocked")) << describe(mission);
 }
 
 // Leave through _exit, so the DDS threads never outlive the process.

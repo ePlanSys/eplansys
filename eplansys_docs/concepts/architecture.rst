@@ -173,6 +173,13 @@ Parameters are declared under the plugin name at configure time
      - Factor by which the search's time bound grows between iterations.
        Optimality does not depend on it; ``1.0`` steps to the next lower
        bound.
+   * - ``temporal_max_expansions``
+     - int
+     - ``0``
+     - Expansion limit of the optimal search; 0 is none. Reaching it, or
+       three quarters of the solver timeout, the solver plans untimed and
+       schedules that policy with the commutation test: an admissible
+       temporal policy, not necessarily the shortest.
    * - ``consistent_beliefs``
      - bool
      - ``true``
@@ -354,7 +361,12 @@ The solver starts an action only if the running set remains coherent. Under
 coherence, the model after a set of overlapping actions does not depend on the
 order in which they end.
 
-The search minimises the worst-case makespan over outcomes. Its result can
+The search minimises the worst-case makespan over outcomes. When it does not
+finish in time (three quarters of the solver timeout), the solver plans
+untimed and schedules that policy instead, each action starting as early as
+the commutation test allows: the result is still a temporal policy with the
+same guarantees, and no longer than the untimed one run in sequence, but not
+necessarily the shortest. Its result can
 differ from the untimed policy: on the corridor, both robots inspect at once
 (35 s), where the shortest untimed policy, inspect and announce, takes 36 s.
 

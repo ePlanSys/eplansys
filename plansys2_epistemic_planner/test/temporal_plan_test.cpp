@@ -26,6 +26,7 @@
 #include "gtest/gtest.h"
 #include "aletheia/bisimulation.hpp"
 #include "aletheia/parser.hpp"
+#include "aletheia/strategy.hpp"
 #include "plansys2_epistemic_planner/action_mapping.hpp"
 #include "plansys2_epistemic_planner/policy_plan.hpp"
 #include "task_fixtures.hpp"
@@ -161,6 +162,28 @@ TEST(TemporalPlan, TheCriticalPathSearchReturnsAPlanNoShorterThanOptimal)
   EXPECT_TRUE(temporal::validate_policy(task, durations, *satisficing, &why)) << why;
   std::string error;
   const auto plan = plansys2::to_temporal_plan(task, *satisficing, mapping, error);
+  ASSERT_TRUE(plan.has_value()) << error;
+  EXPECT_TRUE(plan->temporal);
+}
+
+TEST(TemporalPlan, TheScheduledUntimedPolicySerialises)
+{
+  // What the solver returns when the optimal search does not finish: the
+  // untimed policy scheduled with StartCheck, overlapping the depot's drives
+  // and looks where they commute.
+  const auto task = load_task(task_path("robot-fleet-depot"));
+  const auto mapping = plansys2::ActionMapping::load(mapping_path("robot-fleet-depot"));
+  const auto durations = plansys2::durations_from_mapping(task, mapping);
+  const auto h = make_heuristic("rpg", task);
+  const auto untimed = aostar::search(task, *h);
+  ASSERT_TRUE(untimed.has_value());
+
+  const auto scheduled = temporal::schedule_untimed(task, durations, untimed->plan_tree, 3);
+  ASSERT_TRUE(scheduled.has_value());
+  EXPECT_LT(scheduled->makespan, 72.0);   // the six steps of a branch, in sequence
+
+  std::string error;
+  const auto plan = plansys2::to_temporal_plan(task, *scheduled, mapping, error);
   ASSERT_TRUE(plan.has_value()) << error;
   EXPECT_TRUE(plan->temporal);
 }
